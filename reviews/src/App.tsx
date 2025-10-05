@@ -1,23 +1,37 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Home } from "./pages/Home";
+import { Profile } from "./pages/Profile";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Protected routes */}
+        {/* Protected routes with layout */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Home />
+              <Layout>
+                <Home />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
             </ProtectedRoute>
           }
         />
 
-        {/* Auth routes */}
+        {/* Auth routes (no layout) */}
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/signup" element={<Signup />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />

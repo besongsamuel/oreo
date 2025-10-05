@@ -198,6 +198,9 @@ const { error } = await supabase.auth.signOut();
 reviews/
 ├── src/
 │   ├── components/
+│   │   ├── Header.tsx         # App header with navigation
+│   │   ├── Footer.tsx         # App footer
+│   │   ├── Layout.tsx         # Layout wrapper (header + footer)
 │   │   └── ProtectedRoute.tsx # Protected route wrapper
 │   ├── context/
 │   │   └── UserContext.tsx    # User authentication context
@@ -212,7 +215,8 @@ reviews/
 │   │   │   ├── ForgotPassword.tsx  # Password reset page
 │   │   │   ├── CompleteSignup.tsx  # Complete profile page
 │   │   │   └── index.ts            # Auth exports
-│   │   └── Home.tsx           # Home page (protected)
+│   │   ├── Home.tsx           # Home page (protected)
+│   │   └── Profile.tsx        # Profile page (protected)
 │   ├── theme/
 │   │   └── theme.ts           # Material UI theme configuration
 │   ├── App.tsx                # Main app with routing
@@ -225,6 +229,7 @@ reviews/
 ## Routes
 
 - `/` - Home page (protected, requires authentication and profile)
+- `/profile` - User profile page (protected)
 - `/auth/login` - Login page
 - `/auth/signup` - Signup page
 - `/auth/forgot-password` - Password reset page
@@ -239,7 +244,9 @@ All routes starting with `/` (except auth routes) are protected and will redirec
 
 - ✅ **Material UI Integration** - Modern, accessible UI components with theming
 - ✅ **Centralized Theme** - Consistent design tokens across the app
+- ✅ **Professional Header & Footer** - Branded navigation and footer with Aftermath Technologies link
 - ✅ **User Authentication Context** - Global auth state management
+- ✅ **Profile Management** - Editable user profile with company information
 - ✅ **Protected Routes** - Automatic redirect for unauthenticated users
 - ✅ **Supabase Integration** - Backend services for database, auth, and storage
 - ✅ **React Router** - Client-side routing

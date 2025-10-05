@@ -40,6 +40,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchProfile = useCallback(
     async (userId: string) => {
+      console.log("Fetching profile for user:", userId);
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -47,14 +48,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           .eq("id", userId)
           .single();
 
+        console.log("Profile fetch result:", { data, error });
+
         if (error) {
           if (error.code === "PGRST116") {
             // No profile found
+            console.log("No profile found for user");
             setProfile(null);
           } else {
+            console.error("Profile fetch error:", error);
             throw error;
           }
         } else {
+          console.log("Profile loaded successfully:", data);
           setProfile(data);
         }
       } catch (error) {
@@ -72,23 +78,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
+    console.log("UserContext: Initializing");
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log("Getting session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        console.log("Session retrieved:", session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
 
         // Fetch profile if user exists
         if (session?.user) {
+          console.log("User exists, fetching profile...");
           await fetchProfile(session.user.id);
+        } else {
+          console.log("No user session found");
         }
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };
