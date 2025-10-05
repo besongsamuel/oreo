@@ -1,7 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Home } from "./pages/Home";
+import { Companies } from "./pages/Companies";
+import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 
@@ -9,13 +10,46 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Root redirect to dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
         {/* Protected routes with layout */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Layout>
-                <Home />
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Companies />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
               </Layout>
             </ProtectedRoute>
           }
@@ -37,8 +71,8 @@ function App() {
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/complete-signup" element={<CompleteSignup />} />
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all - redirect to dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

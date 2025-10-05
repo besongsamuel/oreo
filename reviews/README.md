@@ -215,8 +215,10 @@ reviews/
 │   │   │   ├── ForgotPassword.tsx  # Password reset page
 │   │   │   ├── CompleteSignup.tsx  # Complete profile page
 │   │   │   └── index.ts            # Auth exports
-│   │   ├── Home.tsx           # Home page (protected)
-│   │   └── Profile.tsx        # Profile page (protected)
+│   │   ├── Dashboard.tsx      # Dashboard with metrics (protected)
+│   │   ├── Companies.tsx      # Company management (protected)
+│   │   ├── Profile.tsx        # Profile page (protected)
+│   │   └── index.ts           # Page exports
 │   ├── theme/
 │   │   └── theme.ts           # Material UI theme configuration
 │   ├── App.tsx                # Main app with routing
@@ -228,30 +230,65 @@ reviews/
 
 ## Routes
 
-- `/` - Home page (protected, requires authentication and profile)
-- `/profile` - User profile page (protected)
-- `/auth/login` - Login page
-- `/auth/signup` - Signup page
-- `/auth/forgot-password` - Password reset page
-- `/auth/complete-signup` - Complete profile setup (redirected after signup)
+### Application Pages (Protected)
 
-All routes starting with `/` (except auth routes) are protected and will redirect:
+- `/` or `/dashboard` - Dashboard with key metrics and recent reviews
+- `/companies` - Company management (add/edit companies)
+- `/reviews` - Reviews listing (coming soon)
+- `/analytics` - Analytics and insights (coming soon)
+- `/profile` - User profile management
+
+### Authentication Pages (Public)
+
+- `/auth/login` - Sign in to your account
+- `/auth/signup` - Create a new account
+- `/auth/forgot-password` - Reset your password
+- `/auth/complete-signup` - Complete profile setup (full name, company name)
+
+All protected routes automatically redirect:
 
 - Unauthenticated users to `/auth/login`
 - Authenticated users without a profile to `/auth/complete-signup`
 
 ## Key Features
 
+### Infrastructure
+
 - ✅ **Material UI Integration** - Modern, accessible UI components with theming
 - ✅ **Centralized Theme** - Consistent design tokens across the app
-- ✅ **Professional Header & Footer** - Branded navigation and footer with Aftermath Technologies link
-- ✅ **User Authentication Context** - Global auth state management
-- ✅ **Profile Management** - Editable user profile with company information
-- ✅ **Protected Routes** - Automatic redirect for unauthenticated users
 - ✅ **Supabase Integration** - Backend services for database, auth, and storage
-- ✅ **React Router** - Client-side routing
+- ✅ **React Router** - Client-side routing with protected routes
 - ✅ **TypeScript** - Full type safety throughout the application
 - ✅ **Self-contained Components** - Minimal props, encapsulated logic
+
+### Authentication & Authorization
+
+- ✅ **User Authentication Context** - Global auth state management
+- ✅ **Protected Routes** - Automatic redirect for unauthenticated users
+- ✅ **Profile Management** - Editable user profile with company information
+- ✅ **Complete Signup Flow** - Multi-step signup with profile completion
+
+### Application Features
+
+- ✅ **Dashboard** - Overview metrics (total reviews, average rating, sentiment analysis)
+- ✅ **Company Management** - Add, edit, and manage companies
+- ✅ **Professional Navigation** - Header with page navigation and user menu
+- ✅ **Recent Reviews Display** - View latest reviews with ratings and sentiment
+- ✅ **Keywords Analysis** - Top keywords from reviews with category tags
+- ✅ **Responsive Design** - Works on desktop, tablet, and mobile devices
+
+### Database Schema
+
+The app uses a comprehensive Supabase database schema including:
+
+- **Profiles** - User profiles and authentication
+- **Companies** - Business entities being analyzed
+- **Locations** - Physical locations per company
+- **Platforms** - Review platforms (Google, Trustpilot, etc.)
+- **Reviews** - Individual reviews with ratings and content
+- **Sentiment Analysis** - AI-generated sentiment scores
+- **Keywords** - Extracted keywords with categories
+- **Topics** - Recurring themes across reviews
 
 ## Learn More
 

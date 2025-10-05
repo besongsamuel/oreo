@@ -40,7 +40,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchProfile = useCallback(
     async (userId: string) => {
-      console.log("Fetching profile for user:", userId);
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -48,19 +47,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           .eq("id", userId)
           .single();
 
-        console.log("Profile fetch result:", { data, error });
-
         if (error) {
           if (error.code === "PGRST116") {
             // No profile found
-            console.log("No profile found for user");
             setProfile(null);
           } else {
             console.error("Profile fetch error:", error);
             throw error;
           }
         } else {
-          console.log("Profile loaded successfully:", data);
           setProfile(data);
         }
       } catch (error) {
@@ -78,26 +73,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    console.log("UserContext: Initializing");
     let mounted = true;
-
-    // Safety timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      console.warn("Loading timeout reached - forcing loading to false");
-      if (mounted) {
-        setLoading(false);
-      }
-    }, 5000); // 5 second timeout
 
     // Get initial session
     const initializeAuth = async () => {
       try {
-        console.log("Getting session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
-
-        console.log("Session retrieved:", session?.user?.email);
 
         if (!mounted) return;
 
@@ -106,21 +89,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Fetch profile if user exists
         if (session?.user) {
-          console.log("User exists, fetching profile...");
           try {
             await fetchProfile(session.user.id);
           } catch (profileError) {
             console.error("Failed to fetch profile:", profileError);
-            // Continue even if profile fetch fails
           }
-        } else {
-          console.log("No user session found");
         }
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
-        console.log("Setting loading to false");
-        clearTimeout(timeout);
         if (mounted) {
           setLoading(false);
         }
@@ -133,8 +110,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", _event, session?.user?.email);
-
       if (!mounted) return;
 
       setSession(session);
@@ -159,7 +134,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);

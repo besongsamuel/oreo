@@ -35,7 +35,7 @@ export const Login = () => {
       if (error) throw error;
 
       // Navigation will be handled by the auth state change
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "An error occurred during login");
     } finally {

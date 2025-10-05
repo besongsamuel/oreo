@@ -1,0 +1,87 @@
+# Project Cursor Rules
+
+## UI/UX Standards
+
+### Skeleton Loading (REQUIRED)
+
+**ALWAYS use skeleton loading instead of spinners or circular progress indicators.**
+
+#### Implementation Requirements:
+
+1. **Never use CircularProgress or spinner components** for loading states
+2. **Always use Skeleton components** from `@mui/material` or custom skeleton loaders
+3. Skeleton loaders should **match the layout** of the actual content being loaded
+4. Show **meaningful structure** during loading (cards, lists, forms, etc.)
+5. Maintain **consistent spacing and sizing** between skeleton and actual content
+
+#### Available Skeleton Components:
+
+- `StatCardSkeleton` - For dashboard statistics cards
+- `ReviewCardSkeleton` - For review list items
+- `CompanyCardSkeleton` - For company cards
+- `ProfileSectionSkeleton` - For profile sections
+- `KeywordChipSkeleton` - For keyword chips
+- `ContentSkeleton` - Generic content skeleton
+
+Location: `/reviews/src/components/SkeletonLoaders.tsx`
+
+#### Example Pattern:
+
+```tsx
+if (loading) {
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Stack spacing={4}>
+        <Typography variant="h4">Dashboard</Typography>
+        <Typography variant="body1" color="text.secondary">
+          Loading your data...
+        </Typography>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 3,
+          }}
+        >
+          {[1, 2, 3, 4].map((i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </Box>
+      </Stack>
+    </Container>
+  );
+}
+```
+
+#### Why Skeleton Loading:
+
+- **Better UX**: Users see the structure of content before it loads
+- **Perceived Performance**: Makes the app feel faster
+- **Reduces Layout Shift**: Content doesn't jump when it loads
+- **Professional**: Modern apps (Facebook, LinkedIn, etc.) use skeleton loading
+- **Apple-like**: Aligns with minimalist, smooth user experience
+
+### Design System
+
+- Follow Apple.com's minimalist aesthetic
+- Clean, spacious layouts with generous whitespace
+- Subtle shadows and borders
+- Smooth transitions and animations
+- Typography: SF Pro Display/Text font stack
+- Colors: Black (#000000), Blue (#0071e3), Gray tones
+- Border radius: 12-18px for cards, 980px for buttons
+
+### Component Standards
+
+- Cards: 18px border radius, subtle shadows
+- Buttons: Pill-shaped (980px radius), no text transform
+- Spacing: Generous padding and margins (multiples of 8px)
+- Typography: Proper letter-spacing and font weights
+
+### Performance
+
+- Always show loading states with skeleton loaders
+- Optimize images and assets
+- Lazy load when appropriate
+- Minimize layout shifts

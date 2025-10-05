@@ -4,6 +4,7 @@ import {
   AppBar,
   Avatar,
   Box,
+  Button,
   Container,
   Divider,
   IconButton,
@@ -13,13 +14,16 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
 export const Header = () => {
   const { user, profile, signOut } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const isActive = (path: string) => location.pathname === path;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -41,49 +45,126 @@ export const Header = () => {
   };
 
   return (
-    <AppBar position="sticky" elevation={1} color="default">
-      <Container maxWidth="lg">
-        <Toolbar disableGutters>
+    <AppBar position="sticky" elevation={0} color="default">
+      <Container maxWidth="xl">
+        <Toolbar disableGutters sx={{ minHeight: "64px", py: 1 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               cursor: "pointer",
-              flexGrow: 1,
+              mr: 4,
             }}
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
           >
             <Typography
               variant="h6"
               sx={{
-                fontWeight: 700,
-                background: "linear-gradient(45deg, #1976d2 30%, #9c27b0 90%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                fontWeight: 600,
+                color: "text.primary",
+                letterSpacing: "-0.01em",
               }}
             >
               Reviews
             </Typography>
           </Box>
 
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: "flex",
+              justifyContent: "center",
+              gap: 0.5,
+            }}
+          >
+            <Button
+              onClick={() => navigate("/dashboard")}
+              color="inherit"
+              sx={{
+                color: isActive("/dashboard")
+                  ? "text.primary"
+                  : "text.secondary",
+                fontWeight: isActive("/dashboard") ? 600 : 400,
+                fontSize: "0.875rem",
+                px: 2,
+                minWidth: "auto",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+            >
+              Dashboard
+            </Button>
+            <Button
+              onClick={() => navigate("/companies")}
+              color="inherit"
+              sx={{
+                color: isActive("/companies")
+                  ? "text.primary"
+                  : "text.secondary",
+                fontWeight: isActive("/companies") ? 600 : 400,
+                fontSize: "0.875rem",
+                px: 2,
+                minWidth: "auto",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+            >
+              Companies
+            </Button>
+            <Button
+              onClick={() => navigate("/reviews")}
+              color="inherit"
+              sx={{
+                color: isActive("/reviews") ? "text.primary" : "text.secondary",
+                fontWeight: isActive("/reviews") ? 600 : 400,
+                fontSize: "0.875rem",
+                px: 2,
+                minWidth: "auto",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+            >
+              Reviews
+            </Button>
+            <Button
+              onClick={() => navigate("/analytics")}
+              color="inherit"
+              sx={{
+                color: isActive("/analytics")
+                  ? "text.primary"
+                  : "text.secondary",
+                fontWeight: isActive("/analytics") ? 600 : 400,
+                fontSize: "0.875rem",
+                px: 2,
+                minWidth: "auto",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+            >
+              Analytics
+            </Button>
+          </Box>
+
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <IconButton
-              size="large"
+              size="small"
               onClick={handleMenuOpen}
               color="inherit"
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
+                p: 0,
               }}
             >
               <Avatar
                 sx={{
                   width: 32,
                   height: 32,
-                  bgcolor: "primary.main",
+                  bgcolor: "secondary.main",
                   fontSize: "0.875rem",
+                  fontWeight: 600,
                 }}
               >
                 {profile?.full_name?.charAt(0)?.toUpperCase() ||
@@ -103,27 +184,62 @@ export const Header = () => {
                 vertical: "top",
                 horizontal: "right",
               }}
-              sx={{ mt: 1 }}
+              sx={{
+                mt: 1.5,
+                "& .MuiPaper-root": {
+                  borderRadius: "12px",
+                  minWidth: 200,
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+                },
+              }}
             >
-              <Box sx={{ px: 2, py: 1, minWidth: 200 }}>
+              <Box sx={{ px: 2.5, py: 2 }}>
                 <Typography variant="body2" fontWeight={600}>
                   {profile?.full_name || "User"}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.75rem" }}
+                >
                   {user?.email}
                 </Typography>
               </Box>
 
               <Divider />
 
-              <MenuItem onClick={handleProfileClick}>
-                <AccountCircleIcon sx={{ mr: 2 }} fontSize="small" />
-                Profile
+              <MenuItem
+                onClick={handleProfileClick}
+                sx={{
+                  py: 1.5,
+                  px: 2.5,
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                  },
+                }}
+              >
+                <AccountCircleIcon
+                  sx={{ mr: 2, fontSize: "1.25rem" }}
+                  color="action"
+                />
+                <Typography variant="body2">Profile</Typography>
               </MenuItem>
 
-              <MenuItem onClick={handleSignOut}>
-                <LogoutIcon sx={{ mr: 2 }} fontSize="small" />
-                Sign Out
+              <MenuItem
+                onClick={handleSignOut}
+                sx={{
+                  py: 1.5,
+                  px: 2.5,
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                  },
+                }}
+              >
+                <LogoutIcon
+                  sx={{ mr: 2, fontSize: "1.25rem" }}
+                  color="action"
+                />
+                <Typography variant="body2">Sign Out</Typography>
               </MenuItem>
             </Menu>
           </Box>

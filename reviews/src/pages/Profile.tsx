@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
 import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
@@ -25,6 +26,26 @@ export const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Show skeleton if profile is not yet loaded
+  if (!user || !profile) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Stack spacing={3}>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Profile Settings
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Loading your profile...
+            </Typography>
+          </Box>
+          <ProfileSectionSkeleton />
+          <ProfileSectionSkeleton />
+        </Stack>
+      </Container>
+    );
+  }
 
   const handleEdit = () => {
     setFullName(profile?.full_name || "");
