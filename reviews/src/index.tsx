@@ -3,7 +3,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-// Remove this line: import { UserProvider } from "./context/UserContext";
+import { UserProvider } from "./context/UserContext";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import { theme } from "./theme/theme";
@@ -15,7 +15,9 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <App /> {/* Remove UserProvider wrapper */}
+      <UserProvider>
+        <App />
+      </UserProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

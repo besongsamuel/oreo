@@ -1,123 +1,14 @@
 import { Box, CircularProgress, Container } from "@mui/material";
-import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { UserProvider } from "../context/UserContext"; // ADD THIS
-import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../context/UserContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const supabase = useSupabase();
   const location = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [hasProfile, setHasProfile] = useState(false);
-  // Remove this line: const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!mounted) return;
-
-        const user = session?.user;
-
-        setAuthenticated(!!user);
-
-        if (user) {
-          try {
-            const { data: profile, error } = await supabase
-              .from("profiles")
-              .select("id")
-              .eq("id", user.id)
-              .maybeSingle();
-
-            if (!mounted) return;
-
-            if (!error && profile) {
-              setHasProfile(true);
-            } else {
-              setHasProfile(false);
-            }
-          } catch (profileError) {
-            console.error("Error checking profile:", profileError);
-            if (mounted) {
-              setHasProfile(false);
-            }
-          }
-        } else {
-          if (mounted) {
-            setHasProfile(false);
-          }
-        }
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-        if (mounted) {
-          setAuthenticated(false);
-          setHasProfile(false);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    checkAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
-
-      const user = session?.user;
-
-      setAuthenticated(!!user);
-
-      if (user) {
-        try {
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (!mounted) return;
-
-          if (!error && profile) {
-            setHasProfile(true);
-          } else {
-            setHasProfile(false);
-          }
-        } catch (profileError) {
-          console.error("Error checking profile on auth change:", profileError);
-          if (mounted) {
-            setHasProfile(false);
-          }
-        }
-      } else {
-        if (mounted) {
-          setHasProfile(false);
-        }
-      }
-
-      if (mounted) {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const { user, hasProfile, loading } = useUser();
 
   if (loading) {
     return (
@@ -136,7 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!authenticated) {
+  if (!user) {
     return <Navigate to="/auth/login" replace />;
   }
 
@@ -144,6 +35,5 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth/complete-signup" replace />;
   }
 
-  // CHANGE THIS LINE:
-  return <UserProvider>{children}</UserProvider>;
+  return <>{children}</>;
 };
