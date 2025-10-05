@@ -10,33 +10,49 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../../context/UserContext";
-import { useSupabase } from "../../hooks/useSupabase";
+import { supabase } from "../../lib/supabaseClient";
 
 export const CompleteSignup = () => {
-  const supabase = useSupabase();
-  const { user, refreshProfile } = useUser();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Autofill email from user's auth email
-    if (user?.email) {
-      setEmail(user.email);
-    }
-  }, [user]);
+    const getUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          setUserId(user.id);
+          setEmail(user.email || "");
+        } else {
+          // No user, redirect to login
+          navigate("/auth/login");
+        }
+      } catch (err) {
+        console.error("Error getting user:", err);
+        navigate("/auth/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUser();
+  }, [navigate]);
 
   const handleCompleteSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    if (!user) {
+    if (!userId) {
       setError("No authenticated user found");
       setLoading(false);
       return;
@@ -44,7 +60,7 @@ export const CompleteSignup = () => {
 
     try {
       const profileData = {
-        id: user.id,
+        id: userId,
         email: email,
         full_name: fullName,
         company_name: companyName,
@@ -55,7 +71,7 @@ export const CompleteSignup = () => {
       const { data: existingProfile, error: checkError } = await supabase
         .from("profiles")
         .select("id")
-        .eq("id", user.id)
+        .eq("id", userId)
         .maybeSingle();
 
       if (checkError && checkError.code !== "PGRST116") {
@@ -70,7 +86,7 @@ export const CompleteSignup = () => {
             full_name: fullName,
             company_name: companyName,
           })
-          .eq("id", user.id);
+          .eq("id", userId);
 
         if (profileError) throw profileError;
       } else {
@@ -81,10 +97,7 @@ export const CompleteSignup = () => {
         if (profileError) throw profileError;
       }
 
-      // Refresh the profile in context
-      await refreshProfile();
-
-      // Navigate to dashboard
+      // Navigate to dashboard - ProtectedRoute will pick up the new profile
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Error completing signup:", err);
@@ -93,6 +106,25 @@ export const CompleteSignup = () => {
       setLoading(false);
     }
   };
+
+  if (loading && !userId) {
+    return (
+      <Container maxWidth="sm">
+        <Box
+          sx={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Typography variant="body1" color="text.secondary">
+            Loading...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm">
