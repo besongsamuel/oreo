@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Companies } from "./pages/Companies";
+import { CompanyStats } from "./pages/CompanyStats";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
@@ -35,21 +36,11 @@ function App() {
           }
         />
         <Route
-          path="/reviews"
+          path="/companies/:companyId"
           element={
             <ProtectedRoute>
               <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
+                <CompanyStats />
               </Layout>
             </ProtectedRoute>
           }

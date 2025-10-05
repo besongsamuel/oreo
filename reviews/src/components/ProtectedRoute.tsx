@@ -23,7 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Auth check timeout")), 2000)
+          setTimeout(() => reject(new Error("Auth check timeout")), 5000)
         );
 
         const result = await Promise.race([

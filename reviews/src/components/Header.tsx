@@ -124,40 +124,6 @@ export const Header = () => {
             >
               Companies
             </Button>
-            <Button
-              onClick={() => navigate("/reviews")}
-              color="inherit"
-              sx={{
-                color: isActive("/reviews") ? "text.primary" : "text.secondary",
-                fontWeight: isActive("/reviews") ? 600 : 400,
-                fontSize: "0.875rem",
-                px: 2,
-                minWidth: "auto",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
-              }}
-            >
-              Reviews
-            </Button>
-            <Button
-              onClick={() => navigate("/analytics")}
-              color="inherit"
-              sx={{
-                color: isActive("/analytics")
-                  ? "text.primary"
-                  : "text.secondary",
-                fontWeight: isActive("/analytics") ? 600 : 400,
-                fontSize: "0.875rem",
-                px: 2,
-                minWidth: "auto",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
-              }}
-            >
-              Analytics
-            </Button>
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
