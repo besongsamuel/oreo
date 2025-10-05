@@ -69,6 +69,16 @@ Edit `src/theme/theme.ts` to customize colors, typography, spacing, and componen
 
 The app provides a `UserContext` that manages authentication state across all components.
 
+### Authentication Flow
+
+- Unauthenticated users are automatically redirected to `/auth/login`
+- After signup, users without a profile are redirected to `/auth/complete-signup`
+- Authentication pages available:
+  - `/auth/login` - Sign in to your account
+  - `/auth/signup` - Create a new account
+  - `/auth/forgot-password` - Reset your password
+  - `/auth/complete-signup` - Complete profile setup (full name, company name)
+
 ### Using the UserContext
 
 ```tsx
@@ -93,6 +103,10 @@ function MyComponent() {
   );
 }
 ```
+
+### Protected Routes
+
+The app uses a `ProtectedRoute` component to protect routes that require authentication. Unauthenticated users are automatically redirected to the login page.
 
 ## Supabase Integration
 
@@ -183,27 +197,52 @@ const { error } = await supabase.auth.signOut();
 ```
 reviews/
 ├── src/
+│   ├── components/
+│   │   └── ProtectedRoute.tsx # Protected route wrapper
 │   ├── context/
-│   │   └── UserContext.tsx   # User authentication context
+│   │   └── UserContext.tsx    # User authentication context
 │   ├── hooks/
-│   │   └── useSupabase.ts    # Custom Supabase hook
+│   │   └── useSupabase.ts     # Custom Supabase hook
 │   ├── lib/
-│   │   └── supabaseClient.ts # Supabase client initialization
+│   │   └── supabaseClient.ts  # Supabase client initialization
+│   ├── pages/
+│   │   ├── auth/
+│   │   │   ├── Login.tsx           # Login page
+│   │   │   ├── Signup.tsx          # Signup page
+│   │   │   ├── ForgotPassword.tsx  # Password reset page
+│   │   │   ├── CompleteSignup.tsx  # Complete profile page
+│   │   │   └── index.ts            # Auth exports
+│   │   └── Home.tsx           # Home page (protected)
 │   ├── theme/
-│   │   └── theme.ts          # Material UI theme configuration
-│   ├── App.tsx
+│   │   └── theme.ts           # Material UI theme configuration
+│   ├── App.tsx                # Main app with routing
 │   └── index.tsx
-├── .cursorrules               # Cursor AI rules for this project
-├── .env                       # Environment variables (not committed)
+├── .cursorrules                # Cursor AI rules for this project
+├── .env                        # Environment variables (not committed)
 └── package.json
 ```
+
+## Routes
+
+- `/` - Home page (protected, requires authentication and profile)
+- `/auth/login` - Login page
+- `/auth/signup` - Signup page
+- `/auth/forgot-password` - Password reset page
+- `/auth/complete-signup` - Complete profile setup (redirected after signup)
+
+All routes starting with `/` (except auth routes) are protected and will redirect:
+
+- Unauthenticated users to `/auth/login`
+- Authenticated users without a profile to `/auth/complete-signup`
 
 ## Key Features
 
 - ✅ **Material UI Integration** - Modern, accessible UI components with theming
 - ✅ **Centralized Theme** - Consistent design tokens across the app
 - ✅ **User Authentication Context** - Global auth state management
+- ✅ **Protected Routes** - Automatic redirect for unauthenticated users
 - ✅ **Supabase Integration** - Backend services for database, auth, and storage
+- ✅ **React Router** - Client-side routing
 - ✅ **TypeScript** - Full type safety throughout the application
 - ✅ **Self-contained Components** - Minimal props, encapsulated logic
 

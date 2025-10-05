@@ -1,69 +1,32 @@
-import { Box, Chip, Container, Paper, Stack, Typography } from "@mui/material";
-import { useUser } from "./context/UserContext";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Home } from "./pages/Home";
+import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 
 function App() {
-  const { user, loading } = useUser();
-
-  if (loading) {
-    return (
-      <Container maxWidth="md">
-        <Box sx={{ mt: 8, textAlign: "center" }}>
-          <Typography variant="h5">Loading...</Typography>
-        </Box>
-      </Container>
-    );
-  }
-
   return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 8 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Stack spacing={3}>
-            <Typography variant="h3" component="h1" gutterBottom>
-              Reviews App
-            </Typography>
+    <BrowserRouter>
+      <Routes>
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body1">Status:</Typography>
-              <Chip
-                label="Connected to Supabase"
-                color="success"
-                size="small"
-              />
-            </Stack>
+        {/* Auth routes */}
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/signup" element={<Signup />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/auth/complete-signup" element={<CompleteSignup />} />
 
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Authentication Status
-              </Typography>
-              {user ? (
-                <Stack spacing={1}>
-                  <Chip
-                    label={`Logged in as: ${user.email}`}
-                    color="primary"
-                    variant="outlined"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    User ID: {user.id}
-                  </Typography>
-                </Stack>
-              ) : (
-                <Chip
-                  label="Not logged in"
-                  color="default"
-                  variant="outlined"
-                />
-              )}
-            </Box>
-
-            <Typography variant="body2" color="text.secondary">
-              This app is integrated with Material UI theming and Supabase
-              authentication.
-            </Typography>
-          </Stack>
-        </Paper>
-      </Box>
-    </Container>
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
