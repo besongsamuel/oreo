@@ -79,6 +79,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     console.log("UserContext: Initializing");
+    let mounted = true;
+
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn("Loading timeout reached - forcing loading to false");
+      if (mounted) {
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
+
     // Get initial session
     const initializeAuth = async () => {
       try {
@@ -88,13 +98,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         } = await supabase.auth.getSession();
 
         console.log("Session retrieved:", session?.user?.email);
+
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
 
         // Fetch profile if user exists
         if (session?.user) {
           console.log("User exists, fetching profile...");
-          await fetchProfile(session.user.id);
+          try {
+            await fetchProfile(session.user.id);
+          } catch (profileError) {
+            console.error("Failed to fetch profile:", profileError);
+            // Continue even if profile fetch fails
+          }
         } else {
           console.log("No user session found");
         }
@@ -102,7 +120,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error("Error getting session:", error);
       } finally {
         console.log("Setting loading to false");
-        setLoading(false);
+        clearTimeout(timeout);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -112,12 +133,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("Auth state changed:", _event, session?.user?.email);
+
+      if (!mounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
 
       // Fetch profile if user exists
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        try {
+          await fetchProfile(session.user.id);
+        } catch (profileError) {
+          console.error(
+            "Failed to fetch profile on auth change:",
+            profileError
+          );
+        }
       } else {
         setProfile(null);
       }
@@ -126,6 +158,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);

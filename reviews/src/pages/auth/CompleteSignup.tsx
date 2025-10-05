@@ -36,32 +36,105 @@ export const CompleteSignup = () => {
     setLoading(true);
     setError(null);
 
+    console.log("Complete Signup: Starting");
+    console.log("User:", user);
+
     if (!user) {
       setError("No authenticated user found");
       setLoading(false);
       return;
     }
 
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Operation timed out after 10 seconds")), 10000);
+    });
+
     try {
-      // Create profile
-      const { error: profileError } = await supabase.from("profiles").insert({
+      const profileData = {
         id: user.id,
         email: email,
         full_name: fullName,
         company_name: companyName,
         role: "user",
-      });
+      };
 
-      if (profileError) throw profileError;
+      console.log("Checking if profile exists...");
+      
+      // First, check if profile exists
+      const { data: existingProfile, error: checkError } = await Promise.race([
+        supabase.from("profiles").select("id").eq("id", user.id).maybeSingle(),
+        timeoutPromise
+      ]) as any;
+
+      console.log("Profile check result:", { existingProfile, checkError });
+
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+
+      let result;
+      if (existingProfile) {
+        console.log("Profile exists, updating...");
+        // Profile exists, update it
+        result = await Promise.race([
+          supabase
+            .from("profiles")
+            .update({
+              full_name: fullName,
+              company_name: companyName,
+            })
+            .eq("id", user.id)
+            .select(),
+          timeoutPromise
+        ]) as any;
+      } else {
+        console.log("Profile doesn't exist, inserting...");
+        // Profile doesn't exist, insert it
+        result = await Promise.race([
+          supabase.from("profiles").insert(profileData).select(),
+          timeoutPromise
+        ]) as any;
+      }
+
+      const { data, error: profileError } = result;
+
+      console.log("Profile operation result:", { data, error: profileError });
+
+      if (profileError) {
+        console.error("Profile error details:", {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          code: profileError.code,
+        });
+        throw profileError;
+      }
+
+      console.log("Profile created/updated successfully");
 
       // Refresh the profile in context
+      console.log("Refreshing profile in context...");
       await refreshProfile();
 
-      // Redirect to home page
-      navigate("/");
+      console.log("Navigating to home...");
+      // Small delay to ensure profile is loaded
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
     } catch (err: any) {
       console.error("Error completing signup:", err);
-      setError(err.message || "An error occurred while completing signup");
+      console.error("Error details:", {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint,
+      });
+      setError(
+        err.message ||
+          err.details ||
+          "An error occurred while completing signup. Please check the console for details."
+      );
     } finally {
       setLoading(false);
     }
