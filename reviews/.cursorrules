@@ -1,0 +1,31 @@
+# Cursor AI Rules for this Project
+
+## Code Generation Guidelines
+
+- **Do NOT create example components** unless explicitly requested by the user
+- Focus on implementing only what is specifically asked for
+- Avoid creating demo, sample, or tutorial code unless the user explicitly asks for examples
+- Keep implementations clean and production-ready without unnecessary sample usage files
+
+## Component Design Principles
+
+- **Always create self-contained components** with a minimum amount of inputs/props
+- Components should encapsulate their own logic and state management
+- Minimize prop drilling by keeping component dependencies simple
+- This helps avoid bloated React components and improves code maintainability
+- Prefer composition over complex prop interfaces
+
+## Project-Specific Guidelines
+
+- This is a TypeScript React application integrated with Supabase
+- Use TypeScript best practices and type safety
+- Follow React hooks conventions
+- Keep code modular and maintainable
+
+## Styling and Theming
+
+- **Prioritize using an app theme** consistently across the entire application
+- Define colors, spacing, typography, and other design tokens in a centralized theme
+- Always reference theme values instead of hardcoding styles
+- Ensure all components use the theme for consistent look and feel
+- Make the app easily customizable through theme configuration
