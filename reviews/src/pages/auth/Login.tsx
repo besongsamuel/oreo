@@ -27,18 +27,21 @@ export const Login = () => {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      // Navigation will be handled by the auth state change
-      navigate("/dashboard");
+      // Wait a moment for the session to be fully established
+      if (data.session) {
+        // Small delay to ensure auth state is propagated
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "An error occurred during login");
-    } finally {
       setLoading(false);
     }
   };

@@ -30,7 +30,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         const user = session?.user;
 
         setAuthenticated(!!user);
-        // Remove this line: setUserId(user?.id || null);
 
         if (user) {
           try {
@@ -49,6 +48,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             }
           } catch (profileError) {
             console.error("Error checking profile:", profileError);
+            if (mounted) {
+              setHasProfile(false);
+            }
+          }
+        } else {
+          if (mounted) {
             setHasProfile(false);
           }
         }
@@ -56,6 +61,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         console.error("Error checking authentication:", error);
         if (mounted) {
           setAuthenticated(false);
+          setHasProfile(false);
         }
       } finally {
         if (mounted) {
@@ -72,8 +78,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       if (!mounted) return;
 
       const user = session?.user;
+
       setAuthenticated(!!user);
-      // Remove this line: setUserId(user?.id || null);
 
       if (user) {
         try {
@@ -83,20 +89,28 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             .eq("id", user.id)
             .maybeSingle();
 
-          if (mounted && !error && profile) {
+          if (!mounted) return;
+
+          if (!error && profile) {
             setHasProfile(true);
           } else {
             setHasProfile(false);
           }
         } catch (profileError) {
           console.error("Error checking profile on auth change:", profileError);
-          setHasProfile(false);
+          if (mounted) {
+            setHasProfile(false);
+          }
         }
       } else {
-        setHasProfile(false);
+        if (mounted) {
+          setHasProfile(false);
+        }
       }
 
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     return () => {
