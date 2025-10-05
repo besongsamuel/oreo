@@ -21,19 +21,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Auth check timeout")), 5000)
-        );
-
-        const result = await Promise.race([
-          sessionPromise,
-          timeoutPromise,
-        ]).catch(() => ({ data: { session: null }, error: null }));
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
-        const session = result.data?.session;
         const user = session?.user;
 
         setAuthenticated(!!user);

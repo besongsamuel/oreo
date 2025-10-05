@@ -1,24 +1,17 @@
+import { Star as StarIcon } from "@mui/icons-material";
 import {
-  ArrowForward as ArrowForwardIcon,
-  Business as BusinessIcon,
-  Star as StarIcon,
-} from "@mui/icons-material";
-import {
-  Avatar,
   Box,
-  Button,
   Card,
   CardContent,
   Chip,
   Container,
-  Divider,
   LinearProgress,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { CompanyCard } from "../components/CompanyCard";
 import {
   KeywordChipSkeleton,
   ReviewCardSkeleton,
@@ -66,7 +59,6 @@ interface KeywordAnalysis {
 export const Dashboard = () => {
   const supabase = useSupabase();
   const { profile } = useUser();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStat[]>([]);
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([]);
@@ -302,101 +294,16 @@ export const Dashboard = () => {
               }}
             >
               {companyStats.slice(0, 6).map((company) => (
-                <Card variant="outlined" key={company.company_id}>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                      >
-                        <Avatar sx={{ bgcolor: "secondary.main" }}>
-                          <BusinessIcon />
-                        </Avatar>
-                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                          <Typography
-                            variant="subtitle1"
-                            fontWeight={600}
-                            noWrap
-                            title={company.company_name}
-                          >
-                            {company.company_name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {company.total_locations} location
-                            {company.total_locations !== 1 ? "s" : ""}
-                          </Typography>
-                        </Box>
-                      </Stack>
-
-                      <Divider />
-
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        justifyContent="space-between"
-                      >
-                        <Box>
-                          <Typography variant="h5" fontWeight={700}>
-                            {company.total_reviews}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Reviews
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <Typography variant="h5" fontWeight={700}>
-                              {company.average_rating?.toFixed(1) || "0.0"}
-                            </Typography>
-                            <StarIcon
-                              sx={{ color: "warning.main", fontSize: "1.2rem" }}
-                            />
-                          </Stack>
-                          <Typography variant="caption" color="text.secondary">
-                            Avg Rating
-                          </Typography>
-                        </Box>
-                      </Stack>
-
-                      <Stack direction="row" spacing={1}>
-                        <Chip
-                          label={`${company.positive_reviews} positive`}
-                          size="small"
-                          color="success"
-                          variant="outlined"
-                        />
-                        <Chip
-                          label={`${company.negative_reviews} negative`}
-                          size="small"
-                          color="error"
-                          variant="outlined"
-                        />
-                      </Stack>
-
-                      <Divider />
-
-                      <Button
-                        variant="text"
-                        endIcon={<ArrowForwardIcon />}
-                        onClick={() =>
-                          navigate(`/companies/${company.company_id}`)
-                        }
-                        sx={{
-                          justifyContent: "space-between",
-                          textTransform: "none",
-                          fontWeight: 500,
-                        }}
-                      >
-                        View Details
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </Card>
+                <CompanyCard
+                  key={company.company_id}
+                  companyId={company.company_id}
+                  companyName={company.company_name}
+                  totalLocations={company.total_locations}
+                  totalReviews={company.total_reviews}
+                  averageRating={company.average_rating}
+                  positiveReviews={company.positive_reviews}
+                  negativeReviews={company.negative_reviews}
+                />
               ))}
             </Box>
           )}

@@ -165,5 +165,15 @@ BEGIN
     (r9_id, kw_coffee, 1, 0.70),
     (r10_id, kw_atm, 1, 0.92);
 
-  RAISE NOTICE 'SUCCESS! Created 2 companies, 3 locations, and 10 reviews for user %', demo_user_id;
+  -- Create topics for company1 (topics are company-specific)
+  INSERT INTO topics (company_id, name, description, category)
+  VALUES (company1_id, 'Coffee Quality', 'Quality and taste of coffee drinks', 'satisfaction');
+
+  INSERT INTO topics (company_id, name, description, category)
+  VALUES (company1_id, 'Service Speed', 'Speed and efficiency of service', 'neutral');
+
+  INSERT INTO topics (company_id, name, description, category)
+  VALUES (company1_id, 'Atmosphere', 'Ambiance and environment', 'satisfaction');
+
+  RAISE NOTICE 'SUCCESS! Created 2 companies, 3 locations, 10 reviews, and 3 topics for user %', demo_user_id;
 END $$;

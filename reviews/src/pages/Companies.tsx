@@ -1,5 +1,6 @@
 import {
   Add as AddIcon,
+  ArrowForward as ArrowForwardIcon,
   Business as BusinessIcon,
   Edit as EditIcon,
   LocationOn as LocationIcon,
@@ -19,6 +20,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   InputAdornment,
   Stack,
@@ -26,6 +28,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
 import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
@@ -68,6 +71,7 @@ const INDUSTRY_OPTIONS = [
 export const Companies = () => {
   const supabase = useSupabase();
   const { profile } = useUser();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -405,6 +409,21 @@ export const Companies = () => {
                           {company.website}
                         </Typography>
                       )}
+
+                      <Divider />
+
+                      <Button
+                        variant="text"
+                        endIcon={<ArrowForwardIcon />}
+                        onClick={() => navigate(`/companies/${company.id}`)}
+                        sx={{
+                          justifyContent: "space-between",
+                          textTransform: "none",
+                          fontWeight: 500,
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </Stack>
                   </CardContent>
                 </Card>
