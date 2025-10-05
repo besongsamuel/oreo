@@ -1,6 +1,6 @@
-# Reviews App
+# Aureanne Review Tracker
 
-A React TypeScript application integrated with Supabase, Material UI, and centralized authentication state management.
+A comprehensive review management and analytics platform built with React TypeScript, Supabase, and Material UI. Features Apple-inspired minimalist design with advanced sentiment analysis and keyword tracking.
 
 ## Prerequisites
 

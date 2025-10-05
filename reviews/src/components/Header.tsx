@@ -59,13 +59,24 @@ export const Header = () => {
           >
             <Typography
               variant="h6"
+              component="div"
               sx={{
                 fontWeight: 600,
-                color: "text.primary",
                 letterSpacing: "-0.01em",
+                display: "flex",
+                alignItems: "baseline",
+                gap: 0.5,
               }}
             >
-              Reviews
+              <Box component="span" sx={{ color: "text.primary" }}>
+                Aureanne
+              </Box>
+              <Box component="span" sx={{ color: "secondary.main" }}>
+                Review
+              </Box>
+              <Box component="span" sx={{ color: "text.primary" }}>
+                Tracker
+              </Box>
             </Typography>
           </Box>
 

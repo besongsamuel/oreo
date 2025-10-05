@@ -4,9 +4,11 @@ import {
   Edit as EditIcon,
   LocationOn as LocationIcon,
   Star as StarIcon,
+  LanguageOutlined as WebIcon,
 } from "@mui/icons-material";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -18,6 +20,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Typography,
@@ -37,6 +40,30 @@ interface Company {
   total_reviews?: number;
   average_rating?: number;
 }
+
+// Common industry options for autocomplete
+const INDUSTRY_OPTIONS = [
+  "Restaurant",
+  "Hotel & Hospitality",
+  "Retail",
+  "Healthcare",
+  "Beauty & Spa",
+  "Automotive",
+  "Real Estate",
+  "Education",
+  "Fitness & Wellness",
+  "Entertainment",
+  "Professional Services",
+  "Home Services",
+  "Technology",
+  "Financial Services",
+  "Legal Services",
+  "Construction",
+  "Manufacturing",
+  "E-commerce",
+  "Food & Beverage",
+  "Travel & Tourism",
+];
 
 export const Companies = () => {
   const supabase = useSupabase();
@@ -101,11 +128,18 @@ export const Companies = () => {
   const handleOpenDialog = (company?: Company) => {
     if (company) {
       setEditingCompany(company);
+      // Strip https:// or http:// from website for display
+      let websiteDisplay = company.website || "";
+      if (websiteDisplay.startsWith("https://")) {
+        websiteDisplay = websiteDisplay.substring(8);
+      } else if (websiteDisplay.startsWith("http://")) {
+        websiteDisplay = websiteDisplay.substring(7);
+      }
       setFormData({
         name: company.name,
         description: company.description || "",
         industry: company.industry || "",
-        website: company.website || "",
+        website: websiteDisplay,
       });
     } else {
       setEditingCompany(null);
@@ -140,6 +174,16 @@ export const Companies = () => {
     setError(null);
 
     try {
+      // Format website URL with https:// if it has a value
+      let websiteUrl = formData.website?.trim() || null;
+      if (
+        websiteUrl &&
+        !websiteUrl.startsWith("http://") &&
+        !websiteUrl.startsWith("https://")
+      ) {
+        websiteUrl = `https://${websiteUrl}`;
+      }
+
       if (editingCompany) {
         // Update existing company
         const { error: updateError } = await supabase
@@ -148,7 +192,7 @@ export const Companies = () => {
             name: formData.name,
             description: formData.description || null,
             industry: formData.industry || null,
-            website: formData.website || null,
+            website: websiteUrl,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingCompany.id);
@@ -161,7 +205,7 @@ export const Companies = () => {
           name: formData.name,
           description: formData.description || null,
           industry: formData.industry || null,
-          website: formData.website || null,
+          website: websiteUrl,
         });
 
         if (insertError) throw insertError;
@@ -393,15 +437,25 @@ export const Companies = () => {
                   }
                   disabled={submitting}
                 />
-                <TextField
-                  label="Industry"
+                <Autocomplete
+                  freeSolo
                   fullWidth
+                  options={INDUSTRY_OPTIONS}
                   value={formData.industry}
-                  onChange={(e) =>
-                    setFormData({ ...formData, industry: e.target.value })
+                  onChange={(_, newValue) =>
+                    setFormData({ ...formData, industry: newValue || "" })
+                  }
+                  onInputChange={(_, newInputValue) =>
+                    setFormData({ ...formData, industry: newInputValue })
                   }
                   disabled={submitting}
-                  placeholder="e.g., Restaurant, Hotel, Retail"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Industry"
+                      placeholder="Select or type an industry"
+                    />
+                  )}
                 />
                 <TextField
                   label="Website"
@@ -411,7 +465,20 @@ export const Companies = () => {
                     setFormData({ ...formData, website: e.target.value })
                   }
                   disabled={submitting}
-                  placeholder="https://example.com"
+                  placeholder="example.com"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <WebIcon sx={{ color: "action.active", mr: 0.5 }} />
+                        <Typography
+                          variant="body1"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          https://
+                        </Typography>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <TextField
                   label="Description"

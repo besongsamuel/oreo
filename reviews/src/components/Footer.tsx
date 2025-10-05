@@ -26,8 +26,23 @@ export const Footer = () => {
             gap: 2,
           }}
         >
-          <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} Reviews. All rights reserved.
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            component="div"
+            sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}
+          >
+            © {new Date().getFullYear()}
+            <Box component="span" sx={{ fontWeight: 500 }}>
+              Aureanne
+            </Box>
+            <Box component="span" sx={{ color: "secondary.main", fontWeight: 500 }}>
+              Review
+            </Box>
+            <Box component="span" sx={{ fontWeight: 500 }}>
+              Tracker
+            </Box>
+            . All rights reserved.
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
