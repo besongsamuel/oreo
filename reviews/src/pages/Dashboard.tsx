@@ -68,12 +68,9 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!profile) {
-        console.log("Dashboard: No profile, skipping data fetch");
         setLoading(false);
         return;
       }
-
-      console.log("Dashboard: Profile exists, fetching dashboard data");
 
       try {
         // Fetch company stats for all user's companies

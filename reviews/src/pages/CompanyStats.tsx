@@ -1,6 +1,11 @@
 import {
   ArrowBack as ArrowBackIcon,
   Business as BusinessIcon,
+  Close as CloseIcon,
+  Facebook as FacebookIcon,
+  FilterList as FilterListIcon,
+  Google as GoogleIcon,
+  RateReview as ReviewIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
@@ -11,9 +16,18 @@ import {
   CardContent,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  FormControl,
+  IconButton,
+  InputLabel,
   LinearProgress,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
 } from "@mui/material";
@@ -85,6 +99,13 @@ export const CompanyStats = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [keywordAnalysis, setKeywordAnalysis] = useState<KeywordAnalysis[]>([]);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState("");
+
+  // Filter states
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
+  const [selectedRating, setSelectedRating] = useState<string>("all");
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -272,6 +293,81 @@ export const CompanyStats = () => {
     return colors[category] || "default";
   };
 
+  const handleFetchReviews = (platform: string) => {
+    setSelectedPlatform(platform);
+    setComingSoonOpen(true);
+  };
+
+  const handleCloseComingSoon = () => {
+    setComingSoonOpen(false);
+    setSelectedPlatform("");
+  };
+
+  const platforms = [
+    { name: "Google", icon: <GoogleIcon />, color: "#4285F4" },
+    { name: "Yelp", icon: <ReviewIcon />, color: "#D32323" },
+    { name: "Facebook", icon: <FacebookIcon />, color: "#1877F2" },
+    { name: "Trustpilot", icon: <StarIcon />, color: "#00B67A" },
+    { name: "TripAdvisor", icon: <ReviewIcon />, color: "#34E0A1" },
+  ];
+
+  // Filter reviews based on selected filters
+  const filteredReviews = reviews.filter((review) => {
+    // Filter by location
+    if (
+      selectedLocation !== "all" &&
+      review.location_name !== selectedLocation
+    ) {
+      return false;
+    }
+
+    // Filter by keyword (check if review content contains the keyword)
+    if (selectedKeyword !== "all") {
+      const contentLower = (review.content + " " + review.title).toLowerCase();
+      if (!contentLower.includes(selectedKeyword.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Filter by rating
+    if (selectedRating !== "all") {
+      const rating = review.rating;
+      switch (selectedRating) {
+        case "5":
+          if (rating < 5) return false;
+          break;
+        case "4":
+          if (rating < 4 || rating >= 5) return false;
+          break;
+        case "3":
+          if (rating < 3 || rating >= 4) return false;
+          break;
+        case "2":
+          if (rating < 2 || rating >= 3) return false;
+          break;
+        case "1":
+          if (rating < 1 || rating >= 2) return false;
+          break;
+      }
+    }
+
+    return true;
+  });
+
+  // Get unique locations from reviews for filter dropdown
+  const uniqueLocations = Array.from(
+    new Set(reviews.map((r) => r.location_name))
+  ).sort();
+
+  // Get top keywords for filter dropdown (limit to top 20)
+  const topKeywordsForFilter = keywords.slice(0, 20);
+
+  const handleClearFilters = () => {
+    setSelectedLocation("all");
+    setSelectedKeyword("all");
+    setSelectedRating("all");
+  };
+
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -378,6 +474,56 @@ export const CompanyStats = () => {
               </Stack>
             </Box>
           </Stack>
+        </Paper>
+
+        {/* Fetch Reviews Section */}
+        <Paper sx={{ p: 4 }}>
+          <Typography variant="h5" gutterBottom>
+            Fetch Reviews from Platforms
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Connect to review platforms to import and analyze customer feedback
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(5, 1fr)",
+              },
+              gap: 2,
+            }}
+          >
+            {platforms.map((platform) => (
+              <Button
+                key={platform.name}
+                variant="outlined"
+                size="large"
+                startIcon={platform.icon}
+                onClick={() => handleFetchReviews(platform.name)}
+                sx={{
+                  py: 2,
+                  borderRadius: 3,
+                  borderColor: "divider",
+                  color: "text.primary",
+                  "&:hover": {
+                    borderColor: platform.color,
+                    bgcolor: `${platform.color}08`,
+                    "& .MuiSvgIcon-root": {
+                      color: platform.color,
+                    },
+                  },
+                  "& .MuiSvgIcon-root": {
+                    fontSize: "1.5rem",
+                  },
+                }}
+              >
+                {platform.name}
+              </Button>
+            ))}
+          </Box>
         </Paper>
 
         {/* Stats Overview */}
@@ -585,16 +731,132 @@ export const CompanyStats = () => {
 
         {/* Recent Reviews */}
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Recent Reviews
-          </Typography>
-          {reviews.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              No reviews yet for this company.
-            </Typography>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 3 }}
+          >
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Recent Reviews
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {filteredReviews.length} of {reviews.length} reviews
+              </Typography>
+            </Box>
+            {(selectedLocation !== "all" ||
+              selectedKeyword !== "all" ||
+              selectedRating !== "all") && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearFilters}
+                sx={{ borderRadius: 980 }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </Stack>
+
+          {/* Filters */}
+          {reviews.length > 0 && (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                },
+                gap: 2,
+                mb: 3,
+                p: 3,
+                bgcolor: "background.default",
+                borderRadius: 3,
+              }}
+            >
+              {/* Location Filter */}
+              <FormControl fullWidth size="small">
+                <InputLabel id="location-filter-label">Location</InputLabel>
+                <Select
+                  labelId="location-filter-label"
+                  value={selectedLocation}
+                  label="Location"
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                >
+                  <MenuItem value="all">All Locations</MenuItem>
+                  {uniqueLocations.map((location) => (
+                    <MenuItem key={location} value={location}>
+                      {location}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Keyword Filter */}
+              <FormControl fullWidth size="small">
+                <InputLabel id="keyword-filter-label">Keyword</InputLabel>
+                <Select
+                  labelId="keyword-filter-label"
+                  value={selectedKeyword}
+                  label="Keyword"
+                  onChange={(e) => setSelectedKeyword(e.target.value)}
+                >
+                  <MenuItem value="all">All Keywords</MenuItem>
+                  {topKeywordsForFilter.map((keyword) => (
+                    <MenuItem
+                      key={keyword.keyword_text}
+                      value={keyword.keyword_text}
+                    >
+                      {keyword.keyword_text} ({keyword.occurrence_count})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Rating Filter */}
+              <FormControl fullWidth size="small">
+                <InputLabel id="rating-filter-label">Rating</InputLabel>
+                <Select
+                  labelId="rating-filter-label"
+                  value={selectedRating}
+                  label="Rating"
+                  onChange={(e) => setSelectedRating(e.target.value)}
+                >
+                  <MenuItem value="all">All Ratings</MenuItem>
+                  <MenuItem value="5">⭐⭐⭐⭐⭐ (5 stars)</MenuItem>
+                  <MenuItem value="4">⭐⭐⭐⭐ (4 stars)</MenuItem>
+                  <MenuItem value="3">⭐⭐⭐ (3 stars)</MenuItem>
+                  <MenuItem value="2">⭐⭐ (2 stars)</MenuItem>
+                  <MenuItem value="1">⭐ (1 star)</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+
+          {filteredReviews.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <FilterListIcon
+                sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
+              />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No reviews match your filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Try adjusting your filters to see more results
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={handleClearFilters}
+                sx={{ borderRadius: 980 }}
+              >
+                Clear All Filters
+              </Button>
+            </Box>
           ) : (
-            <Stack spacing={2} sx={{ mt: 2 }}>
-              {reviews.map((review) => (
+            <Stack spacing={2}>
+              {filteredReviews.map((review) => (
                 <Card key={review.id} variant="outlined">
                   <CardContent>
                     <Stack spacing={1}>
@@ -666,6 +928,91 @@ export const CompanyStats = () => {
           )}
         </Paper>
       </Stack>
+
+      {/* Coming Soon Modal */}
+      <Dialog
+        open={comingSoonOpen}
+        onClose={handleCloseComingSoon}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle sx={{ m: 0, p: 3 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h5" component="div">
+              {selectedPlatform} Integration
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseComingSoon}
+              sx={{
+                color: "text.secondary",
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers sx={{ py: 4 }}>
+          <Stack spacing={3} alignItems="center" sx={{ textAlign: "center" }}>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                bgcolor: "primary.light",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <StarIcon sx={{ fontSize: 40, color: "primary.main" }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Coming Soon!
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {selectedPlatform} integration is currently under development.
+                We're working hard to bring you seamless review imports from all
+                major platforms.
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                bgcolor: "background.default",
+                p: 2,
+                borderRadius: 2,
+                width: "100%",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Stay tuned for updates! We'll notify you as soon as this feature
+                becomes available.
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={handleCloseComingSoon}
+            variant="contained"
+            size="large"
+            fullWidth
+            sx={{ borderRadius: 980, py: 1.5 }}
+          >
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
