@@ -23,8 +23,8 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
+import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
-import { useUser } from "../hooks/useUser";
 
 interface CompanyDetails {
   id: string;
@@ -77,7 +77,7 @@ interface KeywordAnalysis {
 export const CompanyStats = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const supabase = useSupabase();
-  const { profile } = useUser();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<CompanyDetails | null>(null);

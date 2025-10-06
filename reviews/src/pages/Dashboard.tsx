@@ -17,8 +17,8 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
+import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
-import { useUser } from "../hooks/useUser";
 
 interface CompanyStat {
   company_id: string;
@@ -58,7 +58,7 @@ interface KeywordAnalysis {
 
 export const Dashboard = () => {
   const supabase = useSupabase();
-  const { profile } = useUser();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStat[]>([]);
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([]);
@@ -68,9 +68,12 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!profile) {
+        console.log("Dashboard: No profile, skipping data fetch");
         setLoading(false);
         return;
       }
+
+      console.log("Dashboard: Profile exists, fetching dashboard data");
 
       try {
         // Fetch company stats for all user's companies

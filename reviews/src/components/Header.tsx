@@ -15,10 +15,12 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useProfile } from "../hooks/useProfile";
 import { useUser } from "../hooks/useUser";
 
 export const Header = () => {
-  const { user, profile, signOut } = useUser();
+  const { user, signOut } = useUser();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

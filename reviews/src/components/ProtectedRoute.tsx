@@ -8,17 +8,9 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
-  const { user, hasProfile, loading } = useUser();
-
-  console.log("ProtectedRoute: Render", {
-    loading,
-    user: !!user,
-    hasProfile,
-    pathname: location.pathname,
-  });
+  const { user, loading } = useUser();
 
   if (loading) {
-    console.log("ProtectedRoute: Showing loading screen");
     return (
       <Container>
         <Box
@@ -36,15 +28,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    console.log("ProtectedRoute: No user, redirecting to login");
     return <Navigate to="/auth/login" replace />;
   }
 
-  if (!hasProfile && location.pathname !== "/auth/complete-signup") {
-    console.log("ProtectedRoute: No profile, redirecting to complete-signup");
-    return <Navigate to="/auth/complete-signup" replace />;
-  }
-
-  console.log("ProtectedRoute: Rendering children");
   return <>{children}</>;
 };

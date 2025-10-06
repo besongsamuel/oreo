@@ -7,10 +7,12 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useProfile } from "../hooks/useProfile";
 import { useUser } from "../hooks/useUser";
 
 export const Home = () => {
-  const { user, profile, signOut } = useUser();
+  const { user, signOut } = useUser();
+  const { profile } = useProfile();
 
   return (
     <Container maxWidth="md">

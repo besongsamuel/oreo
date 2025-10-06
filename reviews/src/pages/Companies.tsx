@@ -30,8 +30,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
+import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
-import { useUser } from "../hooks/useUser";
 
 interface Company {
   id: string;
@@ -70,7 +70,7 @@ const INDUSTRY_OPTIONS = [
 
 export const Companies = () => {
   const supabase = useSupabase();
-  const { profile } = useUser();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<Company[]>([]);

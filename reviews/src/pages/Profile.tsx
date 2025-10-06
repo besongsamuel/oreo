@@ -13,11 +13,13 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
+import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { useUser } from "../hooks/useUser";
 
 export const Profile = () => {
-  const { user, profile, refreshProfile } = useUser();
+  const { user } = useUser();
+  const { profile, refreshProfile } = useProfile();
   const supabase = useSupabase();
 
   const [isEditing, setIsEditing] = useState(false);
