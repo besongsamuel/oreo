@@ -29,10 +29,12 @@ import {
   Paper,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import {
   ReviewCardSkeleton,
   StatCardSkeleton,
@@ -88,6 +90,25 @@ interface KeywordAnalysis {
   percentage: number;
 }
 
+interface SentimentData {
+  overallScore: number;
+  overallSentiment: string;
+  totalReviews: number;
+  positiveCount: number;
+  neutralCount: number;
+  negativeCount: number;
+  byAgeGroup: {
+    ageRange: string;
+    avgScore: number;
+    count: number;
+  }[];
+  byGender: {
+    gender: string;
+    avgScore: number;
+    count: number;
+  }[];
+}
+
 export const CompanyStats = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const supabase = useSupabase();
@@ -99,11 +120,18 @@ export const CompanyStats = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [keywordAnalysis, setKeywordAnalysis] = useState<KeywordAnalysis[]>([]);
+  const [sentimentData, setSentimentData] = useState<SentimentData | null>(
+    null
+  );
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState("");
 
-  // Filter states
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  // Page-level filters (apply to all data)
+  const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterEndDate, setFilterEndDate] = useState<string>("");
+
+  // Review-specific filters
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
 
@@ -167,17 +195,31 @@ export const CompanyStats = () => {
         if (locationsError) {
           console.error("Error fetching locations:", locationsError);
         } else {
-          // For each location, get review stats
+          // For each location, get review stats through platform_connections
           const locationsWithStats = await Promise.all(
             (locationsData || []).map(async (location) => {
-              const { data: reviewStats } = await supabase
-                .from("reviews")
-                .select("rating")
+              // First get platform_connections for this location
+              const { data: platformConnections } = await supabase
+                .from("platform_connections")
+                .select("id")
                 .eq("location_id", location.id);
 
-              const totalReviews = reviewStats?.length || 0;
+              const platformConnectionIds =
+                platformConnections?.map((pc) => pc.id) || [];
+
+              // Then get reviews for these platform_connections
+              let reviewStats: { rating: number }[] = [];
+              if (platformConnectionIds.length > 0) {
+                const { data } = await supabase
+                .from("reviews")
+                .select("rating")
+                  .in("platform_connection_id", platformConnectionIds);
+                reviewStats = data || [];
+              }
+
+              const totalReviews = reviewStats.length;
               const averageRating =
-                totalReviews > 0 && reviewStats
+                totalReviews > 0
                   ? reviewStats.reduce((sum, r) => sum + r.rating, 0) /
                     totalReviews
                   : 0;
@@ -192,13 +234,28 @@ export const CompanyStats = () => {
           setLocations(locationsWithStats);
         }
 
-        // Fetch reviews for this company
-        const { data: reviewsData, error: reviewsError } = await supabase
+        // Fetch reviews for this company with filters
+        let reviewsQuery = supabase
           .from("recent_reviews")
           .select("*")
-          .eq("company_id", companyId)
+          .eq("company_id", companyId);
+
+        // Apply location filter
+        if (filterLocation !== "all") {
+          reviewsQuery = reviewsQuery.eq("location_name", filterLocation);
+        }
+
+        // Apply date range filters
+        if (filterStartDate) {
+          reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
+        }
+        if (filterEndDate) {
+          reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
+        }
+
+        const { data: reviewsData, error: reviewsError } = await reviewsQuery
           .order("published_at", { ascending: false })
-          .limit(15);
+          .limit(50);
 
         if (reviewsError) {
           console.error("Error fetching reviews:", reviewsError);
@@ -206,29 +263,289 @@ export const CompanyStats = () => {
           setReviews(reviewsData || []);
         }
 
-        // Fetch keywords for this company
-        const { data: keywordsData, error: keywordsError } = await supabase
-          .rpc("get_company_keywords", {
-            p_company_id: companyId,
-          })
-          .limit(20);
+        // Fetch sentiment analysis data with filters
+        // First, get platform connection IDs for this company's locations
+        let filteredLocationIds = (locationsData || []).map(
+          (loc: any) => loc.id
+        );
 
-        if (keywordsError) {
-          console.error("Error fetching keywords:", keywordsError);
-          // Fallback: try to get keywords directly
-          const { data: fallbackKeywords } = await supabase
-            .from("top_keywords")
-            .select("keyword_text, category, occurrence_count")
-            .order("occurrence_count", { ascending: false })
-            .limit(20);
+        // Apply location filter
+        if (filterLocation !== "all") {
+          const filteredLocs = (locationsData || []).filter(
+            (loc: any) => loc.name === filterLocation
+          );
+          filteredLocationIds = filteredLocs.map((loc: any) => loc.id);
+        }
 
-          if (fallbackKeywords) {
-            setKeywords(fallbackKeywords);
-            analyzeKeywords(fallbackKeywords);
+        if (filteredLocationIds.length === 0) {
+          setSentimentData(null);
+        } else {
+          const { data: platformConnections } = await supabase
+            .from("platform_connections")
+            .select("id")
+            .in("location_id", filteredLocationIds);
+
+          const platformConnectionIds =
+            platformConnections?.map((pc) => pc.id) || [];
+
+          if (platformConnectionIds.length > 0) {
+            // Build sentiment query with filters
+            let sentimentQuery = supabase
+              .from("reviews")
+              .select(
+                `
+              id,
+              rating,
+              reviewer_gender,
+              reviewer_age_range,
+              platform_connection_id,
+              published_at,
+              sentiment_analysis (
+                sentiment,
+                sentiment_score
+              )
+            `
+              )
+              .in("platform_connection_id", platformConnectionIds);
+
+            // Apply date filters
+            if (filterStartDate) {
+              sentimentQuery = sentimentQuery.gte(
+                "published_at",
+                filterStartDate
+              );
+            }
+            if (filterEndDate) {
+              sentimentQuery = sentimentQuery.lte(
+                "published_at",
+                filterEndDate
+              );
+            }
+
+            const { data: sentimentResults, error: sentimentError } =
+              await sentimentQuery;
+
+            if (!sentimentError && sentimentResults) {
+              // Calculate overall sentiment
+              const sentiments = sentimentResults
+                .filter(
+                  (r: any) =>
+                    r.sentiment_analysis && r.sentiment_analysis.length > 0
+                )
+                .map((r: any) => ({
+                  sentiment: r.sentiment_analysis[0].sentiment,
+                  score: r.sentiment_analysis[0].sentiment_score,
+                  gender: r.reviewer_gender,
+                  ageRange: r.reviewer_age_range,
+                }));
+
+              const totalReviewsWithSentiment = sentiments.length;
+
+              if (totalReviewsWithSentiment > 0) {
+                const positiveCount = sentiments.filter(
+                  (s: any) => s.sentiment === "positive"
+                ).length;
+                const neutralCount = sentiments.filter(
+                  (s: any) => s.sentiment === "neutral"
+                ).length;
+                const negativeCount = sentiments.filter(
+                  (s: any) => s.sentiment === "negative"
+                ).length;
+
+                const avgScore =
+                  sentiments.reduce(
+                    (sum: number, s: any) => sum + (s.score || 0),
+                    0
+                  ) / totalReviewsWithSentiment;
+
+                const overallSentiment =
+                  avgScore >= 0.3
+                    ? "positive"
+                    : avgScore <= -0.3
+                    ? "negative"
+                    : "neutral";
+
+                // Group by age range
+                const ageGroupMap = new Map<
+                  string,
+                  { scores: number[]; count: number }
+                >();
+                sentiments.forEach((s: any) => {
+                  if (s.ageRange && s.ageRange !== "unknown") {
+                    const current = ageGroupMap.get(s.ageRange) || {
+                      scores: [],
+                      count: 0,
+                    };
+                    current.scores.push(s.score || 0);
+                    current.count++;
+                    ageGroupMap.set(s.ageRange, current);
+                  }
+                });
+
+                const byAgeGroup = Array.from(ageGroupMap.entries())
+                  .map(([ageRange, data]) => ({
+                    ageRange,
+                    avgScore:
+                      data.scores.reduce((a, b) => a + b, 0) /
+                      data.scores.length,
+                    count: data.count,
+                  }))
+                  .sort((a, b) => {
+                    const order = [
+                      "18-24",
+                      "25-34",
+                      "35-44",
+                      "45-54",
+                      "55-64",
+                      "65+",
+                    ];
+                    return (
+                      order.indexOf(a.ageRange) - order.indexOf(b.ageRange)
+                    );
+                  });
+
+                // Group by gender
+                const genderMap = new Map<
+                  string,
+                  { scores: number[]; count: number }
+                >();
+                sentiments.forEach((s: any) => {
+                  if (s.gender && s.gender !== "unknown") {
+                    const current = genderMap.get(s.gender) || {
+                      scores: [],
+                      count: 0,
+                    };
+                    current.scores.push(s.score || 0);
+                    current.count++;
+                    genderMap.set(s.gender, current);
+                  }
+                });
+
+                const byGender = Array.from(genderMap.entries()).map(
+                  ([gender, data]) => ({
+                    gender,
+                    avgScore:
+                      data.scores.reduce((a, b) => a + b, 0) /
+                      data.scores.length,
+                    count: data.count,
+                  })
+                );
+
+                setSentimentData({
+                  overallScore: avgScore,
+                  overallSentiment,
+                  totalReviews: totalReviewsWithSentiment,
+                  positiveCount,
+                  neutralCount,
+                  negativeCount,
+                  byAgeGroup,
+                  byGender,
+                });
+              }
+            } else {
+              console.error("Error fetching sentiment data:", sentimentError);
+            }
+          }
+        }
+
+        // Fetch keywords for this company's reviews
+        // Get location IDs (apply filter if needed)
+        let keywordLocationIds = (locationsData || []).map(
+          (loc: any) => loc.id
+        );
+        if (filterLocation !== "all") {
+          const filteredLocs = (locationsData || []).filter(
+            (loc: any) => loc.name === filterLocation
+          );
+          keywordLocationIds = filteredLocs.map((loc: any) => loc.id);
+        }
+
+        // Get review IDs for this company through platform_connections
+        const reviewIds: string[] = [];
+        if (keywordLocationIds.length > 0) {
+          const { data: pcData } = await supabase
+            .from("platform_connections")
+            .select("id")
+            .in("location_id", keywordLocationIds);
+
+          const pcIds = pcData?.map((pc) => pc.id) || [];
+
+          if (pcIds.length > 0) {
+            // Build query with date filters if applicable
+            let reviewQuery = supabase
+              .from("reviews")
+              .select("id")
+              .in("platform_connection_id", pcIds);
+
+            // Apply date filters
+            if (filterStartDate) {
+              reviewQuery = reviewQuery.gte("published_at", filterStartDate);
+            }
+            if (filterEndDate) {
+              reviewQuery = reviewQuery.lte("published_at", filterEndDate);
+            }
+
+            const { data: reviewData } = await reviewQuery;
+            reviewIds.push(...(reviewData?.map((r) => r.id) || []));
+          }
+        }
+
+        if (reviewIds.length > 0) {
+          // Get keywords for these reviews
+          const { data: reviewKeywordsData } = await supabase
+            .from("review_keywords")
+            .select(
+              `
+              keyword_id,
+              keywords (
+                text,
+                category
+              )
+            `
+            )
+            .in("review_id", reviewIds);
+
+          if (reviewKeywordsData) {
+            // Count occurrences of each keyword
+            const keywordMap = new Map<
+              string,
+              { keyword_text: string; category: string; count: number }
+            >();
+
+            reviewKeywordsData.forEach((rk: any) => {
+              if (rk.keywords) {
+                const key = rk.keywords.text;
+                const existing = keywordMap.get(key);
+                if (existing) {
+                  existing.count++;
+        } else {
+                  keywordMap.set(key, {
+                    keyword_text: rk.keywords.text,
+                    category: rk.keywords.category || "other",
+                    count: 1,
+                  });
+                }
+              }
+            });
+
+            // Convert to array and sort by count
+            const keywordsArray = Array.from(keywordMap.values())
+              .map((k) => ({
+                keyword_text: k.keyword_text,
+                category: k.category,
+                occurrence_count: k.count,
+              }))
+              .sort((a, b) => b.occurrence_count - a.occurrence_count)
+              .slice(0, 20);
+
+            setKeywords(keywordsArray);
+            analyzeKeywords(keywordsArray);
+          } else {
+            setKeywords([]);
           }
         } else {
-          setKeywords(keywordsData || []);
-          analyzeKeywords(keywordsData || []);
+          // No reviews found, set empty keywords
+          setKeywords([]);
         }
       } catch (error) {
         console.error("Error fetching company data:", error);
@@ -238,7 +555,15 @@ export const CompanyStats = () => {
     };
 
     fetchCompanyData();
-  }, [supabase, profile, companyId, navigate]);
+  }, [
+    supabase,
+    profile,
+    companyId,
+    navigate,
+    filterLocation,
+    filterStartDate,
+    filterEndDate,
+  ]);
 
   const analyzeKeywords = (keywordsData: Keyword[]) => {
     const categoryMap = new Map<string, number>();
@@ -311,16 +636,9 @@ export const CompanyStats = () => {
     { name: "TripAdvisor", icon: <ReviewIcon />, color: "#34E0A1" },
   ];
 
-  // Filter reviews based on selected filters
+  // Filter reviews based on review-specific filters (keyword and rating)
+  // Location and date filters are already applied at the query level
   const filteredReviews = reviews.filter((review) => {
-    // Filter by location
-    if (
-      selectedLocation !== "all" &&
-      review.location_name !== selectedLocation
-    ) {
-      return false;
-    }
-
     // Filter by keyword (check if review content contains the keyword)
     if (selectedKeyword !== "all") {
       const contentLower = (review.content + " " + review.title).toLowerCase();
@@ -354,16 +672,21 @@ export const CompanyStats = () => {
     return true;
   });
 
-  // Get unique locations from reviews for filter dropdown
-  const uniqueLocations = Array.from(
-    new Set(reviews.map((r) => r.location_name))
-  ).sort();
+  // Get unique locations from all locations (not just filtered reviews)
+  const uniqueLocations = locations.map((loc) => loc.name).sort();
 
   // Get top keywords for filter dropdown (limit to top 20)
   const topKeywordsForFilter = keywords.slice(0, 20);
 
   const handleClearFilters = () => {
-    setSelectedLocation("all");
+    setSelectedKeyword("all");
+    setSelectedRating("all");
+  };
+
+  const handleClearAllFilters = () => {
+    setFilterLocation("all");
+    setFilterStartDate("");
+    setFilterEndDate("");
     setSelectedKeyword("all");
     setSelectedRating("all");
   };
@@ -473,6 +796,147 @@ export const CompanyStats = () => {
                 </Typography>
               </Stack>
             </Box>
+          </Stack>
+        </Paper>
+
+        {/* Page-level Filters */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            bgcolor: "grey.50",
+            border: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Box>
+                <Typography variant="h6" gutterBottom fontWeight={500}>
+                  Data Filters
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Filter all data on this page by location and date range
+                </Typography>
+              </Box>
+              {(filterLocation !== "all" ||
+                filterStartDate ||
+                filterEndDate) && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleClearAllFilters}
+                  sx={{ 
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Clear all
+                </Button>
+              )}
+            </Stack>
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(3, 1fr)",
+                },
+                gap: 2,
+              }}
+            >
+              {/* Location Filter */}
+              <FormControl fullWidth size="small">
+                <InputLabel id="page-location-filter-label">
+                  Location
+                </InputLabel>
+                <Select
+                  labelId="page-location-filter-label"
+                  value={filterLocation}
+                  label="Location"
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  sx={{ bgcolor: "background.paper" }}
+                >
+                  <MenuItem value="all">
+                    All Locations
+                  </MenuItem>
+                  <Divider />
+                  {uniqueLocations.map((location) => (
+                    <MenuItem key={location} value={location}>
+                      {location}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Start Date Filter */}
+              <TextField
+                label="From Date"
+                type="date"
+                size="small"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{ bgcolor: "background.paper" }}
+              />
+
+              {/* End Date Filter */}
+              <TextField
+                label="To Date"
+                type="date"
+                size="small"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{ bgcolor: "background.paper" }}
+              />
+            </Box>
+
+            {/* Active Filters Display */}
+            {(filterLocation !== "all" || filterStartDate || filterEndDate) && (
+              <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mr: 0.5 }}
+                >
+                  Active:
+                </Typography>
+                {filterLocation !== "all" && (
+                  <Chip
+                    label={filterLocation}
+                    size="small"
+                    variant="outlined"
+                    onDelete={() => setFilterLocation("all")}
+                  />
+                )}
+                {filterStartDate && (
+                  <Chip
+                    label={new Date(filterStartDate).toLocaleDateString()}
+                    size="small"
+                    variant="outlined"
+                    onDelete={() => setFilterStartDate("")}
+                  />
+                )}
+                {filterEndDate && (
+                  <Chip
+                    label={new Date(filterEndDate).toLocaleDateString()}
+                    size="small"
+                    variant="outlined"
+                    onDelete={() => setFilterEndDate("")}
+                  />
+                )}
+              </Stack>
+            )}
           </Stack>
         </Paper>
 
@@ -593,6 +1057,9 @@ export const CompanyStats = () => {
             </CardContent>
           </Card>
         </Box>
+
+        {/* Sentiment Analysis */}
+        {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
 
         {/* Locations */}
         {locations.length > 0 && (
@@ -738,100 +1205,91 @@ export const CompanyStats = () => {
             sx={{ mb: 3 }}
           >
             <Box>
-              <Typography variant="h6" gutterBottom>
-                Recent Reviews
-              </Typography>
+          <Typography variant="h6" gutterBottom>
+            Recent Reviews
+          </Typography>
               <Typography variant="body2" color="text.secondary">
-                {filteredReviews.length} of {reviews.length} reviews
-              </Typography>
+                Showing {filteredReviews.length} of {reviews.length} reviews
+            </Typography>
             </Box>
-            {(selectedLocation !== "all" ||
-              selectedKeyword !== "all" ||
-              selectedRating !== "all") && (
+            {(selectedKeyword !== "all" || selectedRating !== "all") && (
               <Button
                 variant="outlined"
                 size="small"
                 onClick={handleClearFilters}
                 sx={{ borderRadius: 980 }}
               >
-                Clear Filters
+                Clear Additional Filters
               </Button>
             )}
           </Stack>
 
-          {/* Filters */}
+          {/* Review-specific Filters */}
           {reviews.length > 0 && (
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
-                gap: 2,
                 mb: 3,
-                p: 3,
+                p: 2,
                 bgcolor: "background.default",
-                borderRadius: 3,
+                borderRadius: 1,
               }}
             >
-              {/* Location Filter */}
-              <FormControl fullWidth size="small">
-                <InputLabel id="location-filter-label">Location</InputLabel>
-                <Select
-                  labelId="location-filter-label"
-                  value={selectedLocation}
-                  label="Location"
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                >
-                  <MenuItem value="all">All Locations</MenuItem>
-                  {uniqueLocations.map((location) => (
-                    <MenuItem key={location} value={location}>
-                      {location}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: "block" }}>
+                Additional filters:
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, 1fr)",
+                  },
+                  gap: 2,
+                }}
+              >
+                {/* Keyword Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="keyword-filter-label">
+                    Keyword
+                  </InputLabel>
+                  <Select
+                    labelId="keyword-filter-label"
+                    value={selectedKeyword}
+                    label="Keyword"
+                    onChange={(e) => setSelectedKeyword(e.target.value)}
+                  >
+                    <MenuItem value="all">All Keywords</MenuItem>
+                    {topKeywordsForFilter.map((keyword) => (
+                      <MenuItem
+                        key={keyword.keyword_text}
+                        value={keyword.keyword_text}
+                      >
+                        {keyword.keyword_text} ({keyword.occurrence_count})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-              {/* Keyword Filter */}
-              <FormControl fullWidth size="small">
-                <InputLabel id="keyword-filter-label">Keyword</InputLabel>
-                <Select
-                  labelId="keyword-filter-label"
-                  value={selectedKeyword}
-                  label="Keyword"
-                  onChange={(e) => setSelectedKeyword(e.target.value)}
-                >
-                  <MenuItem value="all">All Keywords</MenuItem>
-                  {topKeywordsForFilter.map((keyword) => (
-                    <MenuItem
-                      key={keyword.keyword_text}
-                      value={keyword.keyword_text}
-                    >
-                      {keyword.keyword_text} ({keyword.occurrence_count})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* Rating Filter */}
-              <FormControl fullWidth size="small">
-                <InputLabel id="rating-filter-label">Rating</InputLabel>
-                <Select
-                  labelId="rating-filter-label"
-                  value={selectedRating}
-                  label="Rating"
-                  onChange={(e) => setSelectedRating(e.target.value)}
-                >
-                  <MenuItem value="all">All Ratings</MenuItem>
-                  <MenuItem value="5">⭐⭐⭐⭐⭐ (5 stars)</MenuItem>
-                  <MenuItem value="4">⭐⭐⭐⭐ (4 stars)</MenuItem>
-                  <MenuItem value="3">⭐⭐⭐ (3 stars)</MenuItem>
-                  <MenuItem value="2">⭐⭐ (2 stars)</MenuItem>
-                  <MenuItem value="1">⭐ (1 star)</MenuItem>
-                </Select>
-              </FormControl>
+                {/* Rating Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="rating-filter-label">
+                    Rating
+                  </InputLabel>
+                  <Select
+                    labelId="rating-filter-label"
+                    value={selectedRating}
+                    label="Rating"
+                    onChange={(e) => setSelectedRating(e.target.value)}
+                  >
+                    <MenuItem value="all">All Ratings</MenuItem>
+                    <MenuItem value="5">5 stars</MenuItem>
+                    <MenuItem value="4">4 stars</MenuItem>
+                    <MenuItem value="3">3 stars</MenuItem>
+                    <MenuItem value="2">2 stars</MenuItem>
+                    <MenuItem value="1">1 star</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
             </Box>
           )}
 
