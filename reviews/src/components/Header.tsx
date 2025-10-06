@@ -2,21 +2,21 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import {
-    AppBar,
-    Avatar,
-    Box,
-    Button,
-    Container,
-    Divider,
-    Drawer,
-    IconButton,
-    List,
-    ListItemButton,
-    ListItemText,
-    Menu,
-    MenuItem,
-    Toolbar,
-    Typography,
+  AppBar,
+  Avatar,
+  Box,
+  Button,
+  Container,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Toolbar,
+  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -93,10 +93,22 @@ export const Header = () => {
               <Box component="span" sx={{ color: "text.primary" }}>
                 Aureanne
               </Box>
-              <Box component="span" sx={{ color: "secondary.main", display: { xs: "none", sm: "inline" } }}>
+              <Box
+                component="span"
+                sx={{
+                  color: "secondary.main",
+                  display: { xs: "none", sm: "inline" },
+                }}
+              >
                 Review
               </Box>
-              <Box component="span" sx={{ color: "text.primary", display: { xs: "none", sm: "inline" } }}>
+              <Box
+                component="span"
+                sx={{
+                  color: "text.primary",
+                  display: { xs: "none", sm: "inline" },
+                }}
+              >
                 Tracker
               </Box>
             </Typography>

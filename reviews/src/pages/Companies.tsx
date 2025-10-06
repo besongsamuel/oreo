@@ -29,6 +29,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
@@ -230,7 +231,10 @@ export const Companies = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
         <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           {/* Header Skeleton */}
           <Stack
@@ -270,290 +274,310 @@ export const Companies = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
-      <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
-        {/* Header */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          flexWrap="wrap"
-          gap={2}
-        >
-          <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              gutterBottom
-              sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
-            >
-              Companies
-            </Typography>
-            <Typography 
-              variant="body1" 
-              color="text.secondary"
-              sx={{ display: { xs: "none", sm: "block" } }}
-            >
-              Manage the businesses you're analyzing
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ display: { xs: "none", sm: "inline" } }} />}
-            onClick={() => handleOpenDialog()}
-            sx={{ 
-              minWidth: { xs: "auto", sm: "auto" },
-              px: { xs: 2, sm: 3 },
-            }}
+    <>
+      <SEO
+        title="Companies - Aureanne Review Tracker"
+        description="Manage all your business companies in one place. Add, edit, and monitor multiple businesses and their review performance."
+        keywords="manage companies, business management, multiple businesses, company dashboard"
+      />
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+          {/* Header */}
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={2}
           >
-            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-              Add Company
-            </Box>
-            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-              Add
-            </Box>
-          </Button>
-        </Stack>
-
-        {error && <Alert severity="error">{error}</Alert>}
-
-        {/* Companies Grid */}
-        {companies.length === 0 ? (
-          <Card>
-            <CardContent>
-              <Stack spacing={2} alignItems="center" py={4}>
-                <BusinessIcon sx={{ fontSize: 64, color: "text.secondary" }} />
-                <Typography variant="h6" color="text.secondary">
-                  No companies yet
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Add your first company to start analyzing reviews
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleOpenDialog()}
-                >
-                  Add Company
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)",
-              },
-              gap: 3,
-            }}
-          >
-            {companies.map((company) => (
-              <Box key={company.id}>
-                <Card>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="flex-start"
-                      >
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="h6" gutterBottom>
-                            {company.name}
-                          </Typography>
-                          {company.industry && (
-                            <Chip
-                              label={company.industry}
-                              size="small"
-                              variant="outlined"
-                            />
-                          )}
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(company)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Stack>
-
-                      {company.description && (
-                        <Typography variant="body2" color="text.secondary">
-                          {company.description}
-                        </Typography>
-                      )}
-
-                      <Stack spacing={1}>
-                        <Stack direction="row" spacing={2}>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <LocationIcon fontSize="small" color="action" />
-                            <Typography variant="body2">
-                              {company.total_locations} location
-                              {company.total_locations !== 1 ? "s" : ""}
-                            </Typography>
-                          </Stack>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <StarIcon
-                              fontSize="small"
-                              sx={{ color: "warning.main" }}
-                            />
-                            <Typography variant="body2">
-                              {company.average_rating?.toFixed(1) || "0.0"}
-                            </Typography>
-                          </Stack>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">
-                          {company.total_reviews} review
-                          {company.total_reviews !== 1 ? "s" : ""}
-                        </Typography>
-                      </Stack>
-
-                      {company.website && (
-                        <Typography
-                          variant="caption"
-                          component="a"
-                          href={company.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{ color: "primary.main" }}
-                        >
-                          {company.website}
-                        </Typography>
-                      )}
-
-                      <Divider />
-
-                      <Button
-                        variant="text"
-                        endIcon={<ArrowForwardIcon />}
-                        onClick={() => navigate(`/companies/${company.id}`)}
-                        sx={{
-                          justifyContent: "space-between",
-                          textTransform: "none",
-                          fontWeight: 500,
-                        }}
-                      >
-                        View Details
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-            ))}
-          </Box>
-        )}
-
-        {/* Add/Edit Dialog */}
-        <Dialog
-          open={openDialog}
-          onClose={handleCloseDialog}
-          maxWidth="sm"
-          fullWidth
-        >
-          <form onSubmit={handleSubmit}>
-            <DialogTitle>
-              {editingCompany ? "Edit Company" : "Add Company"}
-            </DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                {error && <Alert severity="error">{error}</Alert>}
-                <TextField
-                  label="Company Name"
-                  required
-                  fullWidth
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  disabled={submitting}
-                />
-                <Autocomplete
-                  freeSolo
-                  fullWidth
-                  options={INDUSTRY_OPTIONS}
-                  value={formData.industry}
-                  onChange={(_, newValue) =>
-                    setFormData({ ...formData, industry: newValue || "" })
-                  }
-                  onInputChange={(_, newInputValue) =>
-                    setFormData({ ...formData, industry: newInputValue })
-                  }
-                  disabled={submitting}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Industry"
-                      placeholder="Select or type an industry"
-                    />
-                  )}
-                />
-                <TextField
-                  label="Website"
-                  fullWidth
-                  value={formData.website}
-                  onChange={(e) =>
-                    setFormData({ ...formData, website: e.target.value })
-                  }
-                  disabled={submitting}
-                  placeholder="example.com"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <WebIcon sx={{ color: "action.active", mr: 0.5 }} />
-                        <Typography
-                          variant="body1"
-                          sx={{ color: "text.secondary" }}
-                        >
-                          https://
-                        </Typography>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  label="Description"
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  disabled={submitting}
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={submitting || !formData.name}
+            <Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+                sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
               >
-                {submitting
-                  ? "Saving..."
-                  : editingCompany
-                  ? "Update"
-                  : "Create"}
-              </Button>
-            </DialogActions>
-          </form>
-        </Dialog>
-      </Stack>
-    </Container>
+                Companies
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ display: { xs: "none", sm: "block" } }}
+              >
+                Manage the businesses you're analyzing
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={
+                <AddIcon sx={{ display: { xs: "none", sm: "inline" } }} />
+              }
+              onClick={() => handleOpenDialog()}
+              sx={{
+                minWidth: { xs: "auto", sm: "auto" },
+                px: { xs: 2, sm: 3 },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{ display: { xs: "none", sm: "inline" } }}
+              >
+                Add Company
+              </Box>
+              <Box
+                component="span"
+                sx={{ display: { xs: "inline", sm: "none" } }}
+              >
+                Add
+              </Box>
+            </Button>
+          </Stack>
+
+          {error && <Alert severity="error">{error}</Alert>}
+
+          {/* Companies Grid */}
+          {companies.length === 0 ? (
+            <Card>
+              <CardContent>
+                <Stack spacing={2} alignItems="center" py={4}>
+                  <BusinessIcon
+                    sx={{ fontSize: 64, color: "text.secondary" }}
+                  />
+                  <Typography variant="h6" color="text.secondary">
+                    No companies yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Add your first company to start analyzing reviews
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenDialog()}
+                  >
+                    Add Company
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                },
+                gap: 3,
+              }}
+            >
+              {companies.map((company) => (
+                <Box key={company.id}>
+                  <Card>
+                    <CardContent>
+                      <Stack spacing={2}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                        >
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="h6" gutterBottom>
+                              {company.name}
+                            </Typography>
+                            {company.industry && (
+                              <Chip
+                                label={company.industry}
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(company)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Stack>
+
+                        {company.description && (
+                          <Typography variant="body2" color="text.secondary">
+                            {company.description}
+                          </Typography>
+                        )}
+
+                        <Stack spacing={1}>
+                          <Stack direction="row" spacing={2}>
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
+                              <LocationIcon fontSize="small" color="action" />
+                              <Typography variant="body2">
+                                {company.total_locations} location
+                                {company.total_locations !== 1 ? "s" : ""}
+                              </Typography>
+                            </Stack>
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
+                              <StarIcon
+                                fontSize="small"
+                                sx={{ color: "warning.main" }}
+                              />
+                              <Typography variant="body2">
+                                {company.average_rating?.toFixed(1) || "0.0"}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">
+                            {company.total_reviews} review
+                            {company.total_reviews !== 1 ? "s" : ""}
+                          </Typography>
+                        </Stack>
+
+                        {company.website && (
+                          <Typography
+                            variant="caption"
+                            component="a"
+                            href={company.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: "primary.main" }}
+                          >
+                            {company.website}
+                          </Typography>
+                        )}
+
+                        <Divider />
+
+                        <Button
+                          variant="text"
+                          endIcon={<ArrowForwardIcon />}
+                          onClick={() => navigate(`/companies/${company.id}`)}
+                          sx={{
+                            justifyContent: "space-between",
+                            textTransform: "none",
+                            fontWeight: 500,
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {/* Add/Edit Dialog */}
+          <Dialog
+            open={openDialog}
+            onClose={handleCloseDialog}
+            maxWidth="sm"
+            fullWidth
+          >
+            <form onSubmit={handleSubmit}>
+              <DialogTitle>
+                {editingCompany ? "Edit Company" : "Add Company"}
+              </DialogTitle>
+              <DialogContent>
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  {error && <Alert severity="error">{error}</Alert>}
+                  <TextField
+                    label="Company Name"
+                    required
+                    fullWidth
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    disabled={submitting}
+                  />
+                  <Autocomplete
+                    freeSolo
+                    fullWidth
+                    options={INDUSTRY_OPTIONS}
+                    value={formData.industry}
+                    onChange={(_, newValue) =>
+                      setFormData({ ...formData, industry: newValue || "" })
+                    }
+                    onInputChange={(_, newInputValue) =>
+                      setFormData({ ...formData, industry: newInputValue })
+                    }
+                    disabled={submitting}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Industry"
+                        placeholder="Select or type an industry"
+                      />
+                    )}
+                  />
+                  <TextField
+                    label="Website"
+                    fullWidth
+                    value={formData.website}
+                    onChange={(e) =>
+                      setFormData({ ...formData, website: e.target.value })
+                    }
+                    disabled={submitting}
+                    placeholder="example.com"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <WebIcon sx={{ color: "action.active", mr: 0.5 }} />
+                          <Typography
+                            variant="body1"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            https://
+                          </Typography>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    label="Description"
+                    fullWidth
+                    multiline
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    disabled={submitting}
+                  />
+                </Stack>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseDialog} disabled={submitting}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={submitting || !formData.name}
+                >
+                  {submitting
+                    ? "Saving..."
+                    : editingCompany
+                    ? "Update"
+                    : "Create"}
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+        </Stack>
+      </Container>
+    </>
   );
 };

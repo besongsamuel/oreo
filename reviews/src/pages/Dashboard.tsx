@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { CompanyCard } from "../components/CompanyCard";
+import { SEO } from "../components/SEO";
 import {
   KeywordChipSkeleton,
   ReviewCardSkeleton,
@@ -261,221 +262,237 @@ export const Dashboard = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Stack spacing={4}>
-        {/* Header */}
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Welcome back, {profile?.full_name || profile?.email}!
-          </Typography>
-        </Box>
-
-        {/* Companies Performance */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Companies Overview
-          </Typography>
-          {companyStats.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              No companies yet. Visit the Companies page to add your first
-              business.
+    <>
+      <SEO
+        title="Dashboard - Aureanne Review Tracker"
+        description="View your review analytics dashboard. Monitor reviews, track sentiment, and analyze customer feedback from all your business locations."
+        keywords="review dashboard, review analytics, sentiment analysis, customer feedback dashboard"
+      />
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Stack spacing={4}>
+          {/* Header */}
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Dashboard
             </Typography>
-          ) : (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
-                gap: 3,
-                mt: 1,
-              }}
-            >
-              {companyStats.slice(0, 6).map((company) => (
-                <CompanyCard
-                  key={company.company_id}
-                  companyId={company.company_id}
-                  companyName={company.company_name}
-                  totalLocations={company.total_locations}
-                  totalReviews={company.total_reviews}
-                  averageRating={company.average_rating}
-                  positiveReviews={company.positive_reviews}
-                  negativeReviews={company.negative_reviews}
-                />
-              ))}
-            </Box>
-          )}
-        </Paper>
-
-        {/* Keyword Analysis */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Keyword Analysis by Category
-          </Typography>
-          {keywordAnalysis.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              No keyword data available yet.
+            <Typography variant="body1" color="text.secondary">
+              Welcome back, {profile?.full_name || profile?.email}!
             </Typography>
-          ) : (
-            <Stack spacing={3} sx={{ mt: 3 }}>
-              {keywordAnalysis.map((analysis) => (
-                <Box key={analysis.category}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={1}
-                  >
-                    <Typography
-                      variant="body1"
-                      fontWeight={600}
-                      textTransform="capitalize"
-                    >
-                      {analysis.category}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {analysis.count} mentions (
-                      {analysis.percentage.toFixed(1)}%)
-                    </Typography>
-                  </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analysis.percentage}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: "rgba(0, 0, 0, 0.08)",
-                      "& .MuiLinearProgress-bar": {
-                        borderRadius: 4,
-                        backgroundColor: "secondary.main",
-                      },
-                    }}
+          </Box>
+
+          {/* Companies Performance */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Companies Overview
+            </Typography>
+            {companyStats.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No companies yet. Visit the Companies page to add your first
+                business.
+              </Typography>
+            ) : (
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, 1fr)",
+                    md: "repeat(3, 1fr)",
+                  },
+                  gap: 3,
+                  mt: 1,
+                }}
+              >
+                {companyStats.slice(0, 6).map((company) => (
+                  <CompanyCard
+                    key={company.company_id}
+                    companyId={company.company_id}
+                    companyName={company.company_name}
+                    totalLocations={company.total_locations}
+                    totalReviews={company.total_reviews}
+                    averageRating={company.average_rating}
+                    positiveReviews={company.positive_reviews}
+                    negativeReviews={company.negative_reviews}
                   />
-                </Box>
-              ))}
-            </Stack>
-          )}
-        </Paper>
+                ))}
+              </Box>
+            )}
+          </Paper>
 
-        {/* Recent Reviews */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Recent Reviews
-          </Typography>
-          {recentReviews.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              No reviews yet. Connect your platforms to start collecting
-              reviews.
+          {/* Keyword Analysis */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Keyword Analysis by Category
             </Typography>
-          ) : (
-            <Stack spacing={2} sx={{ mt: 2 }}>
-              {recentReviews.map((review) => (
-                <Card key={review.id} variant="outlined">
-                  <CardContent>
-                    <Stack spacing={1}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="flex-start"
+            {keywordAnalysis.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No keyword data available yet.
+              </Typography>
+            ) : (
+              <Stack spacing={3} sx={{ mt: 3 }}>
+                {keywordAnalysis.map((analysis) => (
+                  <Box key={analysis.category}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1}
+                    >
+                      <Typography
+                        variant="body1"
+                        fontWeight={600}
+                        textTransform="capitalize"
                       >
-                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                        {analysis.category}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {analysis.count} mentions (
+                        {analysis.percentage.toFixed(1)}%)
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={analysis.percentage}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: "rgba(0, 0, 0, 0.08)",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 4,
+                          backgroundColor: "secondary.main",
+                        },
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Paper>
+
+          {/* Recent Reviews */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Recent Reviews
+            </Typography>
+            {recentReviews.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No reviews yet. Connect your platforms to start collecting
+                reviews.
+              </Typography>
+            ) : (
+              <Stack spacing={2} sx={{ mt: 2 }}>
+                {recentReviews.map((review) => (
+                  <Card key={review.id} variant="outlined">
+                    <CardContent>
+                      <Stack spacing={1}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                        >
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              flexWrap="wrap"
+                            >
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {review.author_name || "Anonymous"}
+                              </Typography>
+                              <Chip
+                                label={review.platform_name}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              {review.company_name} • {review.location_name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {new Date(
+                                review.published_at
+                              ).toLocaleDateString()}
+                            </Typography>
+                          </Box>
                           <Stack
                             direction="row"
                             spacing={1}
                             alignItems="center"
-                            flexWrap="wrap"
                           >
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {review.author_name || "Anonymous"}
+                            <Typography variant="body2" fontWeight="bold">
+                              {review.rating.toFixed(1)}
                             </Typography>
-                            <Chip
-                              label={review.platform_name}
-                              size="small"
-                              variant="outlined"
+                            <StarIcon
+                              fontSize="small"
+                              sx={{ color: "warning.main" }}
                             />
+                            {review.sentiment && (
+                              <Chip
+                                label={review.sentiment}
+                                size="small"
+                                color={getSentimentColor(review.sentiment)}
+                              />
+                            )}
                           </Stack>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            {review.company_name} • {review.location_name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(review.published_at).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="body2" fontWeight="bold">
-                            {review.rating.toFixed(1)}
-                          </Typography>
-                          <StarIcon
-                            fontSize="small"
-                            sx={{ color: "warning.main" }}
-                          />
-                          {review.sentiment && (
-                            <Chip
-                              label={review.sentiment}
-                              size="small"
-                              color={getSentimentColor(review.sentiment)}
-                            />
-                          )}
                         </Stack>
-                      </Stack>
-                      {review.title && (
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {review.title}
+                        {review.title && (
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {review.title}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color="text.secondary">
+                          {review.content?.substring(0, 150)}
+                          {review.content && review.content.length > 150
+                            ? "..."
+                            : ""}
                         </Typography>
-                      )}
-                      <Typography variant="body2" color="text.secondary">
-                        {review.content?.substring(0, 150)}
-                        {review.content && review.content.length > 150
-                          ? "..."
-                          : ""}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </Paper>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Paper>
 
-        {/* Top Keywords */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Trending Keywords
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Most frequently mentioned terms across all reviews
-          </Typography>
-          {topKeywords.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              No keywords analyzed yet.
+          {/* Top Keywords */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Trending Keywords
             </Typography>
-          ) : (
-            <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-              {topKeywords.map((keyword, index) => (
-                <Chip
-                  key={index}
-                  label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                  color={getCategoryColor(keyword.category || "other")}
-                  variant="outlined"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: index < 5 ? "0.95rem" : "0.875rem",
-                  }}
-                />
-              ))}
-            </Stack>
-          )}
-        </Paper>
-      </Stack>
-    </Container>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Most frequently mentioned terms across all reviews
+            </Typography>
+            {topKeywords.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No keywords analyzed yet.
+              </Typography>
+            ) : (
+              <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
+                {topKeywords.map((keyword, index) => (
+                  <Chip
+                    key={index}
+                    label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                    color={getCategoryColor(keyword.category || "other")}
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 500,
+                      fontSize: index < 5 ? "0.95rem" : "0.875rem",
+                    }}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Paper>
+        </Stack>
+      </Container>
+    </>
   );
 };

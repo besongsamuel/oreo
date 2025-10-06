@@ -34,6 +34,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import {
   ReviewCardSkeleton,
@@ -211,8 +212,8 @@ export const CompanyStats = () => {
               let reviewStats: { rating: number }[] = [];
               if (platformConnectionIds.length > 0) {
                 const { data } = await supabase
-                .from("reviews")
-                .select("rating")
+                  .from("reviews")
+                  .select("rating")
                   .in("platform_connection_id", platformConnectionIds);
                 reviewStats = data || [];
               }
@@ -523,7 +524,7 @@ export const CompanyStats = () => {
                 const existing = keywordMap.get(key);
                 if (existing) {
                   existing.count++;
-        } else {
+                } else {
                   keywordMap.set(key, {
                     keyword_text: rk.keywords.text,
                     category: rk.keywords.category || "other",
@@ -698,7 +699,10 @@ export const CompanyStats = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
         <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           <Box>
             <Button
@@ -748,7 +752,10 @@ export const CompanyStats = () => {
 
   if (!company) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
         <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -763,739 +770,815 @@ export const CompanyStats = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
-      <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
-        {/* Back Button */}
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/dashboard")}
-          sx={{ alignSelf: "flex-start", fontSize: { xs: "0.875rem", sm: "1rem" } }}
-        >
-          <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-          Back to Dashboard
-          </Box>
-          <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-            Back
-          </Box>
-        </Button>
-
-        {/* Company Header */}
-        <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-          <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="flex-start">
-            <Avatar sx={{ 
-              bgcolor: "secondary.main", 
-              width: { xs: 48, sm: 56, md: 72 }, 
-              height: { xs: 48, sm: 56, md: 72 } 
-            }}>
-              <BusinessIcon sx={{ fontSize: { xs: 24, sm: 32, md: 40 } }} />
-            </Avatar>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                gutterBottom
-                sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
-              >
-                {company.name}
-              </Typography>
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-                flexWrap="wrap"
-              >
-                <Chip label={company.industry} variant="outlined" />
-                <Typography variant="body2" color="text.secondary">
-                  {company.total_locations} location
-                  {company.total_locations !== 1 ? "s" : ""}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Member since{" "}
-                  {new Date(company.created_at).toLocaleDateString()}
-                </Typography>
-              </Stack>
+    <>
+      <SEO
+        title={`${company.name} - Review Analytics | Aureanne`}
+        description={`View detailed review analytics for ${company.name}. Track sentiment, ratings, keywords, and customer feedback across all locations and platforms.`}
+        keywords={`${
+          company.name
+        } reviews, review analytics, customer feedback, sentiment analysis, ${
+          company.industry || "business"
+        } reviews`}
+      />
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+          {/* Back Button */}
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/dashboard")}
+            sx={{
+              alignSelf: "flex-start",
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
+          >
+            <Box
+              component="span"
+              sx={{ display: { xs: "none", sm: "inline" } }}
+            >
+              Back to Dashboard
             </Box>
-          </Stack>
-        </Paper>
+            <Box
+              component="span"
+              sx={{ display: { xs: "inline", sm: "none" } }}
+            >
+              Back
+            </Box>
+          </Button>
 
-        {/* Page-level Filters */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            bgcolor: "grey.50",
-            border: 1,
-            borderColor: "divider",
-          }}
-        >
-          <Stack spacing={2}>
+          {/* Company Header */}
+          <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
             <Stack
               direction="row"
-              justifyContent="space-between"
-              alignItems="center"
+              spacing={{ xs: 2, sm: 3 }}
+              alignItems="flex-start"
             >
-              <Box>
-                <Typography variant="h6" gutterBottom fontWeight={500}>
-                  Data Filters
+              <Avatar
+                sx={{
+                  bgcolor: "secondary.main",
+                  width: { xs: 48, sm: 56, md: 72 },
+                  height: { xs: 48, sm: 56, md: 72 },
+                }}
+              >
+                <BusinessIcon sx={{ fontSize: { xs: 24, sm: 32, md: 40 } }} />
+              </Avatar>
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  gutterBottom
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
+                >
+                  {company.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Filter all data on this page by location and date range
-                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  flexWrap="wrap"
+                >
+                  <Chip label={company.industry} variant="outlined" />
+                  <Typography variant="body2" color="text.secondary">
+                    {company.total_locations} location
+                    {company.total_locations !== 1 ? "s" : ""}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Member since{" "}
+                    {new Date(company.created_at).toLocaleDateString()}
+                  </Typography>
+                </Stack>
               </Box>
+            </Stack>
+          </Paper>
+
+          {/* Page-level Filters */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              bgcolor: "grey.50",
+              border: 1,
+              borderColor: "divider",
+            }}
+          >
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Box>
+                  <Typography variant="h6" gutterBottom fontWeight={500}>
+                    Data Filters
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Filter all data on this page by location and date range
+                  </Typography>
+                </Box>
+                {(filterLocation !== "all" ||
+                  filterStartDate ||
+                  filterEndDate) && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={handleClearAllFilters}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </Stack>
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(3, 1fr)",
+                  },
+                  gap: 2,
+                }}
+              >
+                {/* Location Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="page-location-filter-label">
+                    Location
+                  </InputLabel>
+                  <Select
+                    labelId="page-location-filter-label"
+                    value={filterLocation}
+                    label="Location"
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                    sx={{ bgcolor: "background.paper" }}
+                  >
+                    <MenuItem value="all">All Locations</MenuItem>
+                    <Divider />
+                    {uniqueLocations.map((location) => (
+                      <MenuItem key={location} value={location}>
+                        {location}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Start Date Filter */}
+                <TextField
+                  label="From Date"
+                  type="date"
+                  size="small"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  sx={{ bgcolor: "background.paper" }}
+                />
+
+                {/* End Date Filter */}
+                <TextField
+                  label="To Date"
+                  type="date"
+                  size="small"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  sx={{ bgcolor: "background.paper" }}
+                />
+              </Box>
+
+              {/* Active Filters Display */}
               {(filterLocation !== "all" ||
                 filterStartDate ||
                 filterEndDate) && (
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={handleClearAllFilters}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 500,
-                  }}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  alignItems="center"
                 >
-                  Clear all
-                </Button>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mr: 0.5 }}
+                  >
+                    Active:
+                  </Typography>
+                  {filterLocation !== "all" && (
+                    <Chip
+                      label={filterLocation}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setFilterLocation("all")}
+                    />
+                  )}
+                  {filterStartDate && (
+                    <Chip
+                      label={new Date(filterStartDate).toLocaleDateString()}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setFilterStartDate("")}
+                    />
+                  )}
+                  {filterEndDate && (
+                    <Chip
+                      label={new Date(filterEndDate).toLocaleDateString()}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setFilterEndDate("")}
+                    />
+                  )}
+                </Stack>
               )}
             </Stack>
+          </Paper>
 
+          {/* Fetch Reviews Section */}
+          <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
+            >
+              Fetch Reviews from Platforms
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Connect to review platforms to import and analyze customer
+              feedback
+            </Typography>
             <Box
               sx={{
                 display: "grid",
                 gridTemplateColumns: {
-                  xs: "1fr",
+                  xs: "repeat(2, 1fr)",
                   sm: "repeat(3, 1fr)",
+                  md: "repeat(4, 1fr)",
+                  lg: "repeat(5, 1fr)",
                 },
-                gap: 2,
+                gap: { xs: 1.5, sm: 2 },
               }}
             >
-              {/* Location Filter */}
-              <FormControl fullWidth size="small">
-                <InputLabel id="page-location-filter-label">
-                  Location
-                </InputLabel>
-                <Select
-                  labelId="page-location-filter-label"
-                  value={filterLocation}
-                  label="Location"
-                  onChange={(e) => setFilterLocation(e.target.value)}
-                  sx={{ bgcolor: "background.paper" }}
+              {platforms.map((platform) => (
+                <Button
+                  key={platform.name}
+                  variant="outlined"
+                  size="large"
+                  startIcon={platform.icon}
+                  onClick={() => handleFetchReviews(platform.name)}
+                  sx={{
+                    py: 2,
+                    borderRadius: 3,
+                    borderColor: "divider",
+                    color: "text.primary",
+                    "&:hover": {
+                      borderColor: platform.color,
+                      bgcolor: `${platform.color}08`,
+                      "& .MuiSvgIcon-root": {
+                        color: platform.color,
+                      },
+                    },
+                    "& .MuiSvgIcon-root": {
+                      fontSize: "1.5rem",
+                    },
+                  }}
                 >
-                  <MenuItem value="all">All Locations</MenuItem>
-                  <Divider />
-                  {uniqueLocations.map((location) => (
-                    <MenuItem key={location} value={location}>
-                      {location}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* Start Date Filter */}
-              <TextField
-                label="From Date"
-                type="date"
-                size="small"
-                value={filterStartDate}
-                onChange={(e) => setFilterStartDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{ bgcolor: "background.paper" }}
-              />
-
-              {/* End Date Filter */}
-              <TextField
-                label="To Date"
-                type="date"
-                size="small"
-                value={filterEndDate}
-                onChange={(e) => setFilterEndDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{ bgcolor: "background.paper" }}
-              />
+                  {platform.name}
+                </Button>
+              ))}
             </Box>
+          </Paper>
 
-            {/* Active Filters Display */}
-            {(filterLocation !== "all" || filterStartDate || filterEndDate) && (
-              <Stack
-                direction="row"
-                spacing={1}
-                flexWrap="wrap"
-                alignItems="center"
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mr: 0.5 }}
-                >
-                  Active:
-                </Typography>
-                {filterLocation !== "all" && (
-                  <Chip
-                    label={filterLocation}
-                    size="small"
-                    variant="outlined"
-                    onDelete={() => setFilterLocation("all")}
-                  />
-                )}
-                {filterStartDate && (
-                  <Chip
-                    label={new Date(filterStartDate).toLocaleDateString()}
-                    size="small"
-                    variant="outlined"
-                    onDelete={() => setFilterStartDate("")}
-                  />
-                )}
-                {filterEndDate && (
-                  <Chip
-                    label={new Date(filterEndDate).toLocaleDateString()}
-                    size="small"
-                    variant="outlined"
-                    onDelete={() => setFilterEndDate("")}
-                  />
-                )}
-              </Stack>
-            )}
-          </Stack>
-        </Paper>
-
-        {/* Fetch Reviews Section */}
-        <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-          <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-            Fetch Reviews from Platforms
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Connect to review platforms to import and analyze customer feedback
-          </Typography>
+          {/* Stats Overview */}
           <Box
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
                 md: "repeat(4, 1fr)",
-                lg: "repeat(5, 1fr)",
               },
-              gap: { xs: 1.5, sm: 2 },
+              gap: 3,
             }}
           >
-            {platforms.map((platform) => (
-              <Button
-                key={platform.name}
-                variant="outlined"
-                size="large"
-                startIcon={platform.icon}
-                onClick={() => handleFetchReviews(platform.name)}
-                sx={{
-                  py: 2,
-                  borderRadius: 3,
-                  borderColor: "divider",
-                  color: "text.primary",
-                  "&:hover": {
-                    borderColor: platform.color,
-                    bgcolor: `${platform.color}08`,
-                    "& .MuiSvgIcon-root": {
-                      color: platform.color,
-                    },
-                  },
-                  "& .MuiSvgIcon-root": {
-                    fontSize: "1.5rem",
-                  },
-                }}
-              >
-                {platform.name}
-              </Button>
-            ))}
-          </Box>
-        </Paper>
-
-        {/* Stats Overview */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(4, 1fr)",
-            },
-            gap: 3,
-          }}
-        >
-          <Card>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h4" fontWeight={700}>
-                  {company.total_reviews}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Reviews
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center">
+            <Card>
+              <CardContent>
+                <Stack spacing={1}>
                   <Typography variant="h4" fontWeight={700}>
-                    {company.average_rating.toFixed(1)}
+                    {company.total_reviews}
                   </Typography>
-                  <StarIcon sx={{ color: "warning.main", fontSize: "2rem" }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Total Reviews
+                  </Typography>
                 </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  Average Rating
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h4" fontWeight={700} color="success.main">
-                  {company.positive_reviews}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Positive Reviews
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h4" fontWeight={700} color="error.main">
-                  {company.negative_reviews}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Negative Reviews
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Sentiment Analysis */}
-        {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
-
-        {/* Locations */}
-        {locations.length > 0 && (
-          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Typography variant="h6" gutterBottom>
-              Locations
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "repeat(2, 1fr)",
-                },
-                gap: 2,
-                mt: 2,
-              }}
-            >
-              {locations.map((location) => (
-                <Card key={location.id} variant="outlined">
-                  <CardContent>
-                    <Stack spacing={1}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {location.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {location.address}, {location.city}, {location.state}
-                      </Typography>
-                      <Divider />
-                      <Stack direction="row" spacing={3}>
-                        <Box>
-                          <Typography variant="h6" fontWeight={600}>
-                            {location.total_reviews}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Reviews
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            alignItems="center"
-                          >
-                            <Typography variant="h6" fontWeight={600}>
-                              {location.average_rating.toFixed(1)}
-                            </Typography>
-                            <StarIcon
-                              sx={{ color: "warning.main", fontSize: "1rem" }}
-                            />
-                          </Stack>
-                          <Typography variant="caption" color="text.secondary">
-                            Avg Rating
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          </Paper>
-        )}
-
-        {/* Keyword Analysis */}
-        {keywordAnalysis.length > 0 && (
-          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Typography variant="h6" gutterBottom>
-              Keyword Analysis by Category
-            </Typography>
-            <Stack spacing={3} sx={{ mt: 3 }}>
-              {keywordAnalysis.map((analysis) => (
-                <Box key={analysis.category}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={1}
-                  >
-                    <Typography
-                      variant="body1"
-                      fontWeight={600}
-                      textTransform="capitalize"
-                    >
-                      {analysis.category}
+            <Card>
+              <CardContent>
+                <Stack spacing={1}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h4" fontWeight={700}>
+                      {company.average_rating.toFixed(1)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {analysis.count} mentions (
-                      {analysis.percentage.toFixed(1)}%)
-                    </Typography>
+                    <StarIcon
+                      sx={{ color: "warning.main", fontSize: "2rem" }}
+                    />
                   </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analysis.percentage}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: "rgba(0, 0, 0, 0.08)",
-                      "& .MuiLinearProgress-bar": {
-                        borderRadius: 4,
-                        backgroundColor: "secondary.main",
-                      },
-                    }}
-                  />
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-        )}
+                  <Typography variant="body2" color="text.secondary">
+                    Average Rating
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
 
-        {/* Trending Keywords */}
-        {keywords.length > 0 && (
-          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Typography variant="h6" gutterBottom>
-              Trending Keywords
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Most frequently mentioned terms in reviews
-            </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-              {keywords.map((keyword, index) => (
-                <Chip
-                  key={index}
-                  label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                  color={getCategoryColor(keyword.category || "other")}
-                  variant="outlined"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: index < 5 ? "0.95rem" : "0.875rem",
-                  }}
-                />
-              ))}
-            </Stack>
-          </Paper>
-        )}
+            <Card>
+              <CardContent>
+                <Stack spacing={1}>
+                  <Typography
+                    variant="h4"
+                    fontWeight={700}
+                    color="success.main"
+                  >
+                    {company.positive_reviews}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Positive Reviews
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
 
-        {/* Recent Reviews */}
-        <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 3 }}
-          >
-            <Box>
-          <Typography variant="h6" gutterBottom>
-            Recent Reviews
-          </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Showing {filteredReviews.length} of {reviews.length} reviews
-            </Typography>
-            </Box>
-            {(selectedKeyword !== "all" || selectedRating !== "all") && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={handleClearFilters}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 500,
-                }}
-              >
-                Clear filters
-              </Button>
-            )}
-          </Stack>
+            <Card>
+              <CardContent>
+                <Stack spacing={1}>
+                  <Typography variant="h4" fontWeight={700} color="error.main">
+                    {company.negative_reviews}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Negative Reviews
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
 
-          {/* Review-specific Filters */}
-          {reviews.length > 0 && (
-            <Box
-              sx={{
-                mb: 3,
-                p: 2,
-                bgcolor: "background.default",
-                borderRadius: 1,
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mb: 1.5, display: "block" }}
-              >
-                Additional filters:
+          {/* Sentiment Analysis */}
+          {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
+
+          {/* Locations */}
+          {locations.length > 0 && (
+            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+              <Typography variant="h6" gutterBottom>
+                Locations
               </Typography>
               <Box
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
                     xs: "1fr",
-                    sm: "repeat(2, 1fr)",
+                    md: "repeat(2, 1fr)",
                   },
                   gap: 2,
+                  mt: 2,
                 }}
               >
-                {/* Keyword Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="keyword-filter-label">Keyword</InputLabel>
-                  <Select
-                    labelId="keyword-filter-label"
-                    value={selectedKeyword}
-                    label="Keyword"
-                    onChange={(e) => setSelectedKeyword(e.target.value)}
-                  >
-                    <MenuItem value="all">All Keywords</MenuItem>
-                    {topKeywordsForFilter.map((keyword) => (
-                      <MenuItem
-                        key={keyword.keyword_text}
-                        value={keyword.keyword_text}
-                      >
-                        {keyword.keyword_text} ({keyword.occurrence_count})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Rating Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="rating-filter-label">Rating</InputLabel>
-                  <Select
-                    labelId="rating-filter-label"
-                    value={selectedRating}
-                    label="Rating"
-                    onChange={(e) => setSelectedRating(e.target.value)}
-                  >
-                    <MenuItem value="all">All Ratings</MenuItem>
-                    <MenuItem value="5">5 stars</MenuItem>
-                    <MenuItem value="4">4 stars</MenuItem>
-                    <MenuItem value="3">3 stars</MenuItem>
-                    <MenuItem value="2">2 stars</MenuItem>
-                    <MenuItem value="1">1 star</MenuItem>
-                  </Select>
-                </FormControl>
+                {locations.map((location) => (
+                  <Card key={location.id} variant="outlined">
+                    <CardContent>
+                      <Stack spacing={1}>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {location.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {location.address}, {location.city}, {location.state}
+                        </Typography>
+                        <Divider />
+                        <Stack direction="row" spacing={3}>
+                          <Box>
+                            <Typography variant="h6" fontWeight={600}>
+                              {location.total_reviews}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Reviews
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                            >
+                              <Typography variant="h6" fontWeight={600}>
+                                {location.average_rating.toFixed(1)}
+                              </Typography>
+                              <StarIcon
+                                sx={{ color: "warning.main", fontSize: "1rem" }}
+                              />
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Avg Rating
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
               </Box>
-            </Box>
+            </Paper>
           )}
 
-          {filteredReviews.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 6 }}>
-              <FilterListIcon
-                sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
-              />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No reviews match your filters
+          {/* Keyword Analysis */}
+          {keywordAnalysis.length > 0 && (
+            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+              <Typography variant="h6" gutterBottom>
+                Keyword Analysis by Category
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Try adjusting your filters to see more results
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={handleClearFilters}
-                sx={{ borderRadius: 980 }}
-              >
-                Clear All Filters
-              </Button>
-            </Box>
-          ) : (
-            <Stack spacing={2}>
-              {filteredReviews.map((review) => (
-                <Card key={review.id} variant="outlined">
-                  <CardContent>
-                    <Stack spacing={1}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="flex-start"
+              <Stack spacing={3} sx={{ mt: 3 }}>
+                {keywordAnalysis.map((analysis) => (
+                  <Box key={analysis.category}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1}
+                    >
+                      <Typography
+                        variant="body1"
+                        fontWeight={600}
+                        textTransform="capitalize"
                       >
-                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                        {analysis.category}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {analysis.count} mentions (
+                        {analysis.percentage.toFixed(1)}%)
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={analysis.percentage}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: "rgba(0, 0, 0, 0.08)",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 4,
+                          backgroundColor: "secondary.main",
+                        },
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Trending Keywords */}
+          {keywords.length > 0 && (
+            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+              <Typography variant="h6" gutterBottom>
+                Trending Keywords
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Most frequently mentioned terms in reviews
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
+                {keywords.map((keyword, index) => (
+                  <Chip
+                    key={index}
+                    label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                    color={getCategoryColor(keyword.category || "other")}
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 500,
+                      fontSize: index < 5 ? "0.95rem" : "0.875rem",
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Recent Reviews */}
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 3 }}
+            >
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Recent Reviews
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Showing {filteredReviews.length} of {reviews.length} reviews
+                </Typography>
+              </Box>
+              {(selectedKeyword !== "all" || selectedRating !== "all") && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleClearFilters}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </Stack>
+
+            {/* Review-specific Filters */}
+            {reviews.length > 0 && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  bgcolor: "background.default",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1.5, display: "block" }}
+                >
+                  Additional filters:
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, 1fr)",
+                    },
+                    gap: 2,
+                  }}
+                >
+                  {/* Keyword Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="keyword-filter-label">Keyword</InputLabel>
+                    <Select
+                      labelId="keyword-filter-label"
+                      value={selectedKeyword}
+                      label="Keyword"
+                      onChange={(e) => setSelectedKeyword(e.target.value)}
+                    >
+                      <MenuItem value="all">All Keywords</MenuItem>
+                      {topKeywordsForFilter.map((keyword) => (
+                        <MenuItem
+                          key={keyword.keyword_text}
+                          value={keyword.keyword_text}
+                        >
+                          {keyword.keyword_text} ({keyword.occurrence_count})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Rating Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="rating-filter-label">Rating</InputLabel>
+                    <Select
+                      labelId="rating-filter-label"
+                      value={selectedRating}
+                      label="Rating"
+                      onChange={(e) => setSelectedRating(e.target.value)}
+                    >
+                      <MenuItem value="all">All Ratings</MenuItem>
+                      <MenuItem value="5">5 stars</MenuItem>
+                      <MenuItem value="4">4 stars</MenuItem>
+                      <MenuItem value="3">3 stars</MenuItem>
+                      <MenuItem value="2">2 stars</MenuItem>
+                      <MenuItem value="1">1 star</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              </Box>
+            )}
+
+            {filteredReviews.length === 0 ? (
+              <Box sx={{ textAlign: "center", py: 6 }}>
+                <FilterListIcon
+                  sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
+                />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No reviews match your filters
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
+                  Try adjusting your filters to see more results
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={handleClearFilters}
+                  sx={{ borderRadius: 980 }}
+                >
+                  Clear All Filters
+                </Button>
+              </Box>
+            ) : (
+              <Stack spacing={2}>
+                {filteredReviews.map((review) => (
+                  <Card key={review.id} variant="outlined">
+                    <CardContent>
+                      <Stack spacing={1}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                        >
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              flexWrap="wrap"
+                            >
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {review.author_name || "Anonymous"}
+                              </Typography>
+                              <Chip
+                                label={review.platform_name}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              {review.location_name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {new Date(
+                                review.published_at
+                              ).toLocaleDateString()}
+                            </Typography>
+                          </Box>
                           <Stack
                             direction="row"
                             spacing={1}
                             alignItems="center"
-                            flexWrap="wrap"
                           >
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {review.author_name || "Anonymous"}
+                            <Typography variant="body2" fontWeight="bold">
+                              {review.rating.toFixed(1)}
                             </Typography>
-                            <Chip
-                              label={review.platform_name}
-                              size="small"
-                              variant="outlined"
+                            <StarIcon
+                              fontSize="small"
+                              sx={{ color: "warning.main" }}
                             />
+                            {review.sentiment && (
+                              <Chip
+                                label={review.sentiment}
+                                size="small"
+                                color={getSentimentColor(review.sentiment)}
+                              />
+                            )}
                           </Stack>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            {review.location_name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(review.published_at).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="body2" fontWeight="bold">
-                            {review.rating.toFixed(1)}
-                          </Typography>
-                          <StarIcon
-                            fontSize="small"
-                            sx={{ color: "warning.main" }}
-                          />
-                          {review.sentiment && (
-                            <Chip
-                              label={review.sentiment}
-                              size="small"
-                              color={getSentimentColor(review.sentiment)}
-                            />
-                          )}
                         </Stack>
-                      </Stack>
-                      {review.title && (
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {review.title}
+                        {review.title && (
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {review.title}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color="text.secondary">
+                          {review.content?.substring(0, 200)}
+                          {review.content && review.content.length > 200
+                            ? "..."
+                            : ""}
                         </Typography>
-                      )}
-                      <Typography variant="body2" color="text.secondary">
-                        {review.content?.substring(0, 200)}
-                        {review.content && review.content.length > 200
-                          ? "..."
-                          : ""}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </Paper>
-      </Stack>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Paper>
+        </Stack>
 
-      {/* Coming Soon Modal */}
-      <Dialog
-        open={comingSoonOpen}
-        onClose={handleCloseComingSoon}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-          },
-        }}
-      >
-        <DialogTitle sx={{ m: 0, p: 3 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
+        {/* Coming Soon Modal */}
+        <Dialog
+          open={comingSoonOpen}
+          onClose={handleCloseComingSoon}
+          maxWidth="sm"
+          fullWidth
+          fullScreen={false}
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 3 },
+              m: { xs: 0, sm: 2 },
+            },
+          }}
+        >
+          <DialogTitle sx={{ m: 0, p: { xs: 2, sm: 3 } }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography
+                variant="h5"
+                component="div"
+                sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
+              >
+                {selectedPlatform} Integration
+              </Typography>
+              <IconButton
+                aria-label="close"
+                onClick={handleCloseComingSoon}
+                sx={{
+                  color: "text.secondary",
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
+          <DialogContent
+            dividers
+            sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
           >
-            <Typography variant="h5" component="div">
-              {selectedPlatform} Integration
-            </Typography>
-            <IconButton
-              aria-label="close"
+            <Stack
+              spacing={{ xs: 2, sm: 3 }}
+              alignItems="center"
+              sx={{ textAlign: "center" }}
+            >
+              <Box
+                sx={{
+                  width: { xs: 60, sm: 80 },
+                  height: { xs: 60, sm: 80 },
+                  borderRadius: "50%",
+                  bgcolor: "primary.light",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <StarIcon
+                  sx={{ fontSize: { xs: 32, sm: 40 }, color: "primary.main" }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Coming Soon!
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {selectedPlatform} integration is currently under development.
+                  We're working hard to bring you seamless review imports from
+                  all major platforms.
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  bgcolor: "background.default",
+                  p: 2,
+                  borderRadius: 2,
+                  width: "100%",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Stay tuned for updates! We'll notify you as soon as this
+                  feature becomes available.
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: { xs: 2, sm: 3 } }}>
+            <Button
               onClick={handleCloseComingSoon}
-              sx={{
-                color: "text.secondary",
-              }}
+              variant="contained"
+              size="large"
+              fullWidth
+              sx={{ borderRadius: 980, py: { xs: 1.25, sm: 1.5 } }}
             >
-              <CloseIcon />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        <DialogContent dividers sx={{ py: 4 }}>
-          <Stack spacing={3} alignItems="center" sx={{ textAlign: "center" }}>
-            <Box
-              sx={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                bgcolor: "primary.light",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <StarIcon sx={{ fontSize: 40, color: "primary.main" }} />
-            </Box>
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Coming Soon!
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {selectedPlatform} integration is currently under development.
-                We're working hard to bring you seamless review imports from all
-                major platforms.
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                bgcolor: "background.default",
-                p: 2,
-                borderRadius: 2,
-                width: "100%",
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                Stay tuned for updates! We'll notify you as soon as this feature
-                becomes available.
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={handleCloseComingSoon}
-            variant="contained"
-            size="large"
-            fullWidth
-            sx={{ borderRadius: 980, py: 1.5 }}
-          >
-            Got it
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+              Got it
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </>
   );
 };
