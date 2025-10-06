@@ -698,8 +698,8 @@ export const CompanyStats = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack spacing={4}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           <Box>
             <Button
               startIcon={<ArrowBackIcon />}
@@ -731,7 +731,7 @@ export const CompanyStats = () => {
             ))}
           </Box>
 
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Recent Reviews
             </Typography>
@@ -748,8 +748,8 @@ export const CompanyStats = () => {
 
   if (!company) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack spacing={4}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           <Button
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/dashboard")}
@@ -763,25 +763,39 @@ export const CompanyStats = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Stack spacing={4}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
         {/* Back Button */}
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate("/dashboard")}
-          sx={{ alignSelf: "flex-start" }}
+          sx={{ alignSelf: "flex-start", fontSize: { xs: "0.875rem", sm: "1rem" } }}
         >
+          <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
           Back to Dashboard
+          </Box>
+          <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+            Back
+          </Box>
         </Button>
 
         {/* Company Header */}
-        <Paper sx={{ p: 4 }}>
-          <Stack direction="row" spacing={3} alignItems="flex-start">
-            <Avatar sx={{ bgcolor: "secondary.main", width: 72, height: 72 }}>
-              <BusinessIcon sx={{ fontSize: 40 }} />
+        <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+          <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="flex-start">
+            <Avatar sx={{ 
+              bgcolor: "secondary.main", 
+              width: { xs: 48, sm: 56, md: 72 }, 
+              height: { xs: 48, sm: 56, md: 72 } 
+            }}>
+              <BusinessIcon sx={{ fontSize: { xs: 24, sm: 32, md: 40 } }} />
             </Avatar>
             <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h3" component="h1" gutterBottom>
+              <Typography 
+                variant="h3" 
+                component="h1" 
+                gutterBottom
+                sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
+              >
                 {company.name}
               </Typography>
               <Stack
@@ -949,8 +963,8 @@ export const CompanyStats = () => {
         </Paper>
 
         {/* Fetch Reviews Section */}
-        <Paper sx={{ p: 4 }}>
-          <Typography variant="h5" gutterBottom>
+        <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+          <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
             Fetch Reviews from Platforms
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -960,12 +974,12 @@ export const CompanyStats = () => {
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
+                xs: "repeat(2, 1fr)",
+                sm: "repeat(3, 1fr)",
+                md: "repeat(4, 1fr)",
                 lg: "repeat(5, 1fr)",
               },
-              gap: 2,
+              gap: { xs: 1.5, sm: 2 },
             }}
           >
             {platforms.map((platform) => (
@@ -1071,7 +1085,7 @@ export const CompanyStats = () => {
 
         {/* Locations */}
         {locations.length > 0 && (
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Locations
             </Typography>
@@ -1134,7 +1148,7 @@ export const CompanyStats = () => {
 
         {/* Keyword Analysis */}
         {keywordAnalysis.length > 0 && (
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Keyword Analysis by Category
             </Typography>
@@ -1180,7 +1194,7 @@ export const CompanyStats = () => {
 
         {/* Trending Keywords */}
         {keywords.length > 0 && (
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Typography variant="h6" gutterBottom>
               Trending Keywords
             </Typography>
@@ -1205,7 +1219,7 @@ export const CompanyStats = () => {
         )}
 
         {/* Recent Reviews */}
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
           <Stack
             direction="row"
             justifyContent="space-between"

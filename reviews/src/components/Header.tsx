@@ -1,5 +1,6 @@
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
+import MenuIcon from "@mui/icons-material/Menu";
 import {
     AppBar,
     Avatar,
@@ -7,7 +8,11 @@ import {
     Button,
     Container,
     Divider,
+    Drawer,
     IconButton,
+    List,
+    ListItemButton,
+    ListItemText,
     Menu,
     MenuItem,
     Toolbar,
@@ -24,6 +29,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -50,12 +56,25 @@ export const Header = () => {
     <AppBar position="sticky" elevation={0} color="default">
       <Container maxWidth="xl">
         <Toolbar disableGutters sx={{ minHeight: "64px", py: 1 }}>
+          {/* Mobile Menu Button */}
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            onClick={() => setMobileMenuOpen(true)}
+            sx={{ mr: 2, display: { xs: "flex", md: "none" } }}
+          >
+            <MenuIcon />
+          </IconButton>
+
+          {/* Logo */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               cursor: "pointer",
-              mr: 4,
+              mr: { xs: 0, md: 4 },
+              flexGrow: { xs: 1, md: 0 },
             }}
             onClick={() => navigate("/dashboard")}
           >
@@ -68,24 +87,26 @@ export const Header = () => {
                 display: "flex",
                 alignItems: "baseline",
                 gap: 0.5,
+                fontSize: { xs: "1rem", sm: "1.25rem" },
               }}
             >
               <Box component="span" sx={{ color: "text.primary" }}>
                 Aureanne
               </Box>
-              <Box component="span" sx={{ color: "secondary.main" }}>
+              <Box component="span" sx={{ color: "secondary.main", display: { xs: "none", sm: "inline" } }}>
                 Review
               </Box>
-              <Box component="span" sx={{ color: "text.primary" }}>
+              <Box component="span" sx={{ color: "text.primary", display: { xs: "none", sm: "inline" } }}>
                 Tracker
               </Box>
             </Typography>
           </Box>
 
+          {/* Desktop Navigation */}
           <Box
             sx={{
               flexGrow: 1,
-              display: "flex",
+              display: { xs: "none", md: "flex" },
               justifyContent: "center",
               gap: 0.5,
             }}
@@ -128,6 +149,7 @@ export const Header = () => {
             </Button>
           </Box>
 
+          {/* User Avatar */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <IconButton
               size="small"
@@ -224,6 +246,80 @@ export const Header = () => {
           </Box>
         </Toolbar>
       </Container>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
+            width: 250,
+          },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Menu
+          </Typography>
+          <List>
+            <ListItemButton
+              selected={isActive("/dashboard")}
+              onClick={() => {
+                navigate("/dashboard");
+                setMobileMenuOpen(false);
+              }}
+              sx={{
+                borderRadius: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemText primary="Dashboard" />
+            </ListItemButton>
+            <ListItemButton
+              selected={isActive("/companies")}
+              onClick={() => {
+                navigate("/companies");
+                setMobileMenuOpen(false);
+              }}
+              sx={{
+                borderRadius: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemText primary="Companies" />
+            </ListItemButton>
+            <Divider sx={{ my: 2 }} />
+            <ListItemButton
+              onClick={() => {
+                navigate("/profile");
+                setMobileMenuOpen(false);
+              }}
+              sx={{
+                borderRadius: 1,
+                mb: 0.5,
+              }}
+            >
+              <AccountCircleIcon sx={{ mr: 2 }} fontSize="small" />
+              <ListItemText primary="Profile" />
+            </ListItemButton>
+            <ListItemButton
+              onClick={async () => {
+                setMobileMenuOpen(false);
+                await signOut();
+                navigate("/auth/login");
+              }}
+              sx={{
+                borderRadius: 1,
+              }}
+            >
+              <LogoutIcon sx={{ mr: 2 }} fontSize="small" />
+              <ListItemText primary="Sign Out" />
+            </ListItemButton>
+          </List>
+        </Box>
+      </Drawer>
     </AppBar>
   );
 };

@@ -230,8 +230,8 @@ export const Companies = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Stack spacing={4}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
           {/* Header Skeleton */}
           <Stack
             direction="row"
@@ -270,28 +270,48 @@ export const Companies = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Stack spacing={4}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
         {/* Header */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
+          flexWrap="wrap"
+          gap={2}
         >
           <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              gutterBottom
+              sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
+            >
               Companies
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography 
+              variant="body1" 
+              color="text.secondary"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
               Manage the businesses you're analyzing
             </Typography>
           </Box>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<AddIcon sx={{ display: { xs: "none", sm: "inline" } }} />}
             onClick={() => handleOpenDialog()}
+            sx={{ 
+              minWidth: { xs: "auto", sm: "auto" },
+              px: { xs: 2, sm: 3 },
+            }}
           >
-            Add Company
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              Add Company
+            </Box>
+            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+              Add
+            </Box>
           </Button>
         </Stack>
 
