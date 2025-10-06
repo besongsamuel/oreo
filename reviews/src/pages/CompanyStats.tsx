@@ -330,11 +330,12 @@ export const CompanyStats = () => {
               const sentiments = sentimentResults
                 .filter(
                   (r: any) =>
-                    r.sentiment_analysis && r.sentiment_analysis.length > 0
+                    r.sentiment_analysis &&
+                    typeof r.sentiment_analysis === "object"
                 )
                 .map((r: any) => ({
-                  sentiment: r.sentiment_analysis[0].sentiment,
-                  score: r.sentiment_analysis[0].sentiment_score,
+                  sentiment: r.sentiment_analysis.sentiment,
+                  score: r.sentiment_analysis.sentiment_score,
                   gender: r.reviewer_gender,
                   ageRange: r.reviewer_age_range,
                 }));
@@ -441,10 +442,14 @@ export const CompanyStats = () => {
                   byAgeGroup,
                   byGender,
                 });
+              } else {
+                setSentimentData(null);
               }
             } else {
               console.error("Error fetching sentiment data:", sentimentError);
             }
+          } else {
+            setSentimentData(null);
           }
         }
 
@@ -830,7 +835,7 @@ export const CompanyStats = () => {
                   variant="text"
                   size="small"
                   onClick={handleClearAllFilters}
-                  sx={{ 
+                  sx={{
                     textTransform: "none",
                     fontWeight: 500,
                   }}
@@ -862,9 +867,7 @@ export const CompanyStats = () => {
                   onChange={(e) => setFilterLocation(e.target.value)}
                   sx={{ bgcolor: "background.paper" }}
                 >
-                  <MenuItem value="all">
-                    All Locations
-                  </MenuItem>
+                  <MenuItem value="all">All Locations</MenuItem>
                   <Divider />
                   {uniqueLocations.map((location) => (
                     <MenuItem key={location} value={location}>
@@ -903,7 +906,12 @@ export const CompanyStats = () => {
 
             {/* Active Filters Display */}
             {(filterLocation !== "all" || filterStartDate || filterEndDate) && (
-              <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                alignItems="center"
+              >
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -1214,12 +1222,15 @@ export const CompanyStats = () => {
             </Box>
             {(selectedKeyword !== "all" || selectedRating !== "all") && (
               <Button
-                variant="outlined"
+                variant="text"
                 size="small"
                 onClick={handleClearFilters}
-                sx={{ borderRadius: 980 }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
               >
-                Clear Additional Filters
+                Clear filters
               </Button>
             )}
           </Stack>
@@ -1234,7 +1245,11 @@ export const CompanyStats = () => {
                 borderRadius: 1,
               }}
             >
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: "block" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mb: 1.5, display: "block" }}
+              >
                 Additional filters:
               </Typography>
               <Box
@@ -1249,9 +1264,7 @@ export const CompanyStats = () => {
               >
                 {/* Keyword Filter */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="keyword-filter-label">
-                    Keyword
-                  </InputLabel>
+                  <InputLabel id="keyword-filter-label">Keyword</InputLabel>
                   <Select
                     labelId="keyword-filter-label"
                     value={selectedKeyword}
@@ -1272,9 +1285,7 @@ export const CompanyStats = () => {
 
                 {/* Rating Filter */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="rating-filter-label">
-                    Rating
-                  </InputLabel>
+                  <InputLabel id="rating-filter-label">Rating</InputLabel>
                   <Select
                     labelId="rating-filter-label"
                     value={selectedRating}
