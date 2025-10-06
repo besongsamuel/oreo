@@ -30,8 +30,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
-import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../hooks/useUser";
 
 interface Company {
   id: string;
@@ -91,7 +91,10 @@ export const Companies = () => {
   }, [supabase, profile]);
 
   const fetchCompanies = async () => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     try {
       // Fetch companies with stats

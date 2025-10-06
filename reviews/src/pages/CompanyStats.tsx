@@ -23,8 +23,8 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
-import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../hooks/useUser";
 
 interface CompanyDetails {
   id: string;
@@ -88,7 +88,10 @@ export const CompanyStats = () => {
 
   useEffect(() => {
     const fetchCompanyData = async () => {
-      if (!profile || !companyId) return;
+      if (!profile || !companyId) {
+        setLoading(false);
+        return;
+      }
 
       try {
         // Fetch company details

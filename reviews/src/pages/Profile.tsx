@@ -13,8 +13,8 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
-import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../hooks/useUser";
 
 export const Profile = () => {
   const { user, profile, refreshProfile } = useUser();

@@ -7,7 +7,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../hooks/useUser";
 
 export const Home = () => {
   const { user, profile, signOut } = useUser();

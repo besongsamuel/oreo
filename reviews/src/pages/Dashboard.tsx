@@ -17,8 +17,8 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
-import { useUser } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../hooks/useUser";
 
 interface CompanyStat {
   company_id: string;
@@ -67,7 +67,10 @@ export const Dashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!profile) return;
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
 
       try {
         // Fetch company stats for all user's companies
