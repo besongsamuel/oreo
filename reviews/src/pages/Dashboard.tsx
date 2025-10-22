@@ -264,7 +264,7 @@ export const Dashboard = () => {
   return (
     <>
       <SEO
-        title="Dashboard - Aureanne Review Tracker"
+        title="Dashboard - Boresha"
         description="View your review analytics dashboard. Monitor reviews, track sentiment, and analyze customer feedback from all your business locations."
         keywords="review dashboard, review analytics, sentiment analysis, customer feedback dashboard"
       />

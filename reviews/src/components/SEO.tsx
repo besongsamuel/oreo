@@ -10,10 +10,10 @@ interface SEOProps {
 }
 
 export const SEO = ({
-  title = "Aureanne Review Tracker - Manage & Analyze Customer Reviews",
+  title = "Boresha - Manage & Analyze Customer Reviews",
   description = "Comprehensive review management and analytics platform. Track reviews from Google, Yelp, Facebook, and more. Get sentiment analysis, keyword insights, and actionable feedback.",
   keywords = "review management, customer reviews, review analytics, sentiment analysis, business reviews, review tracking, customer feedback",
-  canonical = "https://aureanne.com/",
+  canonical = "https://boresha.com/",
   ogType = "website",
   ogImage = "/logo512.png",
 }: SEOProps) => {

@@ -91,7 +91,7 @@ export const Header = () => {
               }}
             >
               <Box component="span" sx={{ color: "text.primary" }}>
-                Aureanne
+                Boresha
               </Box>
               <Box
                 component="span"

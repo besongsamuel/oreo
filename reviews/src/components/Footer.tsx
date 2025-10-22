@@ -34,13 +34,7 @@ export const Footer = () => {
           >
             © {new Date().getFullYear()}
             <Box component="span" sx={{ fontWeight: 500 }}>
-              Aureanne
-            </Box>
-            <Box component="span" sx={{ color: "secondary.main", fontWeight: 500 }}>
-              Review
-            </Box>
-            <Box component="span" sx={{ fontWeight: 500 }}>
-              Tracker
+              Boresha
             </Box>
             . All rights reserved.
           </Typography>

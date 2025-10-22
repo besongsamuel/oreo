@@ -60,7 +60,7 @@ export const Login = () => {
           <Stack spacing={3}>
             <Box>
               <Typography variant="h4" component="h1" gutterBottom>
-                Welcome to Reviews
+                Welcome to Boresha
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Sign in to your account to continue

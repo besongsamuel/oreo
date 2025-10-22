@@ -78,7 +78,7 @@ export const Signup = () => {
                 Create Account
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Sign up to start using Reviews
+                Sign up to start using Boresha
               </Typography>
             </Box>
 

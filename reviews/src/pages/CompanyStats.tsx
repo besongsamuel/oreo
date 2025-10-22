@@ -772,7 +772,7 @@ export const CompanyStats = () => {
   return (
     <>
       <SEO
-        title={`${company.name} - Review Analytics | Aureanne`}
+        title={`${company.name} - Review Analytics | Boresha`}
         description={`View detailed review analytics for ${company.name}. Track sentiment, ratings, keywords, and customer feedback across all locations and platforms.`}
         keywords={`${
           company.name

@@ -20,7 +20,7 @@ export const Home = () => {
         <Paper elevation={3} sx={{ p: 4 }}>
           <Stack spacing={3}>
             <Typography variant="h3" component="h1" gutterBottom>
-              Reviews App
+              Boresha
             </Typography>
 
             <Stack direction="row" spacing={1} alignItems="center">

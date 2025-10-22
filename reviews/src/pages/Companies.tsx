@@ -276,7 +276,7 @@ export const Companies = () => {
   return (
     <>
       <SEO
-        title="Companies - Aureanne Review Tracker"
+        title="Companies - Boresha"
         description="Manage all your business companies in one place. Add, edit, and monitor multiple businesses and their review performance."
         keywords="manage companies, business management, multiple businesses, company dashboard"
       />
