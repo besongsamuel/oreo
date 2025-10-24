@@ -107,43 +107,63 @@ export class FacebookProvider implements PlatformProvider {
         try {
             const reviews: StandardReview[] = [];
 
-            // Fetch page ratings/reviews
-            const ratingsResponse = await fetch(
-                `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${accessToken}&limit=100`,
-            );
+            // Try to fetch page ratings/reviews (may fail due to permissions)
+            try {
+                const ratingsResponse = await fetch(
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${accessToken}&limit=100`,
+                );
 
-            if (ratingsResponse.ok) {
-                const ratingsData = await ratingsResponse.json();
+                if (ratingsResponse.ok) {
+                    const ratingsData = await ratingsResponse.json();
 
-                for (const rating of ratingsData.data || []) {
-                    const review = this.transformRatingToReview(rating);
-                    if (review) {
-                        reviews.push(review);
+                    for (const rating of ratingsData.data || []) {
+                        const review = this.transformRatingToReview(rating);
+                        if (review) {
+                            reviews.push(review);
+                        }
                     }
+                } else if (ratingsResponse.status === 403) {
+                    console.warn(
+                        "Access to page ratings denied. This may be due to Facebook's restricted access to ratings API.",
+                    );
                 }
+            } catch (ratingsError) {
+                console.warn("Failed to fetch page ratings:", ratingsError);
             }
 
-            // Fetch page posts with comments (additional feedback)
-            const postsResponse = await fetch(
-                `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${accessToken}&limit=50&fields=id,message,created_time,comments{id,message,from,created_time}`,
-            );
+            // Fetch page posts with comments (this should work with current permissions)
+            try {
+                const postsResponse = await fetch(
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${accessToken}&limit=50&fields=id,message,created_time,comments{id,message,from,created_time}`,
+                );
 
-            if (postsResponse.ok) {
-                const postsData = await postsResponse.json();
+                if (postsResponse.ok) {
+                    const postsData = await postsResponse.json();
 
-                for (const post of postsData.data || []) {
-                    if (post.comments?.data) {
-                        for (const comment of post.comments.data) {
-                            const review = this.transformCommentToReview(
-                                comment,
-                                post,
-                            );
-                            if (review) {
-                                reviews.push(review);
+                    for (const post of postsData.data || []) {
+                        if (post.comments?.data) {
+                            for (const comment of post.comments.data) {
+                                const review = this.transformCommentToReview(
+                                    comment,
+                                    post,
+                                );
+                                if (review) {
+                                    reviews.push(review);
+                                }
                             }
                         }
                     }
                 }
+            } catch (postsError) {
+                console.warn("Failed to fetch page posts:", postsError);
+            }
+
+            // If no reviews found, throw an informative error
+            if (reviews.length === 0) {
+                throw new Error(
+                    "No reviews found. Facebook has restricted access to page ratings. " +
+                        "Consider using Facebook Business Manager or alternative review collection methods.",
+                );
             }
 
             return reviews;
