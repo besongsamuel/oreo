@@ -3,7 +3,9 @@ import {
   ArrowForward as ArrowForwardIcon,
   Business as BusinessIcon,
   Edit as EditIcon,
+  Facebook as FacebookIcon,
   LocationOn as LocationIcon,
+  MoreVert as MoreVertIcon,
   Star as StarIcon,
   LanguageOutlined as WebIcon,
 } from "@mui/icons-material";
@@ -23,16 +25,23 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
+import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
+import { getAllPlatforms } from "../services/platforms/platformRegistry";
 
 interface Company {
   id: string;
@@ -73,6 +82,13 @@ export const Companies = () => {
   const supabase = useSupabase();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const {
+    connectPlatform,
+    connecting,
+    error: platformError,
+    success: platformSuccess,
+  } = usePlatformIntegration();
+
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -85,6 +101,18 @@ export const Companies = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Platform integration state
+  const [platformDialogOpen, setPlatformDialogOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companyLocations, setCompanyLocations] = useState<
+    Array<{ id: string; name: string; address: string }>
+  >([]);
+  const [platformMenuAnchor, setPlatformMenuAnchor] =
+    useState<null | HTMLElement>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+
+  const platforms = getAllPlatforms();
 
   useEffect(() => {
     fetchCompanies();
@@ -227,6 +255,74 @@ export const Companies = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Platform integration functions
+  const handlePlatformMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    company: Company
+  ) => {
+    setPlatformMenuAnchor(event.currentTarget);
+    setSelectedCompany(company);
+  };
+
+  const handlePlatformMenuClose = () => {
+    setPlatformMenuAnchor(null);
+    setSelectedCompany(null);
+    setSelectedPlatform(null);
+  };
+
+  const handlePlatformSelect = async (platformName: string) => {
+    if (!selectedCompany) return;
+
+    setSelectedPlatform(platformName);
+    handlePlatformMenuClose();
+
+    try {
+      // Get company locations
+      const { data: locations, error } = await supabase
+        .from("locations")
+        .select("id, name, address")
+        .eq("company_id", selectedCompany.id)
+        .eq("is_active", true);
+
+      if (error) throw error;
+
+      if (!locations || locations.length === 0) {
+        setError(
+          "Please add at least one location to this company before connecting platforms."
+        );
+        return;
+      }
+
+      setCompanyLocations(locations);
+      setPlatformDialogOpen(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to load company locations");
+    }
+  };
+
+  const handlePlatformConnect = async (pageId: string, locationId: string) => {
+    if (!selectedCompany || !selectedPlatform) return;
+
+    try {
+      await connectPlatform(
+        selectedPlatform,
+        selectedCompany.id,
+        pageId,
+        locationId
+      );
+      await fetchCompanies(); // Refresh company data
+    } catch (err: any) {
+      setError(err.message || "Failed to connect platform");
+    }
+  };
+
+  const handlePlatformDialogClose = () => {
+    setPlatformDialogOpen(false);
+    setSelectedCompany(null);
+    setCompanyLocations([]);
+    setSelectedPlatform(null);
   };
 
   if (loading) {
@@ -396,12 +492,23 @@ export const Companies = () => {
                               />
                             )}
                           </Box>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleOpenDialog(company)}
-                          >
-                            <EditIcon />
-                          </IconButton>
+                          <Stack direction="row" spacing={0.5}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) =>
+                                handlePlatformMenuOpen(e, company)
+                              }
+                              disabled={connecting}
+                            >
+                              <MoreVertIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog(company)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Stack>
                         </Stack>
 
                         {company.description && (
@@ -576,6 +683,68 @@ export const Companies = () => {
               </DialogActions>
             </form>
           </Dialog>
+
+          {/* Platform Menu */}
+          <Menu
+            anchorEl={platformMenuAnchor}
+            open={Boolean(platformMenuAnchor)}
+            onClose={handlePlatformMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+          >
+            {platforms.map((platform) => (
+              <MenuItem
+                key={platform.name}
+                onClick={() => handlePlatformSelect(platform.name)}
+                disabled={platform.status !== "active"}
+              >
+                <ListItemIcon>
+                  {platform.name === "facebook" && (
+                    <FacebookIcon sx={{ color: platform.color }} />
+                  )}
+                  {/* Add other platform icons as they become available */}
+                </ListItemIcon>
+                <ListItemText
+                  primary={platform.displayName}
+                  secondary={
+                    platform.status === "coming_soon"
+                      ? "Coming Soon"
+                      : undefined
+                  }
+                />
+              </MenuItem>
+            ))}
+          </Menu>
+
+          {/* Platform Connection Dialog */}
+          {selectedPlatform && selectedCompany && (
+            <PlatformConnectionDialog
+              open={platformDialogOpen}
+              onClose={handlePlatformDialogClose}
+              onConnect={handlePlatformConnect}
+              platformName={selectedPlatform}
+              companyName={selectedCompany.name}
+              locations={companyLocations}
+            />
+          )}
+
+          {/* Platform Integration Messages */}
+          {platformError && (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {platformError}
+            </Alert>
+          )}
+          {platformSuccess && (
+            <Alert severity="success" onClose={() => setError(null)}>
+              {platformSuccess}
+            </Alert>
+          )}
         </Stack>
       </Container>
     </>

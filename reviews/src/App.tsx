@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Companies } from "./pages/Companies";
-import { CompanyStats } from "./pages/CompanyStats";
+import { AddLocation, Companies, PrivacyPolicy, TermsOfUse } from "./pages";
+import { CompanyPage } from "./pages/CompanyPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
+import { SuccessLocation } from "./pages/SuccessLocation";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 
 function App() {
@@ -40,7 +41,27 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <CompanyStats />
+                <CompanyPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies/:companyId/locations/new"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AddLocation />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies/:companyId/locations/success"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SuccessLocation />
               </Layout>
             </ProtectedRoute>
           }
@@ -61,6 +82,24 @@ function App() {
         <Route path="/auth/signup" element={<Signup />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/complete-signup" element={<CompleteSignup />} />
+
+        {/* Public legal pages (with layout) */}
+        <Route
+          path="/privacy-policy"
+          element={
+            <Layout>
+              <PrivacyPolicy />
+            </Layout>
+          }
+        />
+        <Route
+          path="/terms-of-use"
+          element={
+            <Layout>
+              <TermsOfUse />
+            </Layout>
+          }
+        />
 
         {/* Catch all - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

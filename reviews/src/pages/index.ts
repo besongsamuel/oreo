@@ -1,6 +1,9 @@
+export { AddLocation } from "./AddLocation";
 export { Companies } from "./Companies";
-export { CompanyStats } from "./CompanyStats";
+export { CompanyPage } from "./CompanyPage";
 export { Dashboard } from "./Dashboard";
 export { Home } from "./Home";
+export { PrivacyPolicy } from "./PrivacyPolicy";
 export { Profile } from "./Profile";
-
+export { SuccessLocation } from "./SuccessLocation";
+export { TermsOfUse } from "./TermsOfUse";

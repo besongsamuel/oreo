@@ -1,4 +1,5 @@
-import { Box, Container, Link, Typography } from "@mui/material";
+import { Box, Container, Link, Stack, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
 export const Footer = () => {
   return (
@@ -17,47 +18,91 @@ export const Footer = () => {
       }}
     >
       <Container maxWidth="lg">
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 2,
-          }}
-        >
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            component="div"
-            sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}
+        <Stack spacing={3}>
+          {/* Legal Links */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 4,
+              flexWrap: "wrap",
+            }}
           >
-            © {new Date().getFullYear()}
-            <Box component="span" sx={{ fontWeight: 500 }}>
-              Boresha
-            </Box>
-            . All rights reserved.
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Designed by{" "}
             <Link
-              href="https://www.aftermathtechnologies.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              component={RouterLink}
+              to="/privacy-policy"
               sx={{
-                color: "primary.main",
+                color: "text.secondary",
                 textDecoration: "none",
-                fontWeight: 600,
+                fontSize: "0.875rem",
                 "&:hover": {
                   textDecoration: "underline",
+                  color: "primary.main",
                 },
               }}
             >
-              Aftermath Technologies
+              Privacy Policy
             </Link>
-          </Typography>
-        </Box>
+            <Link
+              component={RouterLink}
+              to="/terms-of-use"
+              sx={{
+                color: "text.secondary",
+                textDecoration: "none",
+                fontSize: "0.875rem",
+                "&:hover": {
+                  textDecoration: "underline",
+                  color: "primary.main",
+                },
+              }}
+            >
+              Terms of Use
+            </Link>
+          </Box>
+
+          {/* Copyright and Design Credit */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              component="div"
+              sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}
+            >
+              © {new Date().getFullYear()}
+              <Box component="span" sx={{ fontWeight: 500 }}>
+                Boresha
+              </Box>
+              . All rights reserved.
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              Designed by{" "}
+              <Link
+                href="https://www.aftermathtechnologies.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: "primary.main",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  "&:hover": {
+                    textDecoration: "underline",
+                  },
+                }}
+              >
+                Aftermath Technologies
+              </Link>
+            </Typography>
+          </Box>
+        </Stack>
       </Container>
     </Box>
   );

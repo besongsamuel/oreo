@@ -1,4 +1,5 @@
 import {
+  Add as AddIcon,
   ArrowBack as ArrowBackIcon,
   Business as BusinessIcon,
   Close as CloseIcon,
@@ -9,6 +10,7 @@ import {
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -34,14 +36,17 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
+import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
+import { getAllPlatforms } from "../services/platforms/platformRegistry";
 
 interface CompanyDetails {
   id: string;
@@ -110,11 +115,18 @@ interface SentimentData {
   }[];
 }
 
-export const CompanyStats = () => {
+export const CompanyPage = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const supabase = useSupabase();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const {
+    connectPlatform,
+    connecting,
+    error: platformError,
+    success: platformSuccess,
+  } = usePlatformIntegration();
+
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -126,6 +138,13 @@ export const CompanyStats = () => {
   );
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState("");
+
+  // Platform integration state
+  const [platformDialogOpen, setPlatformDialogOpen] = useState(false);
+  const [companyLocations, setCompanyLocations] = useState<
+    Array<{ id: string; name: string; address: string }>
+  >([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
@@ -624,9 +643,60 @@ export const CompanyStats = () => {
     return colors[category] || "default";
   };
 
-  const handleFetchReviews = (platform: string) => {
+  const handleFetchReviews = async (platform: string) => {
     setSelectedPlatform(platform);
-    setComingSoonOpen(true);
+
+    // Check if this is Facebook (active platform)
+    if (platform.toLowerCase() === "facebook") {
+      try {
+        // Get company locations
+        const { data: locations, error } = await supabase
+          .from("locations")
+          .select("id, name, address")
+          .eq("company_id", companyId)
+          .eq("is_active", true);
+
+        if (error) throw error;
+
+        if (!locations || locations.length === 0) {
+          setError(
+            "Please add at least one location to this company before connecting platforms."
+          );
+          return;
+        }
+
+        setCompanyLocations(locations);
+        setPlatformDialogOpen(true);
+      } catch (err: any) {
+        setError(err.message || "Failed to load company locations");
+      }
+    } else {
+      // Show coming soon dialog for other platforms
+      setComingSoonOpen(true);
+    }
+  };
+
+  const handlePlatformConnect = async (pageId: string, locationId: string) => {
+    if (!companyId || !selectedPlatform) return;
+
+    try {
+      await connectPlatform(
+        selectedPlatform.toLowerCase(),
+        companyId,
+        pageId,
+        locationId
+      );
+      // Refresh data after successful connection by reloading the page
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message || "Failed to connect platform");
+    }
+  };
+
+  const handlePlatformDialogClose = () => {
+    setPlatformDialogOpen(false);
+    setCompanyLocations([]);
+    setSelectedPlatform("");
   };
 
   const handleCloseComingSoon = () => {
@@ -634,13 +704,7 @@ export const CompanyStats = () => {
     setSelectedPlatform("");
   };
 
-  const platforms = [
-    { name: "Google", icon: <GoogleIcon />, color: "#4285F4" },
-    { name: "Yelp", icon: <ReviewIcon />, color: "#D32323" },
-    { name: "Facebook", icon: <FacebookIcon />, color: "#1877F2" },
-    { name: "Trustpilot", icon: <StarIcon />, color: "#00B67A" },
-    { name: "TripAdvisor", icon: <ReviewIcon />, color: "#34E0A1" },
-  ];
+  const platforms = getAllPlatforms();
 
   // Filter reviews based on review-specific filters (keyword and rating)
   // Location and date filters are already applied at the query level
@@ -1024,33 +1088,67 @@ export const CompanyStats = () => {
                 gap: { xs: 1.5, sm: 2 },
               }}
             >
-              {platforms.map((platform) => (
-                <Button
-                  key={platform.name}
-                  variant="outlined"
-                  size="large"
-                  startIcon={platform.icon}
-                  onClick={() => handleFetchReviews(platform.name)}
-                  sx={{
-                    py: 2,
-                    borderRadius: 3,
-                    borderColor: "divider",
-                    color: "text.primary",
-                    "&:hover": {
-                      borderColor: platform.color,
-                      bgcolor: `${platform.color}08`,
-                      "& .MuiSvgIcon-root": {
-                        color: platform.color,
+              {platforms.map((platform) => {
+                // Get the appropriate icon for each platform
+                const getPlatformIcon = (platformName: string) => {
+                  switch (platformName.toLowerCase()) {
+                    case "facebook":
+                      return <FacebookIcon />;
+                    case "google":
+                      return <GoogleIcon />;
+                    case "yelp":
+                    case "tripadvisor":
+                      return <ReviewIcon />;
+                    case "trustpilot":
+                      return <StarIcon />;
+                    default:
+                      return <ReviewIcon />;
+                  }
+                };
+
+                return (
+                  <Button
+                    key={platform.name}
+                    variant="outlined"
+                    size="large"
+                    startIcon={getPlatformIcon(platform.name)}
+                    onClick={() => handleFetchReviews(platform.displayName)}
+                    disabled={platform.status !== "active" || connecting}
+                    sx={{
+                      py: 2,
+                      borderRadius: 3,
+                      borderColor: "divider",
+                      color: "text.primary",
+                      "&:hover": {
+                        borderColor: platform.color,
+                        bgcolor: `${platform.color}08`,
+                        "& .MuiSvgIcon-root": {
+                          color: platform.color,
+                        },
                       },
-                    },
-                    "& .MuiSvgIcon-root": {
-                      fontSize: "1.5rem",
-                    },
-                  }}
-                >
-                  {platform.name}
-                </Button>
-              ))}
+                      "& .MuiSvgIcon-root": {
+                        fontSize: "1.5rem",
+                      },
+                      opacity: platform.status !== "active" ? 0.6 : 1,
+                    }}
+                  >
+                    {platform.displayName}
+                    {platform.status === "coming_soon" && (
+                      <Chip
+                        label="Soon"
+                        size="small"
+                        sx={{
+                          ml: 1,
+                          height: 20,
+                          fontSize: "0.7rem",
+                          bgcolor: "text.secondary",
+                          color: "white",
+                        }}
+                      />
+                    )}
+                  </Button>
+                );
+              })}
             </Box>
           </Paper>
 
@@ -1132,11 +1230,31 @@ export const CompanyStats = () => {
           {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
 
           {/* Locations */}
-          {locations.length > 0 && (
-            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-              <Typography variant="h6" gutterBottom>
-                Locations
-              </Typography>
+          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6">Locations</Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() =>
+                  navigate(`/companies/${companyId}/locations/new`)
+                }
+                sx={{
+                  borderRadius: 980,
+                  textTransform: "none",
+                  fontWeight: 500,
+                }}
+              >
+                Add Location
+              </Button>
+            </Stack>
+
+            {locations.length > 0 ? (
               <Box
                 sx={{
                   display: "grid",
@@ -1145,7 +1263,6 @@ export const CompanyStats = () => {
                     md: "repeat(2, 1fr)",
                   },
                   gap: 2,
-                  mt: 2,
                 }}
               >
                 {locations.map((location) => (
@@ -1197,8 +1314,38 @@ export const CompanyStats = () => {
                   </Card>
                 ))}
               </Box>
-            </Paper>
-          )}
+            ) : (
+              <Box sx={{ textAlign: "center", py: 4 }}>
+                <BusinessIcon
+                  sx={{ fontSize: 64, color: "text.secondary", mb: 2 }}
+                />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No locations yet
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
+                  Add your first location to start tracking reviews
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() =>
+                    navigate(`/companies/${companyId}/locations/new`)
+                  }
+                  sx={{
+                    borderRadius: 980,
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Add Location
+                </Button>
+              </Box>
+            )}
+          </Paper>
 
           {/* Keyword Analysis */}
           {keywordAnalysis.length > 0 && (
@@ -1578,6 +1725,47 @@ export const CompanyStats = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Platform Connection Dialog */}
+        {selectedPlatform && company && (
+          <PlatformConnectionDialog
+            open={platformDialogOpen}
+            onClose={handlePlatformDialogClose}
+            onConnect={handlePlatformConnect}
+            platformName={selectedPlatform.toLowerCase()}
+            companyName={company.name}
+            locations={companyLocations}
+          />
+        )}
+
+        {/* Platform Integration Messages */}
+        {error && (
+          <Alert
+            severity="error"
+            onClose={() => setError(null)}
+            sx={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+          >
+            {error}
+          </Alert>
+        )}
+        {platformError && (
+          <Alert
+            severity="error"
+            onClose={() => setError(null)}
+            sx={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+          >
+            {platformError}
+          </Alert>
+        )}
+        {platformSuccess && (
+          <Alert
+            severity="success"
+            onClose={() => setError(null)}
+            sx={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+          >
+            {platformSuccess}
+          </Alert>
+        )}
       </Container>
     </>
   );
