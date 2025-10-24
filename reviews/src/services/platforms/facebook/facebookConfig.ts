@@ -12,6 +12,7 @@ export const FACEBOOK_CONFIG: PlatformConfig = {
 export const FACEBOOK_PERMISSIONS = [
     "pages_show_list",
     "pages_read_engagement",
+    "pages_read_user_content",
 ];
 
 export const FACEBOOK_API_VERSION = "v18.0";

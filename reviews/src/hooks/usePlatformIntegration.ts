@@ -33,19 +33,28 @@ export function usePlatformIntegration() {
                 platformName,
             );
 
+            // Authenticate with platform first
+            const accessToken = await provider.authenticate();
+
+            // Get user pages to find the page access token
+            const userPages = await provider.getUserPages(accessToken);
+            const selectedPage = userPages.find((page) => page.id === pageId);
+            const pageAccessToken = selectedPage?.metadata?.accessToken;
+
             // Create platform connection
             const connection = await reviewsService
                 .getOrCreatePlatformConnection(
                     locationId,
                     platform.id,
                     pageId,
+                    undefined, // platformUrl
+                    pageAccessToken,
                 );
 
-            // Authenticate with platform
-            const accessToken = await provider.authenticate();
-
-            // Fetch reviews
-            const reviews = await provider.fetchReviews(pageId, accessToken);
+            // Fetch reviews with page access token
+            const reviews = await provider.fetchReviews(pageId, accessToken, {
+                pageAccessToken,
+            });
 
             // Save reviews to database
             const stats = await reviewsService.saveReviews(
@@ -96,11 +105,19 @@ export function usePlatformIntegration() {
 
             const reviewsService = new ReviewsService(supabase);
 
+            // Get platform connection to retrieve stored access token
+            const connection = await reviewsService.getPlatformConnection(
+                platformConnectionId,
+            );
+            const pageAccessToken = connection.access_token;
+
             // Authenticate with platform
             const accessToken = await provider.authenticate();
 
-            // Fetch reviews
-            const reviews = await provider.fetchReviews(pageId, accessToken);
+            // Fetch reviews with page access token
+            const reviews = await provider.fetchReviews(pageId, accessToken, {
+                pageAccessToken,
+            });
 
             // Save reviews to database
             const stats = await reviewsService.saveReviews(

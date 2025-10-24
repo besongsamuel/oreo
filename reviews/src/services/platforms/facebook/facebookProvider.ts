@@ -102,15 +102,18 @@ export class FacebookProvider implements PlatformProvider {
     async fetchReviews(
         pageId: string,
         accessToken: string,
-        options?: any,
+        options?: { pageAccessToken?: string },
     ): Promise<StandardReview[]> {
         try {
             const reviews: StandardReview[] = [];
 
+            // Use page access token if available, otherwise fall back to user access token
+            const tokenToUse = options?.pageAccessToken || accessToken;
+
             // Try to fetch page ratings/reviews (may fail due to permissions)
             try {
                 const ratingsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${accessToken}&limit=100`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${tokenToUse}&limit=100`,
                 );
 
                 if (ratingsResponse.ok) {
@@ -134,7 +137,7 @@ export class FacebookProvider implements PlatformProvider {
             // Fetch page posts with comments (this should work with current permissions)
             try {
                 const postsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${accessToken}&limit=50&fields=id,message,created_time,comments{id,message,from,created_time}`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${tokenToUse}&limit=50&fields=id,message,created_time,comments{id,message,from,created_time}`,
                 );
 
                 if (postsResponse.ok) {

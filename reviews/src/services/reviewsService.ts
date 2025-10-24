@@ -23,6 +23,7 @@ export class ReviewsService {
         platformId: string,
         platformLocationId: string,
         platformUrl?: string,
+        accessToken?: string,
     ): Promise<{ id: string }> {
         // Try to get existing connection
         const { data: existing, error: fetchError } = await this.supabase
@@ -44,6 +45,7 @@ export class ReviewsService {
                 platform_id: platformId,
                 platform_location_id: platformLocationId,
                 platform_url: platformUrl,
+                access_token: accessToken,
                 is_active: true,
             })
             .select("id")
@@ -52,6 +54,24 @@ export class ReviewsService {
         if (error) {
             throw new Error(
                 `Failed to create platform connection: ${error.message}`,
+            );
+        }
+
+        return data;
+    }
+
+    async getPlatformConnection(
+        connectionId: string,
+    ): Promise<{ id: string; access_token?: string }> {
+        const { data, error } = await this.supabase
+            .from("platform_connections")
+            .select("id, access_token")
+            .eq("id", connectionId)
+            .single();
+
+        if (error) {
+            throw new Error(
+                `Failed to get platform connection: ${error.message}`,
             );
         }
 
