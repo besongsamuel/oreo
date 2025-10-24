@@ -35,6 +35,20 @@ export class FacebookProvider implements PlatformProvider {
                 return;
             }
 
+            // Check if we're on HTTPS or localhost
+            const isSecure = window.location.protocol === "https:" ||
+                window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1";
+
+            if (!isSecure) {
+                reject(
+                    new Error(
+                        "Facebook login requires HTTPS. Please use https://localhost:3000 or configure your Facebook app for HTTP development.",
+                    ),
+                );
+                return;
+            }
+
             window.FB.login(
                 (response: any) => {
                     if (response.authResponse) {
