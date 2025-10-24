@@ -111,13 +111,11 @@ export function usePlatformIntegration() {
             );
             const pageAccessToken = connection.access_token;
 
-            // Authenticate with platform
-            const accessToken = await provider.authenticate();
-
             // Fetch reviews with page access token
-            const reviews = await provider.fetchReviews(pageId, accessToken, {
-                pageAccessToken,
-            });
+            const reviews = await provider.fetchReviews(
+                pageId,
+                pageAccessToken || "",
+            );
 
             // Save reviews to database
             const stats = await reviewsService.saveReviews(

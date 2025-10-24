@@ -78,6 +78,53 @@ export class ReviewsService {
         return data;
     }
 
+    async getLocationPlatformConnections(locationId: string): Promise<
+        Array<{
+            id: string;
+            platform_id: string;
+            platform_location_id: string;
+            platform_url?: string;
+            is_active: boolean;
+            last_sync_at?: string;
+            platform: {
+                name: string;
+                display_name: string;
+                icon_url?: string;
+            };
+        }>
+    > {
+        const { data, error } = await this.supabase
+            .from("platform_connections")
+            .select(`
+                id,
+                platform_id,
+                platform_location_id,
+                platform_url,
+                is_active,
+                last_sync_at,
+                platform:platforms(
+                    name,
+                    display_name,
+                    icon_url
+                )
+            `)
+            .eq("location_id", locationId)
+            .eq("is_active", true);
+
+        if (error) {
+            throw new Error(
+                `Failed to get platform connections: ${error.message}`,
+            );
+        }
+
+        return (data || []).map((item) => ({
+            ...item,
+            platform: Array.isArray(item.platform)
+                ? item.platform[0]
+                : item.platform,
+        }));
+    }
+
     async saveReviews(
         platformConnectionId: string,
         reviews: StandardReview[],

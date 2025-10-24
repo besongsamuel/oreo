@@ -113,11 +113,16 @@ export class FacebookProvider implements PlatformProvider {
             // Try to fetch page ratings/reviews (may fail due to permissions)
             try {
                 const ratingsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${tokenToUse}&limit=100`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?fields=id,reviewer{id,name},rating,review_text,created_time,response{message,created_time}&access_token=${tokenToUse}&limit=100`,
                 );
 
                 if (ratingsResponse.ok) {
                     const ratingsData = await ratingsResponse.json();
+                    console.log(
+                        `Fetched ${
+                            ratingsData.data?.length || 0
+                        } ratings from Facebook`,
+                    );
 
                     for (const rating of ratingsData.data || []) {
                         const review = this.transformRatingToReview(rating);
@@ -129,6 +134,10 @@ export class FacebookProvider implements PlatformProvider {
                     console.warn(
                         "Access to page ratings denied. This may be due to Facebook's restricted access to ratings API.",
                     );
+                } else {
+                    console.warn(
+                        `Failed to fetch ratings: ${ratingsResponse.status} ${ratingsResponse.statusText}`,
+                    );
                 }
             } catch (ratingsError) {
                 console.warn("Failed to fetch page ratings:", ratingsError);
@@ -137,25 +146,31 @@ export class FacebookProvider implements PlatformProvider {
             // Fetch page posts with comments (this should work with current permissions)
             try {
                 const postsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${tokenToUse}&limit=50&fields=id,message,created_time,comments{id,message,from,created_time}`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${tokenToUse}&limit=50`,
                 );
 
                 if (postsResponse.ok) {
                     const postsData = await postsResponse.json();
+                    console.log(
+                        `Fetched ${
+                            postsData.data?.length || 0
+                        } posts from Facebook`,
+                    );
 
                     for (const post of postsData.data || []) {
-                        if (post.comments?.data) {
-                            for (const comment of post.comments.data) {
-                                const review = this.transformCommentToReview(
-                                    comment,
-                                    post,
-                                );
-                                if (review) {
-                                    reviews.push(review);
-                                }
+                        if (post.message) {
+                            const review = this.transformCommentToReview(
+                                post,
+                            );
+                            if (review) {
+                                reviews.push(review);
                             }
                         }
                     }
+                } else {
+                    console.warn(
+                        `Failed to fetch posts: ${postsResponse.status} ${postsResponse.statusText}`,
+                    );
                 }
             } catch (postsError) {
                 console.warn("Failed to fetch page posts:", postsError);
@@ -177,31 +192,68 @@ export class FacebookProvider implements PlatformProvider {
     }
 
     private transformRatingToReview(rating: any): StandardReview | null {
-        if (!rating.reviewer || !rating.review_text) {
+        // Validate required fields
+        if (!rating || !rating.review_text) {
             return null;
         }
 
+        // Extract additional reviewer information
+        const reviewer = rating.reviewer ??
+            { id: `anonymous`, name: "anonymous" };
+        const reviewerId = reviewer.id;
+        const reviewerName = reviewer.name;
+        const reviewerPicture = reviewer.picture?.url ||
+            reviewer.picture?.data?.url;
+        const reviewerProfileLink = reviewer.link;
+
+        // Validate and normalize rating
+        let normalizedRating = rating.rating ?? 0;
+        if (typeof normalizedRating !== "number" || isNaN(normalizedRating)) {
+            normalizedRating = 0;
+        }
+        // Ensure rating is within valid range (0-5)
+        normalizedRating = Math.max(0, Math.min(5, normalizedRating));
+
+        // Validate and normalize published date
+        let publishedDate: Date;
+        try {
+            publishedDate = new Date(rating.created_time);
+            if (isNaN(publishedDate.getTime())) {
+                publishedDate = new Date(); // Fallback to current date
+            }
+        } catch (error) {
+            publishedDate = new Date(); // Fallback to current date
+        }
+
         return {
-            externalId: rating.id,
-            authorName: rating.reviewer.name,
-            authorAvatar: rating.reviewer.picture?.data?.url,
-            rating: rating.rating, // Facebook ratings are already 1-5
+            externalId: rating.id ?? rating.created_time,
+            authorName: reviewerName,
+            authorAvatar: reviewerPicture,
+            rating: normalizedRating,
             content: rating.review_text,
             title: undefined,
-            publishedAt: new Date(rating.created_time),
+            publishedAt: publishedDate,
             replyContent: rating.response?.message,
             replyAt: rating.response
                 ? new Date(rating.response.created_time)
                 : undefined,
-            rawData: rating,
+            rawData: {
+                ...rating,
+                reviewer: {
+                    id: reviewerId,
+                    name: reviewerName,
+                    picture: reviewerPicture,
+                    profile_link: reviewerProfileLink,
+                },
+            },
         };
     }
 
     private transformCommentToReview(
-        comment: any,
         post: any,
     ): StandardReview | null {
-        if (!comment.from || !comment.message) {
+        // Validate required fields
+        if (!post || !post.message) {
             return null;
         }
 
@@ -218,7 +270,7 @@ export class FacebookProvider implements PlatformProvider {
             "recommend",
             "avoid",
         ];
-        const messageLower = comment.message.toLowerCase();
+        const messageLower = post.message.toLowerCase();
         const isReview = reviewKeywords.some((keyword) =>
             messageLower.includes(keyword)
         );
@@ -227,17 +279,39 @@ export class FacebookProvider implements PlatformProvider {
             return null;
         }
 
+        // Extract additional reviewer information from comment
+        const reviewer = { id: `anonymous`, name: "anonymous" };
+        const reviewerId = reviewer.id;
+        const reviewerName = reviewer.name;
+
+        // Validate and normalize published date
+        let publishedDate: Date;
+        try {
+            publishedDate = new Date(post.created_time);
+            if (isNaN(publishedDate.getTime())) {
+                publishedDate = new Date(); // Fallback to current date
+            }
+        } catch (error) {
+            publishedDate = new Date(); // Fallback to current date
+        }
+
         return {
-            externalId: `comment_${comment.id}`,
-            authorName: comment.from.name,
-            authorAvatar: comment.from.picture?.data?.url,
+            externalId: post.id,
+            authorName: reviewerName,
+            authorAvatar: undefined,
             rating: 0, // Comments don't have ratings, will be analyzed by AI later
-            content: comment.message,
+            content: post.message,
             title: undefined,
-            publishedAt: new Date(comment.created_time),
+            publishedAt: publishedDate,
             replyContent: undefined,
             replyAt: undefined,
-            rawData: { comment, post },
+            rawData: {
+                ...post,
+                reviewer: {
+                    id: reviewerId,
+                    name: reviewerName,
+                },
+            },
         };
     }
 }

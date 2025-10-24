@@ -17,7 +17,7 @@ export const PLATFORM_REGISTRY: Record<string, PlatformRegistryEntry> = {
         color: "#1877F2",
         iconUrl: "https://static.xx.fbcdn.net/rsrc.php/v3/yx/r/pyNVUg5EM0j.png",
         status: "active",
-        provider: new FacebookProvider(),
+        provider: null, // Will be lazily initialized
     },
     google: {
         name: "google",
@@ -60,7 +60,14 @@ export function getPlatformProvider(
     platformName: string,
 ): PlatformProvider | null {
     const platform = PLATFORM_REGISTRY[platformName];
-    return platform?.provider || null;
+    if (!platform) return null;
+
+    // Lazy initialization for Facebook provider to avoid circular dependencies
+    if (platformName === "facebook" && !platform.provider) {
+        platform.provider = new FacebookProvider();
+    }
+
+    return platform.provider;
 }
 
 export function getActivePlatforms(): PlatformRegistryEntry[] {

@@ -6,6 +6,7 @@ import {
   Facebook as FacebookIcon,
   FilterList as FilterListIcon,
   Google as GoogleIcon,
+  Refresh as RefreshIcon,
   RateReview as ReviewIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
@@ -46,7 +47,11 @@ import {
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
-import { getAllPlatforms } from "../services/platforms/platformRegistry";
+import {
+  getAllPlatforms,
+  getPlatformConfig,
+} from "../services/platforms/platformRegistry";
+import { ReviewsService } from "../services/reviewsService";
 
 interface CompanyDetails {
   id: string;
@@ -122,6 +127,7 @@ export const CompanyPage = () => {
   const navigate = useNavigate();
   const {
     connectPlatform,
+    fetchReviews,
     connecting,
     error: platformError,
     success: platformSuccess,
@@ -136,6 +142,24 @@ export const CompanyPage = () => {
   const [sentimentData, setSentimentData] = useState<SentimentData | null>(
     null
   );
+  const [locationConnections, setLocationConnections] = useState<
+    Record<
+      string,
+      Array<{
+        id: string;
+        platform_id: string;
+        platform_location_id: string;
+        platform_url?: string;
+        is_active: boolean;
+        last_sync_at?: string;
+        platform: {
+          name: string;
+          display_name: string;
+          icon_url?: string;
+        };
+      }>
+    >
+  >({});
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState("");
 
@@ -252,6 +276,28 @@ export const CompanyPage = () => {
             })
           );
           setLocations(locationsWithStats);
+
+          // Fetch platform connections for each location
+          const reviewsService = new ReviewsService(supabase);
+          const connectionsMap: Record<string, any[]> = {};
+
+          for (const location of locationsWithStats) {
+            try {
+              const connections =
+                await reviewsService.getLocationPlatformConnections(
+                  location.id
+                );
+              connectionsMap[location.id] = connections;
+            } catch (err) {
+              console.error(
+                `Error fetching connections for location ${location.id}:`,
+                err
+              );
+              connectionsMap[location.id] = [];
+            }
+          }
+
+          setLocationConnections(connectionsMap);
         }
 
         // Fetch reviews for this company with filters
@@ -702,6 +748,20 @@ export const CompanyPage = () => {
   const handleCloseComingSoon = () => {
     setComingSoonOpen(false);
     setSelectedPlatform("");
+  };
+
+  const handleFetchReviewsForConnection = async (
+    connectionId: string,
+    platformName: string,
+    pageId: string
+  ) => {
+    try {
+      await fetchReviews(platformName, pageId, connectionId);
+      // Refresh data after successful fetch
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch reviews");
+    }
   };
 
   const platforms = getAllPlatforms();
@@ -1265,54 +1325,139 @@ export const CompanyPage = () => {
                   gap: 2,
                 }}
               >
-                {locations.map((location) => (
-                  <Card key={location.id} variant="outlined">
-                    <CardContent>
-                      <Stack spacing={1}>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          {location.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {location.address}, {location.city}, {location.state}
-                        </Typography>
-                        <Divider />
-                        <Stack direction="row" spacing={3}>
-                          <Box>
-                            <Typography variant="h6" fontWeight={600}>
-                              {location.total_reviews}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              Reviews
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                            >
-                              <Typography variant="h6" fontWeight={600}>
-                                {location.average_rating.toFixed(1)}
+                {locations.map((location) => {
+                  const connections = locationConnections[location.id] || [];
+
+                  return (
+                    <Card key={location.id} variant="outlined">
+                      <CardContent>
+                        <Stack spacing={2}>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                          >
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {location.name}
                               </Typography>
-                              <StarIcon
-                                sx={{ color: "warning.main", fontSize: "1rem" }}
-                              />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {location.address}, {location.city},{" "}
+                                {location.state}
+                              </Typography>
+                            </Box>
+
+                            {/* Platform Connection Badges */}
+                            {connections.length > 0 && (
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                              >
+                                {connections.map((connection) => {
+                                  const platformConfig = getPlatformConfig(
+                                    connection.platform.name
+                                  );
+                                  const platformColor =
+                                    platformConfig?.color || "#666666";
+
+                                  return (
+                                    <Chip
+                                      key={connection.id}
+                                      label={connection.platform.display_name}
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: platformColor,
+                                        color: "white",
+                                        fontWeight: 500,
+                                        "& .MuiChip-label": {
+                                          fontSize: "0.75rem",
+                                        },
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </Stack>
+                            )}
+                          </Stack>
+
+                          <Divider />
+
+                          <Stack direction="row" spacing={3}>
+                            <Box>
+                              <Typography variant="h6" fontWeight={600}>
+                                {location.total_reviews}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Reviews
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
+                              >
+                                <Typography variant="h6" fontWeight={600}>
+                                  {location.average_rating.toFixed(1)}
+                                </Typography>
+                                <StarIcon
+                                  sx={{
+                                    color: "warning.main",
+                                    fontSize: "1rem",
+                                  }}
+                                />
+                              </Stack>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Avg Rating
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* Fetch Reviews Buttons */}
+                          {connections.length > 0 && (
+                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                              {connections.map((connection) => (
+                                <Button
+                                  key={connection.id}
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<RefreshIcon />}
+                                  onClick={() =>
+                                    handleFetchReviewsForConnection(
+                                      connection.id,
+                                      connection.platform.name,
+                                      connection.platform_location_id
+                                    )
+                                  }
+                                  disabled={connecting}
+                                  sx={{
+                                    borderRadius: 980,
+                                    textTransform: "none",
+                                    fontSize: "0.75rem",
+                                    minWidth: "auto",
+                                    px: 2,
+                                  }}
+                                >
+                                  Fetch {connection.platform.display_name}
+                                </Button>
+                              ))}
                             </Stack>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              Avg Rating
-                            </Typography>
-                          </Box>
+                          )}
                         </Stack>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </Box>
             ) : (
               <Box sx={{ textAlign: "center", py: 4 }}>
