@@ -65,6 +65,24 @@ export function usePlatformIntegration() {
                 reviews,
             );
 
+            // Trigger sentiment analysis for new reviews
+            if (stats.reviewsNew > 0) {
+                try {
+                    await supabase.functions.invoke(
+                        "perform-sentiment-analysis",
+                        {
+                            body: { connectionId: connection.id },
+                        },
+                    );
+                    console.log(
+                        `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
+                    );
+                } catch (err) {
+                    console.error("Failed to trigger sentiment analysis:", err);
+                    // Don't fail the whole operation if sentiment analysis fails
+                }
+            }
+
             // Create sync log
             await reviewsService.createSyncLog(connection.id, stats);
 
@@ -125,6 +143,24 @@ export function usePlatformIntegration() {
                 platformConnectionId,
                 reviews,
             );
+
+            // Trigger sentiment analysis for new reviews
+            if (stats.reviewsNew > 0) {
+                try {
+                    await supabase.functions.invoke(
+                        "perform-sentiment-analysis",
+                        {
+                            body: { connectionId: platformConnectionId },
+                        },
+                    );
+                    console.log(
+                        `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
+                    );
+                } catch (err) {
+                    console.error("Failed to trigger sentiment analysis:", err);
+                    // Don't fail the whole operation if sentiment analysis fails
+                }
+            }
 
             // Create sync log
             await reviewsService.createSyncLog(platformConnectionId, stats);
