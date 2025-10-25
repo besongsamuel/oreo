@@ -1,6 +1,7 @@
 import {
   Add as AddIcon,
   Business as BusinessIcon,
+  Refresh as RefreshIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
@@ -9,12 +10,15 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { getPlatformConfig } from "../services/platforms/platformRegistry";
 
 interface Location {
@@ -46,14 +50,39 @@ interface LocationComponentProps {
   locations: Location[];
   locationConnections: Record<string, LocationConnection[]>;
   companyId: string;
+  onReviewsFetched?: () => void; // Callback to refresh data after fetching reviews
 }
 
 export const LocationComponent = ({
   locations,
   locationConnections,
   companyId,
+  onReviewsFetched,
 }: LocationComponentProps) => {
   const navigate = useNavigate();
+  const { fetchReviews, connecting, error, success } = usePlatformIntegration();
+  const [fetchingForConnection, setFetchingForConnection] = useState<
+    string | null
+  >(null);
+
+  const handleFetchReviews = async (connection: LocationConnection) => {
+    setFetchingForConnection(connection.id);
+    try {
+      const result = await fetchReviews(
+        connection.platform.name,
+        connection.platform_location_id,
+        connection.id
+      );
+
+      if (result.success && onReviewsFetched) {
+        onReviewsFetched();
+      }
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
+    } finally {
+      setFetchingForConnection(null);
+    }
+  };
 
   if (locations.length === 0) {
     return (
@@ -166,6 +195,67 @@ export const LocationComponent = ({
                       </Stack>
                     )}
                   </Stack>
+
+                  {/* Fetch Reviews Buttons */}
+                  {connections.length > 0 && (
+                    <Stack spacing={1}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={500}
+                      >
+                        Fetch Reviews:
+                      </Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap">
+                        {connections.map((connection) => {
+                          const platformConfig = getPlatformConfig(
+                            connection.platform.name
+                          );
+                          const platformColor =
+                            platformConfig?.color || "#666666";
+                          const isFetching =
+                            fetchingForConnection === connection.id;
+
+                          return (
+                            <Button
+                              key={`fetch-${connection.id}`}
+                              variant="outlined"
+                              size="small"
+                              startIcon={
+                                isFetching ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <RefreshIcon />
+                                )
+                              }
+                              onClick={() => handleFetchReviews(connection)}
+                              disabled={isFetching || connecting}
+                              sx={{
+                                borderRadius: 980,
+                                textTransform: "none",
+                                fontWeight: 500,
+                                fontSize: "0.75rem",
+                                borderColor: platformColor,
+                                color: platformColor,
+                                "&:hover": {
+                                  borderColor: platformColor,
+                                  backgroundColor: `${platformColor}08`,
+                                },
+                                "&:disabled": {
+                                  borderColor: "text.disabled",
+                                  color: "text.disabled",
+                                },
+                              }}
+                            >
+                              {isFetching
+                                ? "Fetching..."
+                                : `Fetch ${connection.platform.display_name}`}
+                            </Button>
+                          );
+                        })}
+                      </Stack>
+                    </Stack>
+                  )}
 
                   <Divider />
 

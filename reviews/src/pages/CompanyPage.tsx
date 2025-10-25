@@ -1308,6 +1308,53 @@ export const CompanyPage = () => {
               locations={locations}
               locationConnections={locationConnections}
               companyId={companyId}
+              onReviewsFetched={() => {
+                // Refresh reviews data after fetching
+                const refreshReviews = async () => {
+                  try {
+                    let reviewsQuery = supabase
+                      .from("recent_reviews")
+                      .select("*")
+                      .eq("company_id", companyId);
+
+                    // Apply location filter
+                    if (filterLocation !== "all") {
+                      reviewsQuery = reviewsQuery.eq(
+                        "location_name",
+                        filterLocation
+                      );
+                    }
+
+                    // Apply date range filters
+                    if (filterStartDate) {
+                      reviewsQuery = reviewsQuery.gte(
+                        "published_at",
+                        filterStartDate
+                      );
+                    }
+                    if (filterEndDate) {
+                      reviewsQuery = reviewsQuery.lte(
+                        "published_at",
+                        filterEndDate
+                      );
+                    }
+
+                    const { data: reviewsData, error: reviewsError } =
+                      await reviewsQuery
+                        .order("published_at", { ascending: false })
+                        .limit(50);
+
+                    if (reviewsError) {
+                      console.error("Error refreshing reviews:", reviewsError);
+                    } else {
+                      setReviews(reviewsData || []);
+                    }
+                  } catch (err) {
+                    console.error("Error refreshing reviews data:", err);
+                  }
+                };
+                refreshReviews();
+              }}
             />
           )}
 

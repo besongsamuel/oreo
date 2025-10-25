@@ -130,52 +130,52 @@ export class ReviewsService {
         reviews: StandardReview[],
     ): Promise<SyncStats> {
         let reviewsNew = 0;
-        let reviewsUpdated = 0;
         const errors: string[] = [];
 
         for (const review of reviews) {
             try {
-                const { data, error } = await this.supabase
+                // First check if review already exists
+                const { data: existingReview, error: checkError } = await this
+                    .supabase
                     .from("reviews")
-                    .upsert({
-                        platform_connection_id: platformConnectionId,
-                        external_id: review.externalId,
-                        author_name: review.authorName,
-                        author_avatar_url: review.authorAvatar,
-                        rating: review.rating,
-                        title: review.title,
-                        content: review.content,
-                        published_at: review.publishedAt.toISOString(),
-                        reply_content: review.replyContent,
-                        reply_at: review.replyAt?.toISOString(),
-                        raw_data: review.rawData,
-                        updated_at: new Date().toISOString(),
-                    }, {
-                        onConflict: "platform_connection_id,external_id",
-                    })
-                    .select("id")
-                    .single();
+                    .select("id, created_at")
+                    .eq("platform_connection_id", platformConnectionId)
+                    .eq("external_id", review.externalId)
+                    .maybeSingle();
 
-                if (error) {
+                if (checkError) {
                     errors.push(
-                        `Failed to save review ${review.externalId}: ${error.message}`,
+                        `Failed to check existing review ${review.externalId}: ${checkError.message}`,
                     );
-                } else {
-                    // Check if this was a new review or update
-                    const { data: existing } = await this.supabase
-                        .from("reviews")
-                        .select("created_at")
-                        .eq("id", data.id)
-                        .single();
+                    continue;
+                }
 
-                    if (
-                        existing &&
-                        new Date(existing.created_at).getTime() ===
-                            new Date().getTime()
-                    ) {
-                        reviewsNew++;
+                const reviewData = {
+                    platform_connection_id: platformConnectionId,
+                    external_id: review.externalId,
+                    author_name: review.authorName,
+                    author_avatar_url: review.authorAvatar,
+                    rating: review.rating,
+                    title: review.title,
+                    content: review.content,
+                    published_at: review.publishedAt.toISOString(),
+                    reply_content: review.replyContent,
+                    reply_at: review.replyAt?.toISOString(),
+                    raw_data: review.rawData,
+                    updated_at: new Date().toISOString(),
+                };
+
+                if (!existingReview) {
+                    const { error: insertError } = await this.supabase
+                        .from("reviews")
+                        .insert(reviewData);
+
+                    if (insertError) {
+                        errors.push(
+                            `Failed to insert review ${review.externalId}: ${insertError.message}`,
+                        );
                     } else {
-                        reviewsUpdated++;
+                        reviewsNew++;
                     }
                 }
             } catch (err: any) {
@@ -188,7 +188,7 @@ export class ReviewsService {
         return {
             reviewsFetched: reviews.length,
             reviewsNew,
-            reviewsUpdated,
+            reviewsUpdated: 0,
             errorMessage: errors.length > 0 ? errors.join("; ") : undefined,
         };
     }

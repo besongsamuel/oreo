@@ -39,10 +39,16 @@ Deno.serve(async (req: Request) => {
         }
 
         // Query for unanalyzed reviews (batch of 50)
+        // Find reviews that don't have corresponding sentiment_analysis entries
         const { data: reviews, error: reviewsError } = await supabaseClient
             .from("reviews")
-            .select("id, content, rating")
-            .is("sentiment_analysis", null)
+            .select(`
+                id, 
+                content, 
+                rating,
+                sentiment_analysis!left(review_id)
+            `)
+            .is("sentiment_analysis.review_id", null)
             .limit(50);
 
         if (reviewsError) {
@@ -85,7 +91,13 @@ Deno.serve(async (req: Request) => {
         };
 
         // Process each review
-        for (const review of reviews as ProcessedReview[]) {
+        for (const review of reviews) {
+            // Extract the review data (ignore the sentiment_analysis relation)
+            const reviewData = {
+                id: review.id,
+                content: review.content,
+                rating: review.rating,
+            };
             try {
                 // Call OpenAI API for sentiment analysis
                 const openaiResponse = await fetch(
@@ -111,7 +123,8 @@ Example response: {"sentiment": "positive", "score": 85, "emotions": ["ðŸ˜Š", "ð
                                 },
                                 {
                                     role: "user",
-                                    content: `Review text: "${review.content}"`,
+                                    content:
+                                        `Review text: "${reviewData.content}"`,
                                 },
                             ],
                             temperature: 0.3,
@@ -163,7 +176,7 @@ Example response: {"sentiment": "positive", "score": 85, "emotions": ["ðŸ˜Š", "ð
                 const { error: insertError } = await supabaseClient
                     .from("sentiment_analysis")
                     .insert({
-                        review_id: review.id,
+                        review_id: reviewData.id,
                         sentiment: analysisResult.sentiment,
                         sentiment_score: sentimentScore,
                         emotions: analysisResult.emotions
@@ -181,11 +194,12 @@ Example response: {"sentiment": "positive", "score": 85, "emotions": ["ðŸ˜Š", "ð
 
                 result.processed++;
                 console.log(
-                    `Processed review ${review.id}: ${analysisResult.sentiment} (${analysisResult.score})`,
+                    `Processed review ${reviewData.id}: ${analysisResult.sentiment} (${analysisResult.score})`,
                 );
             } catch (error) {
                 result.failed++;
-                const errorMessage = `Review ${review.id}: ${error.message}`;
+                const errorMessage =
+                    `Review ${reviewData.id}: ${error.message}`;
                 result.errors.push(errorMessage);
                 console.error(errorMessage);
                 // Continue processing other reviews

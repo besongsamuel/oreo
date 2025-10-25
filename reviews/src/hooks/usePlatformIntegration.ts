@@ -126,16 +126,30 @@ export function usePlatformIntegration() {
 
             const reviewsService = new ReviewsService(supabase);
 
-            // Get platform connection to retrieve stored access token
-            const connection = await reviewsService.getPlatformConnection(
-                platformConnectionId,
-            );
-            const pageAccessToken = connection.access_token;
+            // Authenticate with the platform to get access token
+            const accessToken = await provider.authenticate();
+
+            // Get user pages to find the specific page and its token
+            const userPages = await provider.getUserPages(accessToken);
+            const targetPage = userPages.find((page) => page.id === pageId);
+
+            if (!targetPage) {
+                throw new Error(`Page ${pageId} not found in user pages`);
+            }
+
+            // Get the page access token from the page metadata
+            const pageAccessToken = targetPage.metadata?.accessToken;
+            if (!pageAccessToken) {
+                throw new Error(`No access token found for page ${pageId}`);
+            }
 
             // Fetch reviews with page access token
             const reviews = await provider.fetchReviews(
                 pageId,
-                pageAccessToken || "",
+                pageAccessToken,
+                {
+                    pageAccessToken,
+                },
             );
 
             // Save reviews to database
