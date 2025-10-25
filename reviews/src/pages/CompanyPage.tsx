@@ -1,17 +1,11 @@
 import {
-  Add as AddIcon,
   ArrowBack as ArrowBackIcon,
-  Business as BusinessIcon,
   Close as CloseIcon,
-  Facebook as FacebookIcon,
   FilterList as FilterListIcon,
-  Google as GoogleIcon,
-  RateReview as ReviewIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   Card,
@@ -36,6 +30,12 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  CompanyHeader,
+  FetchPlatformReviews,
+  LocationComponent,
+  ReviewComponent,
+} from "../components";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
@@ -46,10 +46,7 @@ import {
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
-import {
-  getAllPlatforms,
-  getPlatformConfig,
-} from "../services/platforms/platformRegistry";
+import { getAllPlatforms } from "../services/platforms/platformRegistry";
 import { PlatformPage } from "../services/platforms/types";
 import { ReviewsService } from "../services/reviewsService";
 
@@ -826,9 +823,39 @@ export const CompanyPage = () => {
         );
       }
 
-      // Refresh reviews data (this will trigger the filtered data useEffect)
-      // We don't need to manually refresh reviews as the filtered data useEffect will handle it
-      // when the component re-renders
+      // Refresh reviews data
+      try {
+        // Fetch reviews for this company with current filters
+        let reviewsQuery = supabase
+          .from("recent_reviews")
+          .select("*")
+          .eq("company_id", companyId);
+
+        // Apply location filter
+        if (filterLocation !== "all") {
+          reviewsQuery = reviewsQuery.eq("location_name", filterLocation);
+        }
+
+        // Apply date range filters
+        if (filterStartDate) {
+          reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
+        }
+        if (filterEndDate) {
+          reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
+        }
+
+        const { data: reviewsData, error: reviewsError } = await reviewsQuery
+          .order("published_at", { ascending: false })
+          .limit(50);
+
+        if (reviewsError) {
+          console.error("Error refreshing reviews:", reviewsError);
+        } else {
+          setReviews(reviewsData || []);
+        }
+      } catch (err) {
+        console.error("Error refreshing reviews data:", err);
+      }
     } catch (error) {
       console.error("Error refreshing data after platform connection:", error);
     }
@@ -1043,49 +1070,7 @@ export const CompanyPage = () => {
           </Button>
 
           {/* Company Header */}
-          <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-            <Stack
-              direction="row"
-              spacing={{ xs: 2, sm: 3 }}
-              alignItems="flex-start"
-            >
-              <Avatar
-                sx={{
-                  bgcolor: "secondary.main",
-                  width: { xs: 48, sm: 56, md: 72 },
-                  height: { xs: 48, sm: 56, md: 72 },
-                }}
-              >
-                <BusinessIcon sx={{ fontSize: { xs: 24, sm: 32, md: 40 } }} />
-              </Avatar>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography
-                  variant="h3"
-                  component="h1"
-                  gutterBottom
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
-                >
-                  {company.name}
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  alignItems="center"
-                  flexWrap="wrap"
-                >
-                  <Chip label={company.industry} variant="outlined" />
-                  <Typography variant="body2" color="text.secondary">
-                    {company.total_locations} location
-                    {company.total_locations !== 1 ? "s" : ""}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Member since{" "}
-                    {new Date(company.created_at).toLocaleDateString()}
-                  </Typography>
-                </Stack>
-              </Box>
-            </Stack>
-          </Paper>
+          <CompanyHeader company={company} />
 
           {/* Page-level Filters */}
           <Paper
@@ -1234,93 +1219,11 @@ export const CompanyPage = () => {
           </Paper>
 
           {/* Fetch Reviews Section */}
-          <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-            <Typography
-              variant="h5"
-              gutterBottom
-              sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
-            >
-              Fetch Reviews from Platforms
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Connect to review platforms to import and analyze customer
-              feedback
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "repeat(2, 1fr)",
-                  sm: "repeat(3, 1fr)",
-                  md: "repeat(4, 1fr)",
-                  lg: "repeat(5, 1fr)",
-                },
-                gap: { xs: 1.5, sm: 2 },
-              }}
-            >
-              {platforms.map((platform) => {
-                // Get the appropriate icon for each platform
-                const getPlatformIcon = (platformName: string) => {
-                  switch (platformName.toLowerCase()) {
-                    case "facebook":
-                      return <FacebookIcon />;
-                    case "google":
-                      return <GoogleIcon />;
-                    case "yelp":
-                    case "tripadvisor":
-                      return <ReviewIcon />;
-                    case "trustpilot":
-                      return <StarIcon />;
-                    default:
-                      return <ReviewIcon />;
-                  }
-                };
-
-                return (
-                  <Button
-                    key={platform.name}
-                    variant="outlined"
-                    size="large"
-                    startIcon={getPlatformIcon(platform.name)}
-                    onClick={() => handleFetchReviews(platform.displayName)}
-                    disabled={platform.status !== "active" || connecting}
-                    sx={{
-                      py: 2,
-                      borderRadius: 3,
-                      borderColor: "divider",
-                      color: "text.primary",
-                      "&:hover": {
-                        borderColor: platform.color,
-                        bgcolor: `${platform.color}08`,
-                        "& .MuiSvgIcon-root": {
-                          color: platform.color,
-                        },
-                      },
-                      "& .MuiSvgIcon-root": {
-                        fontSize: "1.5rem",
-                      },
-                      opacity: platform.status !== "active" ? 0.6 : 1,
-                    }}
-                  >
-                    {platform.displayName}
-                    {platform.status === "coming_soon" && (
-                      <Chip
-                        label="Soon"
-                        size="small"
-                        sx={{
-                          ml: 1,
-                          height: 20,
-                          fontSize: "0.7rem",
-                          bgcolor: "text.secondary",
-                          color: "white",
-                        }}
-                      />
-                    )}
-                  </Button>
-                );
-              })}
-            </Box>
-          </Paper>
+          <FetchPlatformReviews
+            platforms={platforms}
+            connecting={connecting}
+            onPlatformClick={handleFetchReviews}
+          />
 
           {/* Stats Overview */}
           <Box
@@ -1400,176 +1303,13 @@ export const CompanyPage = () => {
           {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
 
           {/* Locations */}
-          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 2 }}
-            >
-              <Typography variant="h6">Locations</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  navigate(`/companies/${companyId}/locations/new`)
-                }
-                sx={{
-                  borderRadius: 980,
-                  textTransform: "none",
-                  fontWeight: 500,
-                }}
-              >
-                Add Location
-              </Button>
-            </Stack>
-
-            {locations.length > 0 ? (
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    md: "repeat(2, 1fr)",
-                  },
-                  gap: 2,
-                }}
-              >
-                {locations.map((location) => {
-                  const connections = locationConnections[location.id] || [];
-
-                  return (
-                    <Card key={location.id} variant="outlined">
-                      <CardContent>
-                        <Stack spacing={2}>
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="flex-start"
-                          >
-                            <Box>
-                              <Typography variant="subtitle1" fontWeight={600}>
-                                {location.name}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {location.address}, {location.city},{" "}
-                                {location.state}
-                              </Typography>
-                            </Box>
-
-                            {/* Platform Connection Badges */}
-                            {connections.length > 0 && (
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                              >
-                                {connections.map((connection) => {
-                                  const platformConfig = getPlatformConfig(
-                                    connection.platform.name
-                                  );
-                                  const platformColor =
-                                    platformConfig?.color || "#666666";
-
-                                  return (
-                                    <Chip
-                                      key={connection.id}
-                                      label={connection.platform.display_name}
-                                      size="small"
-                                      sx={{
-                                        backgroundColor: platformColor,
-                                        color: "white",
-                                        fontWeight: 500,
-                                        "& .MuiChip-label": {
-                                          fontSize: "0.75rem",
-                                        },
-                                      }}
-                                    />
-                                  );
-                                })}
-                              </Stack>
-                            )}
-                          </Stack>
-
-                          <Divider />
-
-                          <Stack direction="row" spacing={3}>
-                            <Box>
-                              <Typography variant="h6" fontWeight={600}>
-                                {location.total_reviews}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Reviews
-                              </Typography>
-                            </Box>
-                            <Box>
-                              <Stack
-                                direction="row"
-                                spacing={0.5}
-                                alignItems="center"
-                              >
-                                <Typography variant="h6" fontWeight={600}>
-                                  {location.average_rating.toFixed(1)}
-                                </Typography>
-                                <StarIcon
-                                  sx={{
-                                    color: "warning.main",
-                                    fontSize: "1rem",
-                                  }}
-                                />
-                              </Stack>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Avg Rating
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: "center", py: 4 }}>
-                <BusinessIcon
-                  sx={{ fontSize: 64, color: "text.secondary", mb: 2 }}
-                />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No locations yet
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 3 }}
-                >
-                  Add your first location to start tracking reviews
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() =>
-                    navigate(`/companies/${companyId}/locations/new`)
-                  }
-                  sx={{
-                    borderRadius: 980,
-                    textTransform: "none",
-                    fontWeight: 500,
-                  }}
-                >
-                  Add Location
-                </Button>
-              </Box>
-            )}
-          </Paper>
+          {companyId && (
+            <LocationComponent
+              locations={locations}
+              locationConnections={locationConnections}
+              companyId={companyId}
+            />
+          )}
 
           {/* Keyword Analysis */}
           {keywordAnalysis.length > 0 && (
@@ -1769,81 +1509,11 @@ export const CompanyPage = () => {
             ) : (
               <Stack spacing={2}>
                 {filteredReviews.map((review) => (
-                  <Card key={review.id} variant="outlined">
-                    <CardContent>
-                      <Stack spacing={1}>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="flex-start"
-                        >
-                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              flexWrap="wrap"
-                            >
-                              <Typography variant="subtitle1" fontWeight="bold">
-                                {review.author_name || "Anonymous"}
-                              </Typography>
-                              <Chip
-                                label={review.platform_name}
-                                size="small"
-                                variant="outlined"
-                              />
-                            </Stack>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              display="block"
-                            >
-                              {review.location_name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {new Date(
-                                review.published_at
-                              ).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                          >
-                            <Typography variant="body2" fontWeight="bold">
-                              {review.rating.toFixed(1)}
-                            </Typography>
-                            <StarIcon
-                              fontSize="small"
-                              sx={{ color: "warning.main" }}
-                            />
-                            {review.sentiment && (
-                              <Chip
-                                label={review.sentiment}
-                                size="small"
-                                color={getSentimentColor(review.sentiment)}
-                              />
-                            )}
-                          </Stack>
-                        </Stack>
-                        {review.title && (
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {review.title}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary">
-                          {review.content?.substring(0, 200)}
-                          {review.content && review.content.length > 200
-                            ? "..."
-                            : ""}
-                        </Typography>
-                      </Stack>
-                    </CardContent>
-                  </Card>
+                  <ReviewComponent
+                    key={review.id}
+                    review={review}
+                    getSentimentColor={getSentimentColor}
+                  />
                 ))}
               </Stack>
             )}

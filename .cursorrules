@@ -86,6 +86,75 @@ if (loading) {
 - Lazy load when appropriate
 - Minimize layout shifts
 
+## Component Architecture
+
+### Self-Contained Components (REQUIRED)
+
+**ALWAYS create self-contained components with minimal dependencies.**
+
+#### Implementation Requirements:
+
+1. **Minimal Props**: Only pass essential data, avoid passing entire objects when possible
+2. **Self-Contained Logic**: Include all necessary logic within the component
+3. **Clear Interfaces**: Define explicit prop interfaces with TypeScript
+4. **Single Responsibility**: Each component should have one clear purpose
+5. **Reusable**: Components should be reusable across different contexts
+6. **No External Dependencies**: Avoid dependencies on specific parent components
+
+#### Component Creation Guidelines:
+
+```tsx
+// ✅ GOOD - Self-contained component
+interface UserCardProps {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  onEdit: (userId: string) => void;
+}
+
+export const UserCard = ({
+  userId,
+  userName,
+  userEmail,
+  onEdit,
+}: UserCardProps) => {
+  // All logic contained within component
+  const handleEdit = () => onEdit(userId);
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">{userName}</Typography>
+        <Typography variant="body2">{userEmail}</Typography>
+        <Button onClick={handleEdit}>Edit</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ❌ BAD - Tightly coupled component
+interface BadUserCardProps {
+  user: User; // Passing entire object
+  company: Company; // Unnecessary dependency
+  onEdit: (user: User, company: Company) => void; // Complex callback
+}
+```
+
+#### Benefits:
+
+- **Reusability**: Components can be used in multiple contexts
+- **Testability**: Easier to unit test with clear interfaces
+- **Maintainability**: Changes to one component don't affect others
+- **Performance**: Smaller prop changes trigger fewer re-renders
+- **Clarity**: Clear separation of concerns
+
+#### Examples of Self-Contained Components:
+
+- `CompanyHeader` - Takes company data, renders header
+- `FetchPlatformReviews` - Takes platforms array, renders platform buttons
+- `ReviewCard` - Takes review data, renders review display
+- `LocationCard` - Takes location data, renders location info
+
 ## MUI Grid Component Fix
 
 ### Problem

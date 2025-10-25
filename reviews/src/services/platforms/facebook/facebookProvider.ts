@@ -197,8 +197,10 @@ export class FacebookProvider implements PlatformProvider {
             return null;
         }
 
-        // Extract external ID (id if present, else fallback to created_time)
-        const externalId = rating.id ?? rating.created_time;
+        // Generate hash-based external ID from created_time and review_text
+        const externalId = this.generateHash(
+            rating.created_time + rating.review_text,
+        );
 
         // Extract author information from 'from' field if available
         let authorName = "anonymous";
@@ -307,5 +309,22 @@ export class FacebookProvider implements PlatformProvider {
             replyAt: undefined,
             rawData,
         };
+    }
+
+    /**
+     * Generate a deterministic hash from a string input
+     * Uses a simple hash function that's consistent across runs
+     */
+    private generateHash(input: string): string {
+        let hash = 0;
+        if (input.length === 0) return hash.toString();
+
+        for (let i = 0; i < input.length; i++) {
+            const char = input.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+
+        return Math.abs(hash).toString(36);
     }
 }
