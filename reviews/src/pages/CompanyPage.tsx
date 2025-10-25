@@ -127,7 +127,6 @@ export const CompanyPage = () => {
   const navigate = useNavigate();
   const {
     connectPlatform,
-    fetchReviews,
     connecting,
     error: platformError,
     success: platformSuccess,
@@ -179,8 +178,9 @@ export const CompanyPage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
 
+  // Initial data loading - only runs once
   useEffect(() => {
-    const fetchCompanyData = async () => {
+    const fetchInitialData = async () => {
       if (!profile || !companyId) {
         setLoading(false);
         return;
@@ -238,6 +238,7 @@ export const CompanyPage = () => {
 
         if (locationsError) {
           console.error("Error fetching locations:", locationsError);
+          setLocations([]);
         } else {
           // For each location, get review stats through platform_connections
           const locationsWithStats = await Promise.all(
@@ -299,7 +300,22 @@ export const CompanyPage = () => {
 
           setLocationConnections(connectionsMap);
         }
+      } catch (error) {
+        console.error("Error fetching initial company data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchInitialData();
+  }, [supabase, profile, companyId, navigate]);
+
+  // Filtered data loading - runs when filters change
+  useEffect(() => {
+    const fetchFilteredData = async () => {
+      if (!companyId || loading) return;
+
+      try {
         // Fetch reviews for this company with filters
         let reviewsQuery = supabase
           .from("recent_reviews")
@@ -330,7 +346,11 @@ export const CompanyPage = () => {
         }
 
         // Fetch sentiment analysis data with filters
-        // First, get platform connection IDs for this company's locations
+        const { data: locationsData } = await supabase
+          .from("locations")
+          .select("id, name")
+          .eq("company_id", companyId);
+
         let filteredLocationIds = (locationsData || []).map(
           (loc: any) => loc.id
         );
@@ -520,7 +540,6 @@ export const CompanyPage = () => {
         }
 
         // Fetch keywords for this company's reviews
-        // Get location IDs (apply filter if needed)
         let keywordLocationIds = (locationsData || []).map(
           (loc: any) => loc.id
         );
@@ -619,21 +638,18 @@ export const CompanyPage = () => {
           setKeywords([]);
         }
       } catch (error) {
-        console.error("Error fetching company data:", error);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching filtered data:", error);
       }
     };
 
-    fetchCompanyData();
+    fetchFilteredData();
   }, [
-    supabase,
-    profile,
     companyId,
-    navigate,
     filterLocation,
     filterStartDate,
     filterEndDate,
+    loading,
+    supabase,
   ]);
 
   const analyzeKeywords = (keywordsData: Keyword[]) => {
@@ -722,6 +738,102 @@ export const CompanyPage = () => {
     }
   };
 
+  // Selective refresh function for after platform connection
+  const refreshDataAfterConnection = async (
+    platformName: string,
+    locationId: string
+  ) => {
+    try {
+      // Refresh company stats
+      const { data: statsData, error: statsError } = await supabase
+        .from("company_stats")
+        .select("*")
+        .eq("company_id", companyId)
+        .single();
+
+      if (!statsError && statsData && company) {
+        setCompany({
+          ...company,
+          total_reviews: statsData.total_reviews || 0,
+          average_rating: statsData.average_rating || 0,
+          positive_reviews: statsData.positive_reviews || 0,
+          negative_reviews: statsData.negative_reviews || 0,
+          neutral_reviews: statsData.neutral_reviews || 0,
+          total_locations: statsData.total_locations || 0,
+        });
+      }
+
+      // Refresh location stats for the specific location
+      const { data: locationData } = await supabase
+        .from("locations")
+        .select("*")
+        .eq("id", locationId)
+        .single();
+
+      if (locationData) {
+        // Get updated review stats for this location
+        const { data: platformConnections } = await supabase
+          .from("platform_connections")
+          .select("id")
+          .eq("location_id", locationId);
+
+        const platformConnectionIds =
+          platformConnections?.map((pc) => pc.id) || [];
+        let reviewStats: { rating: number }[] = [];
+
+        if (platformConnectionIds.length > 0) {
+          const { data } = await supabase
+            .from("reviews")
+            .select("rating")
+            .in("platform_connection_id", platformConnectionIds);
+          reviewStats = data || [];
+        }
+
+        const totalReviews = reviewStats.length;
+        const averageRating =
+          totalReviews > 0
+            ? reviewStats.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+
+        // Update the specific location in the locations array
+        setLocations((prevLocations) =>
+          prevLocations.map((loc) =>
+            loc.id === locationId
+              ? {
+                  ...loc,
+                  total_reviews: totalReviews,
+                  average_rating: averageRating,
+                }
+              : loc
+          )
+        );
+      }
+
+      // Refresh platform connections for this location
+      const reviewsService = new ReviewsService(supabase);
+      try {
+        const connections = await reviewsService.getLocationPlatformConnections(
+          locationId
+        );
+        setLocationConnections((prevConnections) => ({
+          ...prevConnections,
+          [locationId]: connections,
+        }));
+      } catch (err) {
+        console.error(
+          `Error refreshing connections for location ${locationId}:`,
+          err
+        );
+      }
+
+      // Refresh reviews data (this will trigger the filtered data useEffect)
+      // We don't need to manually refresh reviews as the filtered data useEffect will handle it
+      // when the component re-renders
+    } catch (error) {
+      console.error("Error refreshing data after platform connection:", error);
+    }
+  };
+
   const handlePlatformConnect = async (
     page: PlatformPage,
     locationId: string
@@ -735,8 +847,17 @@ export const CompanyPage = () => {
         page,
         locationId
       );
-      // Refresh data after successful connection by reloading the page
-      window.location.reload();
+
+      // Refresh only the necessary data after successful connection
+      await refreshDataAfterConnection(
+        selectedPlatform.toLowerCase(),
+        locationId
+      );
+
+      // Close the dialog
+      setPlatformDialogOpen(false);
+      setCompanyLocations([]);
+      setSelectedPlatform("");
     } catch (err: any) {
       setError(err.message || "Failed to connect platform");
     }

@@ -15,7 +15,7 @@ export const FACEBOOK_PERMISSIONS = [
     "pages_read_user_content",
 ];
 
-export const FACEBOOK_API_VERSION = "v18.0";
+export const FACEBOOK_API_VERSION = "v24.0";
 
 export const FACEBOOK_GRAPH_API_BASE =
     `https://graph.facebook.com/${FACEBOOK_API_VERSION}`;

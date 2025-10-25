@@ -146,7 +146,7 @@ export class FacebookProvider implements PlatformProvider {
             // Fetch page posts with comments (this should work with current permissions)
             try {
                 const postsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/posts?access_token=${tokenToUse}&limit=50`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/feed?fields=from,id,admin_creator,created_time,message&access_token=${tokenToUse}&limit=50`,
                 );
 
                 if (postsResponse.ok) {
@@ -200,6 +200,19 @@ export class FacebookProvider implements PlatformProvider {
         // Extract external ID (id if present, else fallback to created_time)
         const externalId = rating.id ?? rating.created_time;
 
+        // Extract author information from 'from' field if available
+        let authorName = "anonymous";
+        let authorId: string | undefined = undefined;
+
+        if (rating.from && typeof rating.from === "object") {
+            if (rating.from.name) {
+                authorName = rating.from.name;
+            }
+            if (rating.from.id) {
+                authorId = rating.from.id;
+            }
+        }
+
         // Determine rating based on recommendation_type
         let normalizedRating = 0;
         if (rating.recommendation_type === "positive") {
@@ -219,9 +232,16 @@ export class FacebookProvider implements PlatformProvider {
             publishedDate = new Date(); // Fallback to current date
         }
 
+        // Create rawData with author information included
+        const rawData = {
+            ...rating,
+            authorId,
+            authorName,
+        };
+
         return {
             externalId,
-            authorName: "anonymous",
+            authorName,
             authorAvatar: undefined,
             rating: normalizedRating,
             content: rating.review_text,
@@ -229,7 +249,7 @@ export class FacebookProvider implements PlatformProvider {
             publishedAt: publishedDate,
             replyContent: undefined,
             replyAt: undefined,
-            rawData: rating,
+            rawData,
         };
     }
 
@@ -244,6 +264,19 @@ export class FacebookProvider implements PlatformProvider {
         // Extract external ID (id if present, else fallback to created_time)
         const externalId = post.id ?? post.created_time;
 
+        // Extract author information from 'from' field if available
+        let authorName = "anonymous";
+        let authorId: string | undefined = undefined;
+
+        if (post.from && typeof post.from === "object") {
+            if (post.from.name) {
+                authorName = post.from.name;
+            }
+            if (post.from.id) {
+                authorId = post.from.id;
+            }
+        }
+
         // Validate and normalize published date
         let publishedDate: Date;
         try {
@@ -255,9 +288,16 @@ export class FacebookProvider implements PlatformProvider {
             publishedDate = new Date(); // Fallback to current date
         }
 
+        // Create rawData with author information included
+        const rawData = {
+            ...post,
+            authorId,
+            authorName,
+        };
+
         return {
             externalId,
-            authorName: "anonymous",
+            authorName,
             authorAvatar: undefined,
             rating: 0, // Posts don't have ratings, will be analyzed by AI later
             content: post.message,
@@ -265,7 +305,7 @@ export class FacebookProvider implements PlatformProvider {
             publishedAt: publishedDate,
             replyContent: undefined,
             replyAt: undefined,
-            rawData: post,
+            rawData,
         };
     }
 }
