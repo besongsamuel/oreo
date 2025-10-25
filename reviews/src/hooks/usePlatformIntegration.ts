@@ -158,20 +158,8 @@ export function usePlatformIntegration() {
                 reviews,
             );
 
-            try {
-                await supabase.functions.invoke(
-                    "perform-sentiment-analysis",
-                    {
-                        body: { connectionId: platformConnectionId },
-                    },
-                );
-                console.log(
-                    `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
-                );
-            } catch (err) {
-                console.error("Failed to trigger sentiment analysis:", err);
-                // Don't fail the whole operation if sentiment analysis fails
-            }
+            // Note: Sentiment analysis is now triggered automatically by database webhook
+            // when reviews are inserted, so no manual call is needed
 
             // Create sync log
             await reviewsService.createSyncLog(platformConnectionId, stats);
