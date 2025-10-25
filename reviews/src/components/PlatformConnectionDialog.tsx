@@ -20,7 +20,7 @@ import { PlatformPage } from "../services/platforms/types";
 interface PlatformConnectionDialogProps {
   open: boolean;
   onClose: () => void;
-  onConnect: (pageId: string, locationId: string) => Promise<void>;
+  onConnect: (page: PlatformPage, locationId: string) => Promise<void>;
   platformName: string;
   companyName: string;
   locations: Array<{ id: string; name: string; address: string }>;
@@ -37,7 +37,7 @@ export const PlatformConnectionDialog = ({
   const [pages, setPages] = useState<PlatformPage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [selectedPage, setSelectedPage] = useState<PlatformPage | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
@@ -157,11 +157,13 @@ export const PlatformConnectionDialog = ({
                       key={page.id}
                       sx={{
                         cursor: "pointer",
-                        border: selectedPage === page.id ? 2 : 1,
+                        border: selectedPage?.id === page.id ? 2 : 1,
                         borderColor:
-                          selectedPage === page.id ? "primary.main" : "divider",
+                          selectedPage?.id === page.id
+                            ? "primary.main"
+                            : "divider",
                       }}
-                      onClick={() => setSelectedPage(page.id)}
+                      onClick={() => setSelectedPage(page)}
                     >
                       <CardContent sx={{ py: 2 }}>
                         <Stack direction="row" spacing={2} alignItems="center">

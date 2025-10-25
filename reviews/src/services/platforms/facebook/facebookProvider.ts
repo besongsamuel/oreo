@@ -113,7 +113,7 @@ export class FacebookProvider implements PlatformProvider {
             // Try to fetch page ratings/reviews (may fail due to permissions)
             try {
                 const ratingsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?fields=id,reviewer{id,name},rating,review_text,created_time,response{message,created_time}&access_token=${tokenToUse}&limit=100`,
+                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${tokenToUse}&limit=100`,
                 );
 
                 if (ratingsResponse.ok) {
@@ -197,22 +197,16 @@ export class FacebookProvider implements PlatformProvider {
             return null;
         }
 
-        // Extract additional reviewer information
-        const reviewer = rating.reviewer ??
-            { id: `anonymous`, name: "anonymous" };
-        const reviewerId = reviewer.id;
-        const reviewerName = reviewer.name;
-        const reviewerPicture = reviewer.picture?.url ||
-            reviewer.picture?.data?.url;
-        const reviewerProfileLink = reviewer.link;
+        // Extract external ID (id if present, else fallback to created_time)
+        const externalId = rating.id ?? rating.created_time;
 
-        // Validate and normalize rating
-        let normalizedRating = rating.rating ?? 0;
-        if (typeof normalizedRating !== "number" || isNaN(normalizedRating)) {
-            normalizedRating = 0;
+        // Determine rating based on recommendation_type
+        let normalizedRating = 0;
+        if (rating.recommendation_type === "positive") {
+            normalizedRating = 5;
+        } else if (rating.recommendation_type === "negative") {
+            normalizedRating = 1;
         }
-        // Ensure rating is within valid range (0-5)
-        normalizedRating = Math.max(0, Math.min(5, normalizedRating));
 
         // Validate and normalize published date
         let publishedDate: Date;
@@ -226,26 +220,16 @@ export class FacebookProvider implements PlatformProvider {
         }
 
         return {
-            externalId: rating.id ?? rating.created_time,
-            authorName: reviewerName,
-            authorAvatar: reviewerPicture,
+            externalId,
+            authorName: "anonymous",
+            authorAvatar: undefined,
             rating: normalizedRating,
             content: rating.review_text,
             title: undefined,
             publishedAt: publishedDate,
-            replyContent: rating.response?.message,
-            replyAt: rating.response
-                ? new Date(rating.response.created_time)
-                : undefined,
-            rawData: {
-                ...rating,
-                reviewer: {
-                    id: reviewerId,
-                    name: reviewerName,
-                    picture: reviewerPicture,
-                    profile_link: reviewerProfileLink,
-                },
-            },
+            replyContent: undefined,
+            replyAt: undefined,
+            rawData: rating,
         };
     }
 
@@ -257,32 +241,8 @@ export class FacebookProvider implements PlatformProvider {
             return null;
         }
 
-        // Only include comments that seem like reviews (contain keywords)
-        const reviewKeywords = [
-            "good",
-            "bad",
-            "great",
-            "terrible",
-            "excellent",
-            "awful",
-            "love",
-            "hate",
-            "recommend",
-            "avoid",
-        ];
-        const messageLower = post.message.toLowerCase();
-        const isReview = reviewKeywords.some((keyword) =>
-            messageLower.includes(keyword)
-        );
-
-        if (!isReview) {
-            return null;
-        }
-
-        // Extract additional reviewer information from comment
-        const reviewer = { id: `anonymous`, name: "anonymous" };
-        const reviewerId = reviewer.id;
-        const reviewerName = reviewer.name;
+        // Extract external ID (id if present, else fallback to created_time)
+        const externalId = post.id ?? post.created_time;
 
         // Validate and normalize published date
         let publishedDate: Date;
@@ -296,22 +256,16 @@ export class FacebookProvider implements PlatformProvider {
         }
 
         return {
-            externalId: post.id,
-            authorName: reviewerName,
+            externalId,
+            authorName: "anonymous",
             authorAvatar: undefined,
-            rating: 0, // Comments don't have ratings, will be analyzed by AI later
+            rating: 0, // Posts don't have ratings, will be analyzed by AI later
             content: post.message,
             title: undefined,
             publishedAt: publishedDate,
             replyContent: undefined,
             replyAt: undefined,
-            rawData: {
-                ...post,
-                reviewer: {
-                    id: reviewerId,
-                    name: reviewerName,
-                },
-            },
+            rawData: post,
         };
     }
 }

@@ -42,6 +42,7 @@ import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { getAllPlatforms } from "../services/platforms/platformRegistry";
+import { PlatformPage } from "../services/platforms/types";
 
 interface Company {
   id: string;
@@ -302,14 +303,17 @@ export const Companies = () => {
     }
   };
 
-  const handlePlatformConnect = async (pageId: string, locationId: string) => {
+  const handlePlatformConnect = async (
+    page: PlatformPage,
+    locationId: string
+  ) => {
     if (!selectedCompany || !selectedPlatform) return;
 
     try {
       await connectPlatform(
         selectedPlatform,
         selectedCompany.id,
-        pageId,
+        page,
         locationId
       );
       await fetchCompanies(); // Refresh company data

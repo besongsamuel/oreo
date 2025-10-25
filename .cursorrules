@@ -85,3 +85,55 @@ if (loading) {
 - Optimize images and assets
 - Lazy load when appropriate
 - Minimize layout shifts
+
+## MUI Grid Component Fix
+
+### Problem
+
+MUI Grid components may show TypeScript errors about missing `item` prop or `xs`/`sm`/`md` props not being recognized.
+
+### Solution
+
+Based on MUI version, use the correct Grid component:
+
+```tsx
+// ✅ CORRECT - MUI v7+ (Current Grid component)
+import { Grid } from '@mui/material';
+
+<Grid container spacing={3}>
+  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+    {/* content */}
+  </Grid>
+</Grid>
+
+// ✅ ALTERNATIVE - MUI v5/v6 (Grid2 component)
+import { Grid2 as Grid } from '@mui/material';
+
+<Grid container spacing={3}>
+  <Grid xs={12} sm={6} md={3}>
+    {/* content */}
+  </Grid>
+</Grid>
+
+// ❌ AVOID - Legacy Grid with item prop (deprecated in v7)
+<Grid item xs={12} sm={6} md={3}>  // Deprecated in v7
+```
+
+### Implementation Steps:
+
+1. **Check MUI version**: `npm list @mui/material`
+2. **If MUI v7+**: Use `Grid` with `size` prop (no `item` prop)
+3. **If MUI v5/v6**: Use `Grid2` import with individual size props
+4. **Always test**: Verify Grid layout works correctly
+
+### Migration Guide:
+
+- **v7**: `item` prop removed, use `size={{ xs: 12, sm: 6 }}` instead of `xs={12} sm={6}`
+- **v6**: Size props renamed to `size` prop
+- **v5**: Use `Grid2` import for new Grid component
+
+### Common Error Patterns to Fix:
+
+- `Property 'item' does not exist` → Remove `item` prop, use `size` prop
+- `Property 'xs' does not exist` → Use `size={{ xs: 12 }}` format
+- `No overload matches this call` → Check MUI version and use correct Grid component

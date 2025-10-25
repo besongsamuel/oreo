@@ -6,7 +6,6 @@ import {
   Facebook as FacebookIcon,
   FilterList as FilterListIcon,
   Google as GoogleIcon,
-  Refresh as RefreshIcon,
   RateReview as ReviewIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
@@ -51,6 +50,7 @@ import {
   getAllPlatforms,
   getPlatformConfig,
 } from "../services/platforms/platformRegistry";
+import { PlatformPage } from "../services/platforms/types";
 import { ReviewsService } from "../services/reviewsService";
 
 interface CompanyDetails {
@@ -722,14 +722,17 @@ export const CompanyPage = () => {
     }
   };
 
-  const handlePlatformConnect = async (pageId: string, locationId: string) => {
+  const handlePlatformConnect = async (
+    page: PlatformPage,
+    locationId: string
+  ) => {
     if (!companyId || !selectedPlatform) return;
 
     try {
       await connectPlatform(
         selectedPlatform.toLowerCase(),
         companyId,
-        pageId,
+        page,
         locationId
       );
       // Refresh data after successful connection by reloading the page
@@ -748,20 +751,6 @@ export const CompanyPage = () => {
   const handleCloseComingSoon = () => {
     setComingSoonOpen(false);
     setSelectedPlatform("");
-  };
-
-  const handleFetchReviewsForConnection = async (
-    connectionId: string,
-    platformName: string,
-    pageId: string
-  ) => {
-    try {
-      await fetchReviews(platformName, pageId, connectionId);
-      // Refresh data after successful fetch
-      window.location.reload();
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch reviews");
-    }
   };
 
   const platforms = getAllPlatforms();
@@ -1422,37 +1411,6 @@ export const CompanyPage = () => {
                               </Typography>
                             </Box>
                           </Stack>
-
-                          {/* Fetch Reviews Buttons */}
-                          {connections.length > 0 && (
-                            <Stack direction="row" spacing={1} flexWrap="wrap">
-                              {connections.map((connection) => (
-                                <Button
-                                  key={connection.id}
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<RefreshIcon />}
-                                  onClick={() =>
-                                    handleFetchReviewsForConnection(
-                                      connection.id,
-                                      connection.platform.name,
-                                      connection.platform_location_id
-                                    )
-                                  }
-                                  disabled={connecting}
-                                  sx={{
-                                    borderRadius: 980,
-                                    textTransform: "none",
-                                    fontSize: "0.75rem",
-                                    minWidth: "auto",
-                                    px: 2,
-                                  }}
-                                >
-                                  Fetch {connection.platform.display_name}
-                                </Button>
-                              ))}
-                            </Stack>
-                          )}
                         </Stack>
                       </CardContent>
                     </Card>
