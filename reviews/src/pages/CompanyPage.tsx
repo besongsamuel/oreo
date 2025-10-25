@@ -705,8 +705,11 @@ export const CompanyPage = () => {
   const handleFetchReviews = async (platform: string) => {
     setSelectedPlatform(platform);
 
-    // Check if this is Facebook (active platform)
-    if (platform.toLowerCase() === "facebook") {
+    // Check if this is Facebook or Google (active platforms)
+    if (
+      platform.toLowerCase() === "facebook" ||
+      platform.toLowerCase() === "google"
+    ) {
       try {
         // Get company locations
         const { data: locations, error } = await supabase

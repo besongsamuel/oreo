@@ -7,6 +7,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { SuccessLocation } from "./pages/SuccessLocation";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
+import { GoogleCallback } from "./pages/auth/GoogleCallback";
 
 function App() {
   return (
@@ -82,6 +83,7 @@ function App() {
         <Route path="/auth/signup" element={<Signup />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/complete-signup" element={<CompleteSignup />} />
+        <Route path="/google-callback" element={<GoogleCallback />} />
 
         {/* Public legal pages (with layout) */}
         <Route

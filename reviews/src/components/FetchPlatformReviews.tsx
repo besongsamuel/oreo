@@ -65,7 +65,7 @@ export const FetchPlatformReviews = ({
             variant="outlined"
             size="large"
             startIcon={getPlatformIcon(platform.name)}
-            onClick={() => onPlatformClick(platform.displayName)}
+            onClick={() => onPlatformClick(platform.name)}
             disabled={platform.status !== "active" || connecting}
             sx={{
               py: 2,

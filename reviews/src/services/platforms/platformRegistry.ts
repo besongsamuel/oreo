@@ -1,4 +1,5 @@
 import { FacebookProvider } from "./facebook/facebookProvider";
+import { GoogleProvider } from "./google/googleProvider";
 import { PlatformConfig, PlatformProvider } from "./types";
 
 export interface PlatformRegistryEntry {
@@ -21,11 +22,11 @@ export const PLATFORM_REGISTRY: Record<string, PlatformRegistryEntry> = {
     },
     google: {
         name: "google",
-        displayName: "Google",
+        displayName: "Google Business Profile",
         color: "#4285F4",
         iconUrl:
             "https://www.gstatic.com/images/branding/product/1x/google_blue_24dp.png",
-        status: "coming_soon",
+        status: "active",
         provider: null,
     },
     yelp: {
@@ -65,6 +66,11 @@ export function getPlatformProvider(
     // Lazy initialization for Facebook provider to avoid circular dependencies
     if (platformName === "facebook" && !platform.provider) {
         platform.provider = new FacebookProvider();
+    }
+
+    // Lazy initialization for Google provider to avoid circular dependencies
+    if (platformName === "google" && !platform.provider) {
+        platform.provider = new GoogleProvider();
     }
 
     return platform.provider;
