@@ -59,8 +59,20 @@ export const PlatformConnectionDialog = ({
       }
 
       const accessToken = await provider.authenticate();
-      const userPages = await provider.getUserPages(accessToken);
-      setPages(userPages);
+
+      // Special handling for Yelp
+      if (platformName.toLowerCase() === "yelp") {
+        const yelpProvider = provider as any;
+        if (yelpProvider.searchBusinesses) {
+          const businesses = await yelpProvider.searchBusinesses(companyName);
+          setPages(businesses);
+        } else {
+          throw new Error("Yelp provider searchBusinesses method not found");
+        }
+      } else {
+        const userPages = await provider.getUserPages(accessToken);
+        setPages(userPages);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to fetch pages");
     } finally {

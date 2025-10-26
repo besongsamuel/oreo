@@ -1,6 +1,7 @@
 import { FacebookProvider } from "./facebook/facebookProvider";
 import { GoogleProvider } from "./google/googleProvider";
 import { PlatformConfig, PlatformProvider } from "./types";
+import { YelpProvider } from "./yelp/yelpProvider";
 
 export interface PlatformRegistryEntry {
     name: string;
@@ -35,24 +36,7 @@ export const PLATFORM_REGISTRY: Record<string, PlatformRegistryEntry> = {
         color: "#D32323",
         iconUrl:
             "https://s3-media0.fl.yelpcdn.com/assets/srv0/developer_pages/5b0b5a5c4b4a/assets/img/318x318_yelp_logo.png",
-        status: "coming_soon",
-        provider: null,
-    },
-    trustpilot: {
-        name: "trustpilot",
-        displayName: "Trustpilot",
-        color: "#00B67A",
-        iconUrl: "https://cdn.trustpilot.net/brand-assets/1.1.0/logo-white.svg",
-        status: "coming_soon",
-        provider: null,
-    },
-    tripadvisor: {
-        name: "tripadvisor",
-        displayName: "TripAdvisor",
-        color: "#34E0A1",
-        iconUrl:
-            "https://static.tacdn.com/img2/brand_refresh/Tripadvisor_lockup_horizontal_secondary_registered.svg",
-        status: "coming_soon",
+        status: "active",
         provider: null,
     },
 };
@@ -71,6 +55,11 @@ export function getPlatformProvider(
     // Lazy initialization for Google provider to avoid circular dependencies
     if (platformName === "google" && !platform.provider) {
         platform.provider = new GoogleProvider();
+    }
+
+    // Lazy initialization for Yelp provider
+    if (platformName === "yelp" && !platform.provider) {
+        platform.provider = new YelpProvider();
     }
 
     return platform.provider;
