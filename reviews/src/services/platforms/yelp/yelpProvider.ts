@@ -34,7 +34,10 @@ export class YelpProvider implements PlatformProvider {
         }
     }
 
-    async searchBusinesses(companyName: string): Promise<PlatformPage[]> {
+    async searchBusinesses(
+        companyName: string,
+        location?: string,
+    ): Promise<PlatformPage[]> {
         try {
             if (!YELP_SEARCH_FUNCTION) {
                 throw new Error(
@@ -55,7 +58,10 @@ export class YelpProvider implements PlatformProvider {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${supabaseAnonKey}`,
                 },
-                body: JSON.stringify({ companyName }),
+                body: JSON.stringify({
+                    companyName,
+                    location: location || undefined,
+                }),
             });
 
             if (!response.ok) {

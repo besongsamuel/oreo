@@ -721,16 +721,17 @@ export const CompanyPage = () => {
   const handleFetchReviews = async (platform: string) => {
     setSelectedPlatform(platform);
 
-    // Check if this is Facebook or Google (active platforms)
+    // Check if this is Facebook, Google, or Yelp (active platforms)
     if (
       platform.toLowerCase() === "facebook" ||
-      platform.toLowerCase() === "google"
+      platform.toLowerCase() === "google" ||
+      platform.toLowerCase() === "yelp"
     ) {
       try {
         // Get company locations
         const { data: locations, error } = await supabase
           .from("locations")
-          .select("id, name, address")
+          .select("id, name, address, city")
           .eq("company_id", companyId)
           .eq("is_active", true);
 

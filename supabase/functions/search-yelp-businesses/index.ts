@@ -37,7 +37,7 @@ interface PlatformPage {
     name: string;
     profilePicture?: string;
     url?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
 serve(async (req) => {
@@ -55,25 +55,28 @@ serve(async (req) => {
         }
 
         // Parse request body
-        const { companyName } = await req.json();
+        const { companyName, location } = await req.json();
 
         if (!companyName) {
             throw new Error("Company name is required");
         }
 
+        // Build search URL with location if provided
+        let searchUrl = `https://api.yelp.com/v3/businesses/search?term=${
+            encodeURIComponent(companyName)
+        }&limit=20`;
+        if (location) {
+            searchUrl += `&location=${encodeURIComponent(location)}`;
+        }
+
         // Search for businesses on Yelp
-        const response = await fetch(
-            `https://api.yelp.com/v3/businesses/search?term=${
-                encodeURIComponent(companyName)
-            }&limit=20`,
-            {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${yelpApiKey}`,
-                    "Content-Type": "application/json",
-                },
+        const response = await fetch(searchUrl, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${yelpApiKey}`,
+                "Content-Type": "application/json",
             },
-        );
+        });
 
         if (!response.ok) {
             const errorText = await response.text();
