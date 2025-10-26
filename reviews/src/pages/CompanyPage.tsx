@@ -649,6 +649,22 @@ export const CompanyPage = () => {
     supabase,
   ]);
 
+  // Check for fetch_reviews_platform query parameter and trigger platform connection
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get("fetch_reviews_platform");
+
+    if (platform && !loading && company) {
+      // Remove the query parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+
+      // Trigger platform connection
+      handleFetchReviews(platform);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, company]); // Only run when component is loaded and company data is available
+
   const analyzeKeywords = (keywordsData: Keyword[]) => {
     const categoryMap = new Map<string, number>();
     let total = 0;

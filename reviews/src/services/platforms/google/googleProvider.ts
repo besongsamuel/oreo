@@ -42,9 +42,10 @@ export class GoogleProvider implements PlatformProvider {
                 return;
             }
 
-            // Store current location for redirect after OAuth
+            // Store current location for redirect after OAuth with platform query param
             const currentPath = window.location.pathname;
-            localStorage.setItem("google_oauth_return_path", currentPath);
+            const returnPath = `${currentPath}?fetch_reviews_platform=google`;
+            localStorage.setItem("google_oauth_return_path", returnPath);
 
             // Initiate OAuth flow
             const authUrl = new URL(
