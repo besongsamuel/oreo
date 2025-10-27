@@ -80,9 +80,12 @@ export const RatingDistributionChart = ({
     plotOptions: {
       bar: {
         horizontal: true,
-        barHeight: "70%",
+        barHeight: "75%",
         distributed: true,
         borderRadius: 8,
+        dataLabels: {
+          position: "top",
+        },
       },
     },
     colors: data.map((d) => getStarColor(d.rating)),
@@ -91,8 +94,17 @@ export const RatingDistributionChart = ({
       formatter: (val: number) =>
         `${val} (${((val / totalReviews) * 100).toFixed(1)}%)`,
       style: {
-        fontSize: "12px",
-        fontWeight: 600,
+        fontSize: "14px",
+        fontWeight: 700,
+        colors: ["#ffffff"], // White text
+      },
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 2,
+        opacity: 0.9,
+        color: "#000000",
       },
     },
     xaxis: {

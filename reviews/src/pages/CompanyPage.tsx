@@ -43,7 +43,6 @@ import {
   RatingDistributionChart,
   ReviewComponent,
   ReviewsTimelineChart,
-  SentimentDonutChart,
   StatCardWithTrend,
 } from "../components";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
@@ -1705,36 +1704,14 @@ export const CompanyPage = () => {
             />
           </Box>
 
-          {/* Charts Section */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                lg: "1fr 1fr",
-              },
-              gap: { xs: 2, sm: 3 },
-            }}
-          >
-            {/* Rating Distribution Chart */}
-            {company.total_reviews > 0 && (
-              <RatingDistributionChart
-                ratings={ratingDistribution}
-                totalReviews={company.total_reviews}
-                onRatingClick={(rating) => setSelectedRating(rating.toString())}
-              />
-            )}
-
-            {/* Sentiment Donut Chart */}
-            {company.total_reviews > 0 && sentimentData && (
-              <SentimentDonutChart
-                positive={sentimentData.positiveCount}
-                neutral={sentimentData.neutralCount}
-                negative={sentimentData.negativeCount}
-                total={sentimentData.totalReviews}
-              />
-            )}
-          </Box>
+          {/* Rating Distribution Chart */}
+          {company.total_reviews > 0 && (
+            <RatingDistributionChart
+              ratings={ratingDistribution}
+              totalReviews={company.total_reviews}
+              onRatingClick={(rating) => setSelectedRating(rating.toString())}
+            />
+          )}
 
           {/* Timeline Chart */}
           {timelineData.length > 0 && (

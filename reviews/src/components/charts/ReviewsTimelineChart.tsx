@@ -32,7 +32,7 @@ export const ReviewsTimelineChart = ({
   const options: ApexCharts.ApexOptions = {
     chart: {
       height: 350,
-      type: "line",
+      type: "area",
       toolbar: { show: false },
       zoom: {
         enabled: true,
@@ -52,8 +52,7 @@ export const ReviewsTimelineChart = ({
       enabled: false,
     },
     markers: {
-      size: 5,
-      strokeWidth: 2,
+      size: 0,
     },
     legend: {
       show: false,
@@ -137,12 +136,12 @@ export const ReviewsTimelineChart = ({
             Reviews Over Time
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Weekly review volume trends
+            Review volume trends over time with zoom capability
           </Typography>
         </Box>
         <Box sx={{ height: 350 }}>
           {data.length > 0 ? (
-            <Chart options={options} series={series} type="line" height={350} />
+            <Chart options={options} series={series} type="area" height={350} />
           ) : (
             <Stack
               alignItems="center"
