@@ -36,7 +36,11 @@ import {
   FetchPlatformReviews,
   LocationComponent,
   MonthlySummary,
+  RatingDistributionChart,
   ReviewComponent,
+  ReviewsTimelineChart,
+  SentimentDonutChart,
+  StatCardWithTrend,
 } from "../components";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
@@ -192,6 +196,24 @@ export const CompanyPage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
+
+  // Chart data state
+  const [ratingDistribution, setRatingDistribution] = useState({
+    5: 0,
+    4: 0,
+    3: 0,
+    2: 0,
+    1: 0,
+  });
+  const [timelineData, setTimelineData] = useState<
+    Array<{
+      date: string;
+      count: number;
+      avgRating: number;
+      positive: number;
+      negative: number;
+    }>
+  >([]);
 
   // Refresh function
   const refreshPageData = async () => {
@@ -850,6 +872,67 @@ export const CompanyPage = () => {
     loading,
     supabase,
   ]);
+
+  // Calculate chart data from reviews
+  useEffect(() => {
+    const calculateChartData = () => {
+      if (reviews.length === 0) {
+        setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
+        setTimelineData([]);
+        return;
+      }
+
+      // Calculate rating distribution
+      const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      reviews.forEach((review) => {
+        const rating = Math.floor(review.rating);
+        if (rating >= 1 && rating <= 5) {
+          ratingCounts[rating as keyof typeof ratingCounts]++;
+        }
+      });
+      setRatingDistribution(ratingCounts);
+
+      // Calculate timeline data (group by week)
+      const timelineMap = new Map<
+        string,
+        { count: number; sumRating: number; positive: number; negative: number }
+      >();
+
+      reviews.forEach((review) => {
+        const date = new Date(review.published_at);
+        // Get start of week (Monday)
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay() + 1);
+        const weekKey = weekStart.toISOString().split("T")[0];
+
+        const existing = timelineMap.get(weekKey) || {
+          count: 0,
+          sumRating: 0,
+          positive: 0,
+          negative: 0,
+        };
+        existing.count++;
+        existing.sumRating += review.rating;
+        if (review.sentiment === "positive") existing.positive++;
+        if (review.sentiment === "negative") existing.negative++;
+        timelineMap.set(weekKey, existing);
+      });
+
+      const timeline = Array.from(timelineMap.entries())
+        .map(([date, data]) => ({
+          date,
+          count: data.count,
+          avgRating: data.sumRating / data.count,
+          positive: data.positive,
+          negative: data.negative,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      setTimelineData(timeline);
+    };
+
+    calculateChartData();
+  }, [reviews]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
   useEffect(() => {
@@ -1526,67 +1609,64 @@ export const CompanyPage = () => {
               gap: 3,
             }}
           >
-            <Card>
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography variant="h4" fontWeight={700}>
-                    {company.total_reviews}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Reviews
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent>
-                <Stack spacing={1}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="h4" fontWeight={700}>
-                      {company.average_rating.toFixed(1)}
-                    </Typography>
-                    <StarIcon
-                      sx={{ color: "warning.main", fontSize: "2rem" }}
-                    />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    Average Rating
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    color="success.main"
-                  >
-                    {company.positive_reviews}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Positive Reviews
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography variant="h4" fontWeight={700} color="error.main">
-                    {company.negative_reviews}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Negative Reviews
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+            <StatCardWithTrend
+              title="Total Reviews"
+              value={company.total_reviews}
+              color="primary.main"
+            />
+            <StatCardWithTrend
+              title="Average Rating"
+              value={`${company.average_rating.toFixed(1)}`}
+              icon={<StarIcon />}
+              color="warning.main"
+            />
+            <StatCardWithTrend
+              title="Positive Reviews"
+              value={company.positive_reviews}
+              color="success.main"
+            />
+            <StatCardWithTrend
+              title="Negative Reviews"
+              value={company.negative_reviews}
+              color="error.main"
+            />
           </Box>
+
+          {/* Charts Section */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                lg: "1fr 1fr",
+              },
+              gap: 3,
+            }}
+          >
+            {/* Rating Distribution Chart */}
+            {company.total_reviews > 0 && (
+              <RatingDistributionChart
+                ratings={ratingDistribution}
+                totalReviews={company.total_reviews}
+                onRatingClick={(rating) => setSelectedRating(rating.toString())}
+              />
+            )}
+
+            {/* Sentiment Donut Chart */}
+            {company.total_reviews > 0 && sentimentData && (
+              <SentimentDonutChart
+                positive={sentimentData.positiveCount}
+                neutral={sentimentData.neutralCount}
+                negative={sentimentData.negativeCount}
+                total={sentimentData.totalReviews}
+              />
+            )}
+          </Box>
+
+          {/* Timeline Chart */}
+          {timelineData.length > 0 && (
+            <ReviewsTimelineChart data={timelineData} />
+          )}
 
           {/* Sentiment Analysis */}
           {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}

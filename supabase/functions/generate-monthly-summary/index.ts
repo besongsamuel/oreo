@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+        "authorization, x-client-info, apikey, content-type",
+};
+
 interface RequestPayload {
     company_id: string;
     year: number;
@@ -8,6 +14,11 @@ interface RequestPayload {
 }
 
 Deno.serve(async (req: Request) => {
+    // Handle CORS preflight requests
+    if (req.method === "OPTIONS") {
+        return new Response("ok", { headers: corsHeaders });
+    }
+
     try {
         // Check request method
         if (req.method !== "POST") {
@@ -18,7 +29,10 @@ Deno.serve(async (req: Request) => {
                     message: "Only POST requests are supported",
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 405,
                 },
             );
@@ -48,11 +62,16 @@ Deno.serve(async (req: Request) => {
                     message: "Request body must be valid JSON",
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 400,
                 },
             );
         }
+
+        console.log("Payload:", payload);
 
         const { company_id, year, month } = payload;
 
@@ -94,7 +113,10 @@ Deno.serve(async (req: Request) => {
                         "You can only generate summaries for months that have ended or on the last day of the current month.",
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 400,
                 },
             );
@@ -149,7 +171,10 @@ Deno.serve(async (req: Request) => {
                         "No platform connections found for this company. Connect a platform first.",
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 404,
                 },
             );
@@ -180,7 +205,10 @@ Deno.serve(async (req: Request) => {
                     }`,
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 404,
                 },
             );
@@ -206,7 +234,10 @@ Deno.serve(async (req: Request) => {
                         "A summary for this month has already been generated.",
                 }),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
                     status: 409,
                 },
             );
@@ -245,7 +276,7 @@ Deno.serve(async (req: Request) => {
                 month_year: monthYear,
                 total_reviews: totalReviews,
                 average_rating: averageRating.toFixed(2),
-                sentiment_breakdown,
+                sentiment_breakdown: sentimentBreakdown,
                 summary,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -271,7 +302,7 @@ Deno.serve(async (req: Request) => {
                 },
             }),
             {
-                headers: { "Content-Type": "application/json" },
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 200,
             },
         );
@@ -287,7 +318,7 @@ Deno.serve(async (req: Request) => {
                 error: errorMessage,
             }),
             {
-                headers: { "Content-Type": "application/json" },
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 500,
             },
         );

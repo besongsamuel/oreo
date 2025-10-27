@@ -1,3 +1,6 @@
+export { RatingDistributionChart } from "./charts/RatingDistributionChart";
+export { ReviewsTimelineChart } from "./charts/ReviewsTimelineChart";
+export { SentimentDonutChart } from "./charts/SentimentDonutChart";
 export { CompanyCard } from "./CompanyCard";
 export { CompanyHeader } from "./CompanyHeader";
 export { FetchPlatformReviews } from "./FetchPlatformReviews";
@@ -19,3 +22,4 @@ export {
     ReviewCardSkeleton,
     StatCardSkeleton,
 } from "./SkeletonLoaders";
+export { StatCardWithTrend } from "./StatCardWithTrend";
