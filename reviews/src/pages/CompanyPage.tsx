@@ -35,6 +35,7 @@ import {
   CompanyHeader,
   FetchPlatformReviews,
   LocationComponent,
+  MonthlySummary,
   ReviewComponent,
 } from "../components";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
@@ -1300,6 +1301,9 @@ export const CompanyPage = () => {
 
           {/* Company Header */}
           <CompanyHeader company={company} />
+
+          {/* Monthly Summary */}
+          {companyId && <MonthlySummary companyId={companyId} />}
 
           {/* Locations */}
           {companyId && (

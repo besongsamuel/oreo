@@ -143,3 +143,31 @@ export const HeaderSkeleton = () => (
 export const KeywordChipSkeleton = () => (
   <Skeleton variant="rounded" width={100} height={32} />
 );
+
+// Monthly Summary Skeleton
+export const MonthlySummarySkeleton = () => (
+  <Card variant="outlined">
+    <CardContent>
+      <Stack spacing={3}>
+        {/* Navigation area */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Skeleton variant="rounded" width={120} height={40} />
+          <Skeleton variant="text" width={150} height={28} />
+          <Skeleton variant="rounded" width={120} height={40} />
+        </Stack>
+
+        {/* Summary content */}
+        <Stack spacing={2}>
+          <Skeleton variant="text" width="100%" height={24} />
+          <Skeleton variant="text" width="95%" height={24} />
+          <Skeleton variant="text" width="90%" height={24} />
+          <Skeleton variant="text" width="85%" height={24} />
+        </Stack>
+      </Stack>
+    </CardContent>
+  </Card>
+);

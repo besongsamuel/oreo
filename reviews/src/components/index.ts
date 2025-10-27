@@ -5,6 +5,7 @@ export { Footer } from "./Footer";
 export { Header } from "./Header";
 export { Layout } from "./Layout";
 export { LocationComponent } from "./LocationComponent";
+export { MonthlySummary } from "./MonthlySummary";
 export { ProtectedRoute } from "./ProtectedRoute";
 export { ReviewComponent } from "./ReviewComponent";
 export { SEO } from "./SEO";
@@ -13,6 +14,7 @@ export {
     ContentSkeleton,
     HeaderSkeleton,
     KeywordChipSkeleton,
+    MonthlySummarySkeleton,
     ProfileSectionSkeleton,
     ReviewCardSkeleton,
     StatCardSkeleton,
