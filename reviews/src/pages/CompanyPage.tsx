@@ -122,6 +122,14 @@ interface SentimentData {
   }[];
 }
 
+interface Topic {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  occurrence_count: number;
+}
+
 export const CompanyPage = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const supabase = useSupabase();
@@ -143,6 +151,7 @@ export const CompanyPage = () => {
   const [sentimentData, setSentimentData] = useState<SentimentData | null>(
     null
   );
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [locationConnections, setLocationConnections] = useState<
     Record<
       string,
@@ -798,6 +807,28 @@ export const CompanyPage = () => {
             analyzeKeywords(keywordsArray);
           } else {
             setKeywords([]);
+          }
+
+          // Fetch topics for this company
+          const { data: topicsData, error: topicsError } = await supabase
+            .from("topics")
+            .select("*")
+            .eq("company_id", companyId)
+            .eq("is_active", true)
+            .order("occurrence_count", { ascending: false });
+
+          if (!topicsError && topicsData) {
+            setTopics(
+              topicsData.map((topic: any) => ({
+                id: topic.id,
+                name: topic.name,
+                category: topic.category,
+                description: topic.description,
+                occurrence_count: topic.occurrence_count,
+              }))
+            );
+          } else {
+            setTopics([]);
           }
         } else {
           // No reviews found, set empty keywords
@@ -1499,6 +1530,86 @@ export const CompanyPage = () => {
           {/* Sentiment Analysis */}
           {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
 
+          {/* Topics Section */}
+          {topics.length > 0 && (
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h5" fontWeight={600} gutterBottom>
+                    Topics
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Common themes discussed in reviews
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, 1fr)",
+                      md: "repeat(3, 1fr)",
+                    },
+                    gap: 2,
+                  }}
+                >
+                  {topics.map((topic) => (
+                    <Card key={topic.id} variant="outlined">
+                      <CardContent>
+                        <Stack spacing={1}>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                          >
+                            <Box>
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {topic.name}
+                              </Typography>
+                              <Chip
+                                label={topic.category}
+                                size="small"
+                                color={
+                                  topic.category === "satisfaction"
+                                    ? "success"
+                                    : topic.category === "dissatisfaction"
+                                    ? "error"
+                                    : "default"
+                                }
+                                sx={{ mt: 0.5 }}
+                              />
+                            </Box>
+                          </Stack>
+                          {topic.description && (
+                            <Typography variant="body2" color="text.secondary">
+                              {topic.description}
+                            </Typography>
+                          )}
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              Mentioned in
+                            </Typography>
+                            <Typography variant="body2" fontWeight={600}>
+                              {topic.occurrence_count}{" "}
+                              {topic.occurrence_count === 1
+                                ? "review"
+                                : "reviews"}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              </Stack>
+            </Paper>
+          )}
+
           {/* Locations */}
           {companyId && (
             <LocationComponent
@@ -1680,7 +1791,7 @@ export const CompanyPage = () => {
                     display: "grid",
                     gridTemplateColumns: {
                       xs: "1fr",
-                      sm: "repeat(2, 1fr)",
+                      sm: "repeat(3, 1fr)",
                     },
                     gap: 2,
                   }}
@@ -1721,6 +1832,26 @@ export const CompanyPage = () => {
                       <MenuItem value="3">3 stars</MenuItem>
                       <MenuItem value="2">2 stars</MenuItem>
                       <MenuItem value="1">1 star</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {/* Location Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="additional-location-filter-label">
+                      Location
+                    </InputLabel>
+                    <Select
+                      labelId="additional-location-filter-label"
+                      value={filterLocation}
+                      label="Location"
+                      onChange={(e) => setFilterLocation(e.target.value)}
+                    >
+                      <MenuItem value="all">All Locations</MenuItem>
+                      {locations.map((location) => (
+                        <MenuItem key={location.id} value={location.name}>
+                          {location.name}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Box>
