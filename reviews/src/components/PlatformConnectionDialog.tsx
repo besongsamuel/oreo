@@ -11,16 +11,41 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
-import { getPlatformProvider } from "../services/platforms/platformRegistry";
-import { PlatformPage } from "../services/platforms/types";
+import { useEffect, useState } from "react";
+import { useSupabase } from "../hooks/useSupabase";
+
+interface ZembraListing {
+  name: string;
+  address?: {
+    street: string;
+    city: string;
+    region: string;
+    postalCode: string;
+    country: string;
+  };
+  categories?: string[];
+  globalRating?: number;
+  reviewCount?: {
+    native: {
+      total: number;
+      active: number;
+    };
+  };
+  profileImage?: string;
+  url?: string;
+}
 
 interface PlatformConnectionDialogProps {
   open: boolean;
   onClose: () => void;
-  onConnect: (page: PlatformPage, locationId: string) => Promise<void>;
+  onConnect: (
+    platformLocationId: string,
+    locationId: string,
+    verifiedListing?: ZembraListing
+  ) => Promise<void>;
   platformName: string;
   companyName: string;
   locations: Array<{
@@ -31,6 +56,32 @@ interface PlatformConnectionDialogProps {
   }>;
 }
 
+const getPlatformIdLabel = (platformName: string): string => {
+  switch (platformName.toLowerCase()) {
+    case "facebook":
+      return "Page ID";
+    case "google":
+      return "Place ID";
+    case "yelp":
+      return "Business ID";
+    default:
+      return "Location ID";
+  }
+};
+
+const getPlatformIdPlaceholder = (platformName: string): string => {
+  switch (platformName.toLowerCase()) {
+    case "facebook":
+      return "e.g., 123456789012345";
+    case "google":
+      return "e.g., ChIJN1t_tDeuEmsRUsoyG83frY4";
+    case "yelp":
+      return "e.g., cafe-de-olla-san-francisco-2";
+    default:
+      return "Enter platform location ID";
+  }
+};
+
 export const PlatformConnectionDialog = ({
   open,
   onClose,
@@ -39,77 +90,109 @@ export const PlatformConnectionDialog = ({
   companyName,
   locations,
 }: PlatformConnectionDialogProps) => {
-  const [pages, setPages] = useState<PlatformPage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPage, setSelectedPage] = useState<PlatformPage | null>(null);
+  const supabase = useSupabase();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
-  const [searching, setSearching] = useState(false);
-
-  const fetchPages = useCallback(
-    async (location?: {
-      id: string;
-      name: string;
-      address: string;
-      city?: string;
-    }) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const provider = getPlatformProvider(platformName);
-        if (!provider) {
-          throw new Error(`${platformName} is not available`);
-        }
-
-        const accessToken = await provider.authenticate();
-
-        // Special handling for Yelp
-        if (platformName.toLowerCase() === "yelp") {
-          if (!location) {
-            setLoading(false);
-            return;
-          }
-          setSearching(true);
-          const yelpProvider = provider as any;
-          if (yelpProvider.searchBusinesses) {
-            const businesses = await yelpProvider.searchBusinesses(
-              companyName,
-              location.city || location.address
-            );
-            setPages(businesses);
-          } else {
-            throw new Error("Yelp provider searchBusinesses method not found");
-          }
-          setSearching(false);
-        } else {
-          const userPages = await provider.getUserPages(accessToken);
-          setPages(userPages);
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch pages");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [platformName, companyName]
+  const [platformLocationId, setPlatformLocationId] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifiedListing, setVerifiedListing] = useState<ZembraListing | null>(
+    null
   );
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [availableLocations, setAvailableLocations] = useState(locations);
 
-  // Fetch pages automatically when dialog opens for Facebook and Google
+  // Filter out locations that already have connections for this platform
   useEffect(() => {
-    if (open && platformName.toLowerCase() !== "yelp") {
-      fetchPages();
+    const filterAvailableLocations = async () => {
+      if (!platformName) return;
+
+      // Get platform ID
+      const { data: platformData } = await supabase
+        .from("platforms")
+        .select("id")
+        .eq("name", platformName.toLowerCase())
+        .single();
+
+      if (!platformData) {
+        setAvailableLocations(locations);
+        return;
+      }
+
+      // Get all platform connections for this company
+      const { data: connectionsData } = await supabase
+        .from("platform_connections")
+        .select("location_id")
+        .eq("platform_id", platformData.id)
+        .eq("is_active", true);
+
+      if (!connectionsData) {
+        setAvailableLocations(locations);
+        return;
+      }
+
+      const connectedLocationIds = connectionsData.map((c) => c.location_id);
+
+      // Filter out already connected locations
+      const filtered = locations.filter(
+        (loc) => !connectedLocationIds.includes(loc.id)
+      );
+
+      setAvailableLocations(filtered);
+    };
+
+    if (open) {
+      filterAvailableLocations();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, platformName]);
+  }, [open, platformName, supabase, locations]);
+
+  const handleVerify = async () => {
+    if (!platformLocationId.trim()) {
+      setVerificationError("Please enter a Platform Location ID");
+      return;
+    }
+
+    setVerifying(true);
+    setVerificationError(null);
+    setVerifiedListing(null);
+
+    try {
+      const response = await supabase.functions.invoke("zembra-client", {
+        body: {
+          mode: "listing",
+          network: platformName.toLowerCase(),
+          slug: platformLocationId.trim(),
+        },
+      });
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || "Failed to verify listing");
+      }
+
+      setVerifiedListing(response.data.listing);
+    } catch (err: any) {
+      setVerificationError(
+        err.message || "Failed to verify listing. Please check the ID."
+      );
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleConnect = async () => {
-    if (!selectedPage || !selectedLocation) return;
+    if (!selectedLocation || !verifiedListing) return;
 
     setConnecting(true);
+    setError(null);
+
     try {
-      await onConnect(selectedPage, selectedLocation);
+      await onConnect(
+        platformLocationId.trim(),
+        selectedLocation,
+        verifiedListing
+      );
       handleClose();
     } catch (err: any) {
       setError(err.message || "Failed to connect platform");
@@ -119,9 +202,10 @@ export const PlatformConnectionDialog = ({
   };
 
   const handleClose = () => {
-    setPages([]);
-    setSelectedPage(null);
     setSelectedLocation(null);
+    setPlatformLocationId("");
+    setVerifiedListing(null);
+    setVerificationError(null);
     setError(null);
     onClose();
   };
@@ -137,145 +221,138 @@ export const PlatformConnectionDialog = ({
         <Stack spacing={3}>
           {error && <Alert severity="error">{error}</Alert>}
 
-          {loading ? (
-            <Box display="flex" justifyContent="center" py={4}>
-              <Stack alignItems="center" spacing={2}>
-                <CircularProgress />
-                <Typography variant="body2" color="text.secondary">
-                  Loading your {platformName} pages...
-                </Typography>
+          {/* Location Selection */}
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Select Location
+            </Typography>
+            {availableLocations.length === 0 ? (
+              <Alert severity="info">
+                All locations are already connected to {platformName}. Please
+                add a new location to connect.
+              </Alert>
+            ) : (
+              <Stack spacing={1}>
+                {availableLocations.map((location) => (
+                  <Card
+                    key={location.id}
+                    sx={{
+                      cursor: "pointer",
+                      border: selectedLocation === location.id ? 2 : 1,
+                      borderColor:
+                        selectedLocation === location.id
+                          ? "primary.main"
+                          : "divider",
+                    }}
+                    onClick={() => setSelectedLocation(location.id)}
+                  >
+                    <CardContent sx={{ py: 2 }}>
+                      <Typography variant="subtitle1">
+                        {location.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {location.address}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Box>
+
+          {/* Platform Location ID Entry */}
+          {selectedLocation && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Enter {getPlatformIdLabel(platformName)}
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  label={getPlatformIdLabel(platformName)}
+                  placeholder={getPlatformIdPlaceholder(platformName)}
+                  value={platformLocationId}
+                  onChange={(e) => {
+                    setPlatformLocationId(e.target.value);
+                    setVerifiedListing(null);
+                    setVerificationError(null);
+                  }}
+                  disabled={verifying || connecting}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleVerify}
+                  disabled={
+                    !platformLocationId.trim() || verifying || connecting
+                  }
+                  startIcon={verifying ? <CircularProgress size={20} /> : null}
+                >
+                  {verifying ? "Verifying..." : "Verify"}
+                </Button>
+                {verificationError && (
+                  <Alert severity="error">{verificationError}</Alert>
+                )}
               </Stack>
             </Box>
-          ) : (
-            <>
-              {/* Location Selection */}
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Select Location
-                </Typography>
-                {platformName.toLowerCase() !== "yelp" && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    Please select a location to connect this{" "}
-                    {platformName.charAt(0).toUpperCase() +
-                      platformName.slice(1)}{" "}
-                    account to
-                  </Typography>
-                )}
-                <Stack spacing={1}>
-                  {locations.map((location) => (
-                    <Card
-                      key={location.id}
-                      sx={{
-                        cursor: "pointer",
-                        border: selectedLocation === location.id ? 2 : 1,
-                        borderColor:
-                          selectedLocation === location.id
-                            ? "primary.main"
-                            : "divider",
-                      }}
-                      onClick={() => {
-                        setSelectedLocation(location.id);
-                        setSelectedPage(null);
-                        // For Yelp, fetch businesses when location is selected
-                        if (platformName.toLowerCase() === "yelp") {
-                          fetchPages(location);
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ py: 2 }}>
-                        <Typography variant="subtitle1">
-                          {location.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {location.address}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              </Box>
+          )}
 
-              {/* Page Selection */}
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Select{" "}
-                  {platformName.charAt(0).toUpperCase() + platformName.slice(1)}{" "}
-                  Page
-                </Typography>
-                {platformName.toLowerCase() === "yelp" && !selectedLocation && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    Please select a location first to search for businesses
-                  </Typography>
-                )}
-                {searching && (
-                  <Box display="flex" justifyContent="center" py={2}>
-                    <Stack alignItems="center" spacing={2}>
-                      <CircularProgress size={40} />
-                      <Typography variant="body2" color="text.secondary">
-                        Searching Yelp for businesses...
+          {/* Verified Listing Preview */}
+          {verifiedListing && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Verified Listing
+              </Typography>
+              <Card
+                sx={{
+                  bgcolor: "success.50",
+                  border: 1,
+                  borderColor: "success.main",
+                }}
+              >
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    {verifiedListing.profileImage && (
+                      <Avatar
+                        src={verifiedListing.profileImage}
+                        sx={{ width: 60, height: 60 }}
+                      />
+                    )}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {verifiedListing.name}
                       </Typography>
-                    </Stack>
-                  </Box>
-                )}
-                {!searching && pages.length === 0 && selectedLocation && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    No businesses found. Try selecting a different location.
-                  </Typography>
-                )}
-                <Stack spacing={1}>
-                  {pages.map((page) => (
-                    <Card
-                      key={page.id}
-                      sx={{
-                        cursor: "pointer",
-                        border: selectedPage?.id === page.id ? 2 : 1,
-                        borderColor:
-                          selectedPage?.id === page.id
-                            ? "primary.main"
-                            : "divider",
-                      }}
-                      onClick={() => setSelectedPage(page)}
-                    >
-                      <CardContent sx={{ py: 2 }}>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar
-                            src={page.profilePicture}
-                            sx={{ width: 40, height: 40 }}
-                          >
-                            {page.name.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle1">
-                              {page.name}
-                            </Typography>
-                            {page.url && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {page.url}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              </Box>
-            </>
+                      {verifiedListing.address && (
+                        <Typography variant="body2" color="text.secondary">
+                          {[
+                            verifiedListing.address.street,
+                            verifiedListing.address.city,
+                            verifiedListing.address.region,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </Typography>
+                      )}
+                      {verifiedListing.categories &&
+                        verifiedListing.categories.length > 0 && (
+                          <Typography variant="caption" color="text.secondary">
+                            {verifiedListing.categories.join(", ")}
+                          </Typography>
+                        )}
+                      {verifiedListing.globalRating && (
+                        <Typography variant="body2" color="text.secondary">
+                          Rating: {verifiedListing.globalRating} / 5.0
+                        </Typography>
+                      )}
+                      {verifiedListing.reviewCount && (
+                        <Typography variant="body2" color="text.secondary">
+                          {verifiedListing.reviewCount.native.active} reviews
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Box>
           )}
         </Stack>
       </DialogContent>
@@ -287,7 +364,12 @@ export const PlatformConnectionDialog = ({
         <Button
           onClick={handleConnect}
           variant="contained"
-          disabled={!selectedPage || !selectedLocation || connecting || loading}
+          disabled={
+            !selectedLocation ||
+            !verifiedListing ||
+            connecting ||
+            !availableLocations.length
+          }
         >
           {connecting ? "Connecting..." : "Connect"}
         </Button>

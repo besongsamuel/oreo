@@ -42,7 +42,6 @@ import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { getAllPlatforms } from "../services/platforms/platformRegistry";
-import { PlatformPage } from "../services/platforms/types";
 
 interface Company {
   id: string;
@@ -84,7 +83,7 @@ export const Companies = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const {
-    connectPlatform,
+    connectPlatformUnified,
     connecting,
     error: platformError,
     success: platformSuccess,
@@ -304,17 +303,18 @@ export const Companies = () => {
   };
 
   const handlePlatformConnect = async (
-    page: PlatformPage,
-    locationId: string
+    platformLocationId: string,
+    locationId: string,
+    verifiedListing?: any
   ) => {
     if (!selectedCompany || !selectedPlatform) return;
 
     try {
-      await connectPlatform(
+      await connectPlatformUnified(
         selectedPlatform,
-        selectedCompany.id,
-        page,
-        locationId
+        platformLocationId,
+        locationId,
+        verifiedListing
       );
       await fetchCompanies(); // Refresh company data
     } catch (err: any) {

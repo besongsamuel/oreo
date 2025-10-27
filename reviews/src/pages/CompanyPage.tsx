@@ -47,7 +47,6 @@ import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { getAllPlatforms } from "../services/platforms/platformRegistry";
-import { PlatformPage } from "../services/platforms/types";
 import { ReviewsService } from "../services/reviewsService";
 
 interface CompanyDetails {
@@ -123,7 +122,7 @@ export const CompanyPage = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const {
-    connectPlatform,
+    connectPlatformUnified,
     connecting,
     error: platformError,
     success: platformSuccess,
@@ -721,37 +720,28 @@ export const CompanyPage = () => {
   const handleFetchReviews = async (platform: string) => {
     setSelectedPlatform(platform);
 
-    // Check if this is Facebook, Google, or Yelp (active platforms)
-    if (
-      platform.toLowerCase() === "facebook" ||
-      platform.toLowerCase() === "google" ||
-      platform.toLowerCase() === "yelp"
-    ) {
-      try {
-        // Get company locations
-        const { data: locations, error } = await supabase
-          .from("locations")
-          .select("id, name, address, city")
-          .eq("company_id", companyId)
-          .eq("is_active", true);
+    // All platforms use the same unified flow now
+    try {
+      // Get company locations
+      const { data: locations, error } = await supabase
+        .from("locations")
+        .select("id, name, address, city")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (!locations || locations.length === 0) {
-          setError(
-            "Please add at least one location to this company before connecting platforms."
-          );
-          return;
-        }
-
-        setCompanyLocations(locations);
-        setPlatformDialogOpen(true);
-      } catch (err: any) {
-        setError(err.message || "Failed to load company locations");
+      if (!locations || locations.length === 0) {
+        setError(
+          "Please add at least one location to this company before connecting platforms."
+        );
+        return;
       }
-    } else {
-      // Show coming soon dialog for other platforms
-      setComingSoonOpen(true);
+
+      setCompanyLocations(locations);
+      setPlatformDialogOpen(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to load company locations");
     }
   };
 
@@ -882,17 +872,18 @@ export const CompanyPage = () => {
   };
 
   const handlePlatformConnect = async (
-    page: PlatformPage,
-    locationId: string
+    platformLocationId: string,
+    locationId: string,
+    verifiedListing?: any
   ) => {
     if (!companyId || !selectedPlatform) return;
 
     try {
-      await connectPlatform(
+      await connectPlatformUnified(
         selectedPlatform.toLowerCase(),
-        companyId,
-        page,
-        locationId
+        platformLocationId,
+        locationId,
+        verifiedListing
       );
 
       // Refresh only the necessary data after successful connection

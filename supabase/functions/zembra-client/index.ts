@@ -3,6 +3,7 @@ import {
     ZembraClientRequest,
     ZembraClientResponse,
     ZembraJobResponse,
+    ZembraListingResponse,
     ZembraReviewsResponse,
 } from "./types.ts";
 
@@ -194,6 +195,40 @@ serve(async (req) => {
                 success: true,
                 reviews: [],
                 retryCount,
+            };
+
+            return new Response(JSON.stringify(result), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 200,
+            });
+        } else if (mode === "listing") {
+            // Verify listing exists on platform
+            const response = await fetch(
+                `https://api.zembra.io/listing/${network}/?slug=${
+                    encodeURIComponent(slug)
+                }`,
+                {
+                    method: "GET",
+                    headers,
+                },
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(
+                    `Failed to fetch listing: ${response.status} ${errorText}`,
+                );
+            }
+
+            const data: ZembraListingResponse = await response.json();
+
+            if (data.status !== "SUCCESS") {
+                throw new Error(data.message || "Listing not found");
+            }
+
+            const result: ZembraClientResponse = {
+                success: true,
+                listing: data.data,
             };
 
             return new Response(JSON.stringify(result), {

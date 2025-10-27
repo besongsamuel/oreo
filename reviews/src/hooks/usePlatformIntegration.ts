@@ -271,6 +271,89 @@ export function usePlatformIntegration() {
         };
     };
 
+    const connectPlatformUnified = async (
+        platformName: string,
+        platformLocationId: string,
+        locationId: string,
+        verifiedListing?: any, // ZembraTarget - listing data from Zembra
+    ): Promise<PlatformConnectionResult> => {
+        setConnecting(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const reviewsService = new ReviewsService(supabase);
+
+            // Get platform record
+            const platform = await reviewsService.getPlatformByName(
+                platformName,
+            );
+
+            // Extract platform URL from verified listing
+            const platformUrl = verifiedListing?.url;
+
+            // Create platform connection with URL from verified listing
+            const connection = await reviewsService
+                .getOrCreatePlatformConnection(
+                    locationId,
+                    platform.id,
+                    platformLocationId,
+                    platformUrl, // Use URL from Zembra listing verification
+                    undefined, // accessToken not needed
+                );
+
+            // Create Zembra review job
+            const createJobResponse = await supabase.functions.invoke(
+                "zembra-client",
+                {
+                    body: {
+                        mode: "create-review-job",
+                        network: platformName,
+                        slug: platformLocationId,
+                    },
+                },
+            );
+
+            if (!createJobResponse.data?.success) {
+                throw new Error(
+                    createJobResponse.data?.error ||
+                        "Failed to create review job",
+                );
+            }
+
+            // Update connection metadata with job ID
+            const jobId = createJobResponse.data.jobId;
+            await supabase
+                .from("platform_connections")
+                .update({
+                    metadata: {
+                        zembraJobId: jobId,
+                    },
+                })
+                .eq("id", connection.id);
+
+            setSuccess(
+                `Successfully connected ${platformName}. Reviews will be imported shortly.`,
+            );
+
+            return {
+                success: true,
+                reviewsImported: 0, // Reviews will come via webhook
+            };
+        } catch (err: any) {
+            const errorMessage = err.message || "Failed to connect platform";
+            setError(errorMessage);
+
+            return {
+                success: false,
+                reviewsImported: 0,
+                error: errorMessage,
+            };
+        } finally {
+            setConnecting(false);
+        }
+    };
+
     const connectPlatform = async (
         platformName: string,
         companyId: string,
@@ -480,6 +563,7 @@ export function usePlatformIntegration() {
         error,
         success,
         connectPlatform,
+        connectPlatformUnified,
         fetchReviews,
         clearMessages: () => {
             setError(null);

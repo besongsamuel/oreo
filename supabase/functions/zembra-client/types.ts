@@ -91,8 +91,16 @@ export interface ZembraReviewsResponse {
     };
 }
 
+export interface ZembraListingResponse {
+    status: string;
+    message: string;
+    data: ZembraTarget;
+    cost: number;
+    balance: number;
+}
+
 export interface ZembraClientRequest {
-    mode: "create-review-job" | "get-reviews";
+    mode: "create-review-job" | "get-reviews" | "listing";
     network: string;
     slug: string;
     postedAfter?: string; // ISO timestamp for incremental fetches
@@ -102,6 +110,7 @@ export interface ZembraClientResponse {
     success: boolean;
     jobId?: string;
     reviews?: ZembraReview[];
+    listing?: ZembraTarget;
     error?: string;
     retryCount?: number;
 }
