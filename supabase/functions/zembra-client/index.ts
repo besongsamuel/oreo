@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
     ZembraClientRequest,
     ZembraClientResponse,
@@ -50,13 +51,31 @@ serve(async (req) => {
             );
         }
 
-        const { mode, network, slug, postedAfter } = body;
+        const { mode, network, slug, postedAfter, userId } = body;
+
+        // Get user's subscription tier if userId is provided
+        let isPaid = false;
+        if (userId) {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL");
+            const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+            if (supabaseUrl && supabaseKey) {
+                const supabaseClient = createClient(supabaseUrl, supabaseKey);
+                const { data: profile } = await supabaseClient
+                    .from("profiles")
+                    .select("subscription_tier")
+                    .eq("id", userId)
+                    .single();
+
+                isPaid = profile?.subscription_tier === "paid";
+            }
+        }
 
         // Build base URL with common query parameters
         const baseUrl = new URL(ZEMBRA_API_BASE);
         baseUrl.searchParams.set("network", network);
         baseUrl.searchParams.set("slug", slug);
-        baseUrl.searchParams.set("monitoring", "none");
+        baseUrl.searchParams.set("monitoring", isPaid ? "basic" : "none");
         baseUrl.searchParams.set("sortBy", "timestamp");
         baseUrl.searchParams.set("sortDirection", "DESC");
 
@@ -64,6 +83,11 @@ serve(async (req) => {
         DEFAULT_FIELDS.forEach((field) => {
             baseUrl.searchParams.append("fields[]", field);
         });
+
+        // Add sizeLimit for free users (create-review-job mode only)
+        if (mode === "create-review-job" && !isPaid) {
+            baseUrl.searchParams.set("sizeLimit", "10");
+        }
 
         // Add postedAfter parameter if provided (for incremental fetches)
         if (postedAfter) {

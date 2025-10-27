@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 import { getPlatformProvider } from "../services/platforms/platformRegistry";
 import {
@@ -9,6 +10,8 @@ import { ReviewsService } from "../services/reviewsService";
 
 export function usePlatformIntegration() {
     const supabase = useSupabase();
+    const context = useContext(UserContext);
+    const user = context?.user;
     const [connecting, setConnecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -338,6 +341,7 @@ export function usePlatformIntegration() {
                         mode: "create-review-job",
                         network: platformName,
                         slug: platformLocationId,
+                        userId: user?.id,
                     },
                 },
             );

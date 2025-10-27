@@ -104,6 +104,7 @@ export interface ZembraClientRequest {
     network: string;
     slug: string;
     postedAfter?: string; // ISO timestamp for incremental fetches
+    userId?: string; // User ID for subscription-based limits
 }
 
 export interface ZembraClientResponse {

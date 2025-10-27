@@ -10,7 +10,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { CompanyCard } from "../components/CompanyCard";
 import { SEO } from "../components/SEO";
 import {
@@ -18,7 +18,7 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
-import { useProfile } from "../hooks/useProfile";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface CompanyStat {
@@ -59,7 +59,8 @@ interface KeywordAnalysis {
 
 export const Dashboard = () => {
   const supabase = useSupabase();
-  const { profile } = useProfile();
+  const context = useContext(UserContext);
+  const profile = context?.profile;
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStat[]>([]);
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([]);

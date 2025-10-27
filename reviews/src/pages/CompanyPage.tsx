@@ -29,7 +29,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CompanyHeader,
@@ -44,8 +44,8 @@ import {
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
+import { UserContext } from "../context/UserContext";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
-import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { getAllPlatforms } from "../services/platforms/platformRegistry";
 import { ReviewsService } from "../services/reviewsService";
@@ -133,7 +133,8 @@ interface Topic {
 export const CompanyPage = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const supabase = useSupabase();
-  const { profile } = useProfile();
+  const context = useContext(UserContext);
+  const profile = context?.profile;
   const navigate = useNavigate();
   const {
     connectPlatformUnified,

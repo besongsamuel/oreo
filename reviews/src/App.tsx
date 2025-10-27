@@ -1,7 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AddLocation, Companies, PrivacyPolicy, TermsOfUse } from "./pages";
+import {
+  AddLocation,
+  Companies,
+  Home,
+  Pricing,
+  PrivacyPolicy,
+  TermsOfUse,
+} from "./pages";
 import { CompanyPage } from "./pages/CompanyPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
@@ -13,8 +20,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Root redirect to dashboard */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/pricing" element={<Pricing />} />
 
         {/* Protected routes with layout */}
         <Route
@@ -103,8 +111,8 @@ function App() {
           }
         />
 
-        {/* Catch all - redirect to dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

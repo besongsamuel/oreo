@@ -3,6 +3,7 @@ export { Companies } from "./Companies";
 export { CompanyPage } from "./CompanyPage";
 export { Dashboard } from "./Dashboard";
 export { Home } from "./Home";
+export { Pricing } from "./Pricing";
 export { PrivacyPolicy } from "./PrivacyPolicy";
 export { Profile } from "./Profile";
 export { SuccessLocation } from "./SuccessLocation";

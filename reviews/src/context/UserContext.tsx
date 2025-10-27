@@ -2,9 +2,26 @@ import { Session, User } from "@supabase/supabase-js";
 import React, { createContext, useEffect, useState } from "react";
 import { useSupabase } from "../hooks/useSupabase";
 
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  company_name: string | null;
+  role: string;
+  avatar_url: string | null;
+  subscription_tier: string;
+  subscription_started_at: string | null;
+  subscription_expires_at: string | null;
+  monthly_reviews_count: number;
+  monthly_reviews_reset_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface UserContextType {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -19,7 +36,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const supabase = useSupabase();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        setProfile(data as Profile);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setProfile(null);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -31,6 +69,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setSession(session);
         setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
@@ -46,17 +90,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+
       setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setProfile(null);
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -65,6 +118,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = {
     user,
     session,
+    profile,
     loading,
     signOut,
   };

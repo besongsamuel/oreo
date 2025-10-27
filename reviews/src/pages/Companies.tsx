@@ -33,13 +33,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
+import { UserContext } from "../context/UserContext";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
-import { useProfile } from "../hooks/useProfile";
 import { useSupabase } from "../hooks/useSupabase";
 import { getAllPlatforms } from "../services/platforms/platformRegistry";
 
@@ -80,7 +80,8 @@ const INDUSTRY_OPTIONS = [
 
 export const Companies = () => {
   const supabase = useSupabase();
-  const { profile } = useProfile();
+  const context = useContext(UserContext);
+  const profile = context?.profile;
   const navigate = useNavigate();
   const {
     connectPlatformUnified,

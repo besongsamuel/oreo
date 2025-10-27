@@ -1,13 +1,16 @@
 import { Box, CircularProgress, Container } from "@mui/material";
+import { useContext } from "react";
 import { Navigate } from "react-router-dom";
-import { useUser } from "../hooks/useUser";
+import { UserContext } from "../context/UserContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useUser();
+  const context = useContext(UserContext);
+  const user = context?.user;
+  const loading = context?.loading;
 
   if (loading) {
     return (
@@ -27,7 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

@@ -11,15 +11,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
-import { useProfile } from "../hooks/useProfile";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
-import { useUser } from "../hooks/useUser";
 
 export const Profile = () => {
-  const { user } = useUser();
-  const { profile, refreshProfile } = useProfile();
+  const context = useContext(UserContext);
+  const user = context?.user;
+  const profile = context?.profile;
   const supabase = useSupabase();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -81,11 +81,12 @@ export const Profile = () => {
 
       if (updateError) throw updateError;
 
-      await refreshProfile();
       setSuccess(true);
       setIsEditing(false);
 
       setTimeout(() => setSuccess(false), 3000);
+
+      // Profile will automatically refresh via UserContext
     } catch (err: any) {
       console.error("Error updating profile:", err);
       setError(err.message || "Failed to update profile");

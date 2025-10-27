@@ -18,14 +18,15 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useProfile } from "../hooks/useProfile";
-import { useUser } from "../hooks/useUser";
+import { UserContext } from "../context/UserContext";
 
 export const Header = () => {
-  const { user, signOut } = useUser();
-  const { profile } = useProfile();
+  const context = useContext(UserContext);
+  const user = context?.user;
+  const profile = context?.profile;
+  const signOut = context?.signOut;
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -48,8 +49,10 @@ export const Header = () => {
 
   const handleSignOut = async () => {
     handleMenuClose();
-    await signOut();
-    navigate("/auth/login");
+    if (signOut) {
+      await signOut();
+    }
+    navigate("/");
   };
 
   return (
@@ -84,106 +87,106 @@ export const Header = () => {
               sx={{
                 fontWeight: 600,
                 letterSpacing: "-0.01em",
-                display: "flex",
-                alignItems: "baseline",
-                gap: 0.5,
-                fontSize: { xs: "1rem", sm: "1.25rem" },
+                fontSize: { xs: "1.25rem", sm: "1.5rem" },
               }}
             >
+              <Box component="span" sx={{ color: "#0071e3" }}>
+                B
+              </Box>
               <Box component="span" sx={{ color: "text.primary" }}>
-                Boresha
-              </Box>
-              <Box
-                component="span"
-                sx={{
-                  color: "secondary.main",
-                  display: { xs: "none", sm: "inline" },
-                }}
-              >
-                Review
-              </Box>
-              <Box
-                component="span"
-                sx={{
-                  color: "text.primary",
-                  display: { xs: "none", sm: "inline" },
-                }}
-              >
-                Tracker
+                oresha
               </Box>
             </Typography>
           </Box>
 
           {/* Desktop Navigation */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: { xs: "none", md: "flex" },
-              justifyContent: "center",
-              gap: 0.5,
-            }}
-          >
-            <Button
-              onClick={() => navigate("/dashboard")}
-              color="inherit"
+          {user && (
+            <Box
               sx={{
-                color: isActive("/dashboard")
-                  ? "text.primary"
-                  : "text.secondary",
-                fontWeight: isActive("/dashboard") ? 600 : 400,
-                fontSize: "0.875rem",
-                px: 2,
-                minWidth: "auto",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
+                flexGrow: 1,
+                display: { xs: "none", md: "flex" },
+                justifyContent: "center",
+                gap: 0.5,
               }}
             >
-              Dashboard
-            </Button>
-            <Button
-              onClick={() => navigate("/companies")}
-              color="inherit"
-              sx={{
-                color: isActive("/companies")
-                  ? "text.primary"
-                  : "text.secondary",
-                fontWeight: isActive("/companies") ? 600 : 400,
-                fontSize: "0.875rem",
-                px: 2,
-                minWidth: "auto",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
-              }}
-            >
-              Companies
-            </Button>
-          </Box>
-
-          {/* User Avatar */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <IconButton
-              size="small"
-              onClick={handleMenuOpen}
-              color="inherit"
-              sx={{
-                p: 0,
-              }}
-            >
-              <Avatar
+              <Button
+                onClick={() => navigate("/dashboard")}
+                color="inherit"
                 sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: "secondary.main",
+                  color: isActive("/dashboard")
+                    ? "text.primary"
+                    : "text.secondary",
+                  fontWeight: isActive("/dashboard") ? 600 : 400,
                   fontSize: "0.875rem",
-                  fontWeight: 600,
+                  px: 2,
+                  minWidth: "auto",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                  },
                 }}
               >
-                {profile?.full_name?.charAt(0)?.toUpperCase() ||
-                  user?.email?.charAt(0)?.toUpperCase()}
-              </Avatar>
-            </IconButton>
+                Dashboard
+              </Button>
+              <Button
+                onClick={() => navigate("/companies")}
+                color="inherit"
+                sx={{
+                  color: isActive("/companies")
+                    ? "text.primary"
+                    : "text.secondary",
+                  fontWeight: isActive("/companies") ? 600 : 400,
+                  fontSize: "0.875rem",
+                  px: 2,
+                  minWidth: "auto",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                  },
+                }}
+              >
+                Companies
+              </Button>
+            </Box>
+          )}
+
+          {/* User Avatar or Login Button */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {user ? (
+              <IconButton
+                size="small"
+                onClick={handleMenuOpen}
+                color="inherit"
+                sx={{
+                  p: 0,
+                }}
+              >
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    bgcolor: "secondary.main",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                    user?.email?.charAt(0)?.toUpperCase()}
+                </Avatar>
+              </IconButton>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={() => navigate("/auth/login")}
+                sx={{
+                  borderRadius: 980,
+                  px: 3,
+                  py: 0.75,
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Login
+              </Button>
+            )}
 
             <Menu
               anchorEl={anchorEl}
@@ -319,8 +322,10 @@ export const Header = () => {
             <ListItemButton
               onClick={async () => {
                 setMobileMenuOpen(false);
-                await signOut();
-                navigate("/auth/login");
+                if (signOut) {
+                  await signOut();
+                }
+                navigate("/");
               }}
               sx={{
                 borderRadius: 1,
