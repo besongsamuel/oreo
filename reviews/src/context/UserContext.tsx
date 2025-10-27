@@ -59,6 +59,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
+    if (user) {
+      fetchProfile(user.id);
+    }
+  }, [user]);
+
+  useEffect(() => {
     // Get initial session
 
     // Listen for auth changes
@@ -67,12 +73,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
 
       setLoading(false);
     });
