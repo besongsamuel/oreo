@@ -25,13 +25,7 @@ export const ReviewsTimelineChart = ({
   const series = [
     {
       name: "Reviews",
-      type: "column",
       data: reviewCounts,
-    },
-    {
-      name: "Avg Rating",
-      type: "line",
-      data: avgRatings,
     },
   ];
 
@@ -39,76 +33,98 @@ export const ReviewsTimelineChart = ({
     chart: {
       height: 350,
       type: "line",
-      toolbar: { show: true },
+      toolbar: { show: false },
       zoom: {
+        enabled: true,
+        type: "x",
+        autoScaleYaxis: true,
+      },
+      selection: {
         enabled: true,
       },
     },
     stroke: {
-      width: [0, 4],
+      width: 3,
       curve: "smooth",
     },
-    colors: ["#0071e3", "#ff9800"],
+    colors: ["#0071e3"],
     dataLabels: {
       enabled: false,
     },
     markers: {
-      size: 4,
+      size: 5,
       strokeWidth: 2,
     },
     legend: {
-      show: true,
-      position: "top",
+      show: false,
     },
     xaxis: {
       categories: dates,
       labels: {
-        rotate: -45,
+        rotate: 0,
         style: {
-          fontSize: "10px",
+          fontSize: "12px",
+        },
+      },
+      axisTicks: {
+        show: false,
+      },
+    },
+    yaxis: {
+      labels: {
+        style: {
+          fontSize: "12px",
+        },
+        formatter: function (val: number) {
+          return Math.floor(val).toString();
         },
       },
     },
-    yaxis: [
-      {
-        title: {
-          text: "Number of Reviews",
-        },
-      },
-      {
-        opposite: true,
-        title: {
-          text: "Average Rating",
-        },
-        min: 0,
-        max: 5,
-      },
-    ],
     tooltip: {
-      shared: true,
-      intersect: false,
+      enabled: true,
       custom: function ({ seriesIndex, dataPointIndex, w }) {
-        const data = w.globals.initialSeries[0].data[dataPointIndex];
-        const rating = w.globals.initialSeries[1].data[dataPointIndex];
+        const count = w.globals.initialSeries[0].data[dataPointIndex];
         const date = w.globals.labels[dataPointIndex];
+        const avgRating = avgRatings[dataPointIndex];
 
         return `
-          <div style="padding: 8px;">
-            <div><strong>${date}</strong></div>
-            <div>Reviews: ${data}</div>
-            <div>Avg Rating: ${rating?.toFixed(1)} ⭐</div>
+          <div style="padding: 12px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 14px;">${date}</div>
+            <div style="margin-bottom: 4px; color: #666; font-size: 13px;">${count} ${
+          count === 1 ? "review" : "reviews"
+        }</div>
+            <div style="color: #666; font-size: 13px;">⭐ ${avgRating.toFixed(
+              1
+            )} avg rating</div>
           </div>
         `;
       },
     },
     grid: {
-      borderColor: "#f0f0f0",
+      borderColor: "#e0e0e0",
       strokeDashArray: 3,
+      xaxis: {
+        lines: {
+          show: false,
+        },
+      },
+      yaxis: {
+        lines: {
+          show: true,
+        },
+      },
     },
-    plotOptions: {
-      bar: {
-        columnWidth: "60%",
-        borderRadius: 8,
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "light",
+        type: "vertical",
+        shadeIntensity: 0.5,
+        gradientToColors: ["#ffffff"],
+        inverseColors: false,
+        opacityFrom: 0.3,
+        opacityTo: 0.1,
+        stops: [0, 100],
       },
     },
   };
@@ -121,7 +137,7 @@ export const ReviewsTimelineChart = ({
             Reviews Over Time
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Review volume and average rating trends
+            Weekly review volume trends
           </Typography>
         </Box>
         <Box sx={{ height: 350 }}>

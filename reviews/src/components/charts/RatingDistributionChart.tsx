@@ -52,10 +52,13 @@ export const RatingDistributionChart = ({
     return "#f44336";
   };
 
-  const series = data.map((d) => ({
-    name: `${d.rating} Star${d.rating !== 1 ? "s" : ""}`,
-    data: [d.count],
-  }));
+  // For horizontal bar chart, create single series with all data points
+  const series = [
+    {
+      name: "Reviews",
+      data: data.map((d) => d.count),
+    },
+  ];
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -64,9 +67,13 @@ export const RatingDistributionChart = ({
       toolbar: { show: false },
       events: {
         dataPointSelection: (event, chartContext, config) => {
-          const index = config.dataPointIndex;
-          const rating = data[index].rating;
-          onRatingClick?.(rating);
+          if (
+            config.dataPointIndex >= 0 &&
+            config.dataPointIndex < data.length
+          ) {
+            const rating = data[config.dataPointIndex].rating;
+            onRatingClick?.(rating);
+          }
         },
       },
     },
@@ -89,12 +96,12 @@ export const RatingDistributionChart = ({
       },
     },
     xaxis: {
-      categories: data.map((d) => `${d.rating}★`),
+      categories: data.map(
+        (d) => `${d.rating} Star${d.rating !== 1 ? "s" : ""}`
+      ),
     },
     yaxis: {
-      labels: {
-        formatter: (val: number) => Math.round(val).toString(),
-      },
+      show: false,
     },
     tooltip: {
       y: {

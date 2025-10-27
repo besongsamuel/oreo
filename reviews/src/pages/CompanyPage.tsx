@@ -156,6 +156,7 @@ export const CompanyPage = () => {
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [allReviews, setAllReviews] = useState<Review[]>([]); // All reviews for charts
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [keywordAnalysis, setKeywordAnalysis] = useState<KeywordAnalysis[]>([]);
   const [sentimentData, setSentimentData] = useState<SentimentData | null>(
@@ -502,6 +503,16 @@ export const CompanyPage = () => {
         }
         if (filterEndDate) {
           reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
+        }
+
+        // Fetch all reviews for charts (ignore recent filter)
+        const { data: allReviewsData } = await supabase
+          .from("recent_reviews")
+          .select("*")
+          .eq("company_id", companyId);
+
+        if (allReviewsData) {
+          setAllReviews(allReviewsData);
         }
 
         // Apply recent filter (last 30 days) if showRecentOnly is true
@@ -924,15 +935,18 @@ export const CompanyPage = () => {
   // Calculate chart data from reviews
   useEffect(() => {
     const calculateChartData = () => {
-      if (reviews.length === 0) {
+      // Use all reviews for charts to show full timeline
+      const reviewsForCharts = allReviews.length > 0 ? allReviews : reviews;
+
+      if (reviewsForCharts.length === 0) {
         setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
         setTimelineData([]);
         return;
       }
 
-      // Calculate rating distribution
+      // Calculate rating distribution from all reviews
       const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      reviews.forEach((review) => {
+      reviewsForCharts.forEach((review) => {
         const rating = Math.floor(review.rating);
         if (rating >= 1 && rating <= 5) {
           ratingCounts[rating as keyof typeof ratingCounts]++;
@@ -940,13 +954,13 @@ export const CompanyPage = () => {
       });
       setRatingDistribution(ratingCounts);
 
-      // Calculate timeline data (group by week)
+      // Calculate timeline data (group by week) from all reviews
       const timelineMap = new Map<
         string,
         { count: number; sumRating: number; positive: number; negative: number }
       >();
 
-      reviews.forEach((review) => {
+      reviewsForCharts.forEach((review) => {
         const date = new Date(review.published_at);
         // Get start of week (Monday)
         const weekStart = new Date(date);
@@ -969,7 +983,7 @@ export const CompanyPage = () => {
       const timeline = Array.from(timelineMap.entries())
         .map(([date, data]) => ({
           date,
-          count: data.count,
+          count: Math.floor(data.count), // Remove decimals
           avgRating: data.sumRating / data.count,
           positive: data.positive,
           negative: data.negative,
@@ -980,7 +994,7 @@ export const CompanyPage = () => {
     };
 
     calculateChartData();
-  }, [reviews]);
+  }, [reviews, allReviews]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
   useEffect(() => {
