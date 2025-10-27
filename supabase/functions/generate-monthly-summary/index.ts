@@ -9,6 +9,21 @@ interface RequestPayload {
 
 Deno.serve(async (req: Request) => {
     try {
+        // Check request method
+        if (req.method !== "POST") {
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Method not allowed",
+                    message: "Only POST requests are supported",
+                }),
+                {
+                    headers: { "Content-Type": "application/json" },
+                    status: 405,
+                },
+            );
+        }
+
         // Initialize Supabase client
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -21,7 +36,25 @@ Deno.serve(async (req: Request) => {
         }
 
         // Parse request payload
-        const { company_id, year, month }: RequestPayload = await req.json();
+        let payload: RequestPayload;
+        try {
+            payload = await req.json();
+        } catch (parseError) {
+            console.error("Error parsing request body:", parseError);
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Invalid request body",
+                    message: "Request body must be valid JSON",
+                }),
+                {
+                    headers: { "Content-Type": "application/json" },
+                    status: 400,
+                },
+            );
+        }
+
+        const { company_id, year, month } = payload;
 
         if (!company_id || !year || !month) {
             throw new Error(

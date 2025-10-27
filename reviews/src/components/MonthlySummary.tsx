@@ -181,6 +181,15 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
       if (!supabaseUrl) {
         throw new Error("Missing Supabase URL configuration");
       }
+
+      const payload = {
+        company_id: companyId,
+        year: currentYear,
+        month: currentMonth,
+      };
+
+      console.log("Calling edge function with payload:", payload);
+
       const response = await fetch(
         `${supabaseUrl}/functions/v1/generate-monthly-summary`,
         {
@@ -189,15 +198,13 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({
-            company_id: companyId,
-            year: currentYear,
-            month: currentMonth,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
+      console.log("Response status:", response.status);
       const result = await response.json();
+      console.log("Response result:", result);
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || "Failed to generate summary");
