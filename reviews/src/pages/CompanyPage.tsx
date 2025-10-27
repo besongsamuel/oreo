@@ -933,19 +933,40 @@ export const CompanyPage = () => {
 
   // Calculate chart data from reviews
   useEffect(() => {
-    const calculateChartData = () => {
-      // Use all reviews for charts to show full timeline
-      const reviewsForCharts = allReviews.length > 0 ? allReviews : reviews;
+    const calculateChartData = async () => {
+      // Filter reviews based on active filters for charts
+      let filteredForCharts = allReviews.length > 0 ? allReviews : reviews;
 
-      if (reviewsForCharts.length === 0) {
+      // Apply location filter
+      if (filterLocation !== "all") {
+        filteredForCharts = filteredForCharts.filter(
+          (review: any) => review.location_name === filterLocation
+        );
+      }
+
+      // Apply date range filters
+      if (filterStartDate) {
+        filteredForCharts = filteredForCharts.filter(
+          (review: any) =>
+            new Date(review.published_at) >= new Date(filterStartDate)
+        );
+      }
+      if (filterEndDate) {
+        filteredForCharts = filteredForCharts.filter(
+          (review: any) =>
+            new Date(review.published_at) <= new Date(filterEndDate)
+        );
+      }
+
+      if (filteredForCharts.length === 0) {
         setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
         setTimelineData([]);
         return;
       }
 
-      // Calculate rating distribution from all reviews
+      // Calculate rating distribution from filtered reviews
       const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      reviewsForCharts.forEach((review) => {
+      filteredForCharts.forEach((review) => {
         const rating = Math.floor(review.rating);
         if (rating >= 1 && rating <= 5) {
           ratingCounts[rating as keyof typeof ratingCounts]++;
@@ -959,7 +980,7 @@ export const CompanyPage = () => {
         { count: number; sumRating: number; positive: number; negative: number }
       >();
 
-      reviewsForCharts.forEach((review) => {
+      filteredForCharts.forEach((review) => {
         const date = new Date(review.published_at);
         // Get start of week (Monday)
         const weekStart = new Date(date);
@@ -993,7 +1014,7 @@ export const CompanyPage = () => {
     };
 
     calculateChartData();
-  }, [reviews, allReviews]);
+  }, [reviews, allReviews, filterLocation, filterStartDate, filterEndDate]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
   useEffect(() => {
