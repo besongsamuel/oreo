@@ -1,11 +1,15 @@
 import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
+  ExpandMore as ExpandMoreIcon,
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -196,6 +200,10 @@ export const CompanyPage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
+
+  // Pagination for reviews
+  const [currentPage, setCurrentPage] = useState(1);
+  const reviewsPerPage = 10;
 
   // Chart data state
   const [ratingDistribution, setRatingDistribution] = useState({
@@ -1241,6 +1249,17 @@ export const CompanyPage = () => {
     return true;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+  const startIndex = (currentPage - 1) * reviewsPerPage;
+  const endIndex = startIndex + reviewsPerPage;
+  const paginatedReviews = filteredReviews.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedKeyword, selectedRating]);
+
   // Get unique locations from all locations (not just filtered reviews)
   const uniqueLocations = locations.map((loc) => loc.name).sort();
 
@@ -1673,17 +1692,25 @@ export const CompanyPage = () => {
 
           {/* Topics Section */}
           {topics.length > 0 && (
-            <Paper sx={{ p: 3 }}>
-              <Stack spacing={3}>
+            <Accordion defaultExpanded>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  "& .MuiAccordionSummary-content": {
+                    alignItems: "center",
+                  },
+                }}
+              >
                 <Box>
-                  <Typography variant="h5" fontWeight={600} gutterBottom>
+                  <Typography variant="h6" fontWeight={600}>
                     Topics
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Common themes discussed in reviews
                   </Typography>
                 </Box>
-
+              </AccordionSummary>
+              <AccordionDetails>
                 <Box
                   sx={{
                     display: "grid",
@@ -1747,8 +1774,8 @@ export const CompanyPage = () => {
                     </Card>
                   ))}
                 </Box>
-              </Stack>
-            </Paper>
+              </AccordionDetails>
+            </Accordion>
           )}
 
           {/* Keyword Analysis */}
@@ -1836,7 +1863,9 @@ export const CompanyPage = () => {
                   Recent Reviews
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Showing {filteredReviews.length} of {reviews.length} reviews
+                  Showing {paginatedReviews.length} of {filteredReviews.length}{" "}
+                  reviews
+                  {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
                 </Typography>
               </Box>
               {(selectedKeyword !== "all" || selectedRating !== "all") && (
@@ -1967,15 +1996,50 @@ export const CompanyPage = () => {
                 </Button>
               </Box>
             ) : (
-              <Stack spacing={2}>
-                {filteredReviews.map((review) => (
-                  <ReviewComponent
-                    key={review.id}
-                    review={review}
-                    getSentimentColor={getSentimentColor}
-                  />
-                ))}
-              </Stack>
+              <>
+                <Stack spacing={2}>
+                  {paginatedReviews.map((review) => (
+                    <ReviewComponent
+                      key={review.id}
+                      review={review}
+                      getSentimentColor={getSentimentColor}
+                    />
+                  ))}
+                </Stack>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 1,
+                      mt: 3,
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      sx={{ borderRadius: 980 }}
+                    >
+                      Previous
+                    </Button>
+                    <Typography variant="body2" color="text.secondary">
+                      Page {currentPage} of {totalPages}
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      sx={{ borderRadius: 980 }}
+                    >
+                      Next
+                    </Button>
+                  </Box>
+                )}
+              </>
             )}
           </Paper>
         </Stack>

@@ -8,8 +8,11 @@ import {
   Button,
   Card,
   CardContent,
+  FormControl,
   IconButton,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
 } from "@mui/material";
@@ -58,6 +61,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
   // Fetch available months on mount
   useEffect(() => {
     fetchAvailableMonths();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   // Fetch summary when month/year changes
@@ -65,6 +69,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     if (availableMonths.length > 0) {
       fetchSummary();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth, availableMonths.length]);
 
   const fetchAvailableMonths = async () => {
@@ -248,24 +253,6 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     }
   };
 
-  const getMonthName = (month: number) => {
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    return monthNames[month - 1];
-  };
-
   const canNavigateNext = () => {
     const now = new Date();
     const currentDate = new Date(currentYear, currentMonth, 1);
@@ -299,7 +286,6 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     (m) => m.year === currentYear && m.month === currentMonth
   );
 
-  const monthYear = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
   const summaryExists = summaryData !== null;
 
   return (
@@ -330,9 +316,58 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
             <ArrowBackIcon />
           </IconButton>
 
-          <Typography variant="h6" fontWeight={500}>
-            {getMonthName(currentMonth)} {currentYear}
-          </Typography>
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            sx={{ flex: 1, justifyContent: "center" }}
+          >
+            {/* Month Selector */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <Select
+                value={currentMonth}
+                onChange={(e) => setCurrentMonth(Number(e.target.value))}
+                sx={{ borderRadius: 2 }}
+              >
+                {[
+                  "January",
+                  "February",
+                  "March",
+                  "April",
+                  "May",
+                  "June",
+                  "July",
+                  "August",
+                  "September",
+                  "October",
+                  "November",
+                  "December",
+                ].map((month, index) => (
+                  <MenuItem key={index + 1} value={index + 1}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Year Selector */}
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <Select
+                value={currentYear}
+                onChange={(e) => setCurrentYear(Number(e.target.value))}
+                sx={{ borderRadius: 2 }}
+              >
+                {Array.from(
+                  { length: 5 },
+                  (_, i) => new Date().getFullYear() - i
+                ).map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
 
           <IconButton
             onClick={handleNextMonth}
@@ -472,10 +507,16 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                 <Button
                   variant="contained"
                   onClick={handleGenerateSummary}
-                  disabled={generating || summaryExists}
+                  disabled={generating || summaryExists || !hasReviews}
                   sx={{ borderRadius: 980, minWidth: 200 }}
                 >
-                  {generating ? "Generating..." : "Generate Summary"}
+                  {generating
+                    ? "Generating..."
+                    : !hasReviews
+                    ? "No reviews for this month"
+                    : summaryExists
+                    ? "Summary already generated"
+                    : "Generate Summary"}
                 </Button>
               </Stack>
             </CardContent>
