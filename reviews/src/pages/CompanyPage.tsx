@@ -170,6 +170,7 @@ export const CompanyPage = () => {
     Array<{ id: string; name: string; address: string }>
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
@@ -1061,6 +1062,11 @@ export const CompanyPage = () => {
         locationId
       );
 
+      // Show success message
+      setSuccessMessage(
+        `Reviews from ${selectedPlatform} will be available shortly. Use the refresh button in the top right to check for new reviews.`
+      );
+
       // Close the dialog
       setPlatformDialogOpen(false);
       setCompanyLocations([]);
@@ -1896,6 +1902,15 @@ export const CompanyPage = () => {
             sx={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
           >
             {platformSuccess}
+          </Alert>
+        )}
+        {successMessage && (
+          <Alert
+            severity="success"
+            onClose={() => setSuccessMessage(null)}
+            sx={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+          >
+            {successMessage}
           </Alert>
         )}
       </Container>
