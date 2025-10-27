@@ -12,6 +12,11 @@ export const YELP_REVIEWS_FUNCTION = process.env
     ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/fetch-yelp-reviews`
     : "";
 
+export const ZEMBRA_CLIENT_FUNCTION = process.env
+        .REACT_APP_SUPABASE_URL
+    ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/zembra-client`
+    : "";
+
 export const YELP_CONFIG: PlatformConfig = {
     name: "yelp",
     displayName: "Yelp",

@@ -1,8 +1,8 @@
 import { PlatformPage, PlatformProvider, StandardReview } from "../types";
 import {
     YELP_CONFIG,
-    YELP_REVIEWS_FUNCTION,
     YELP_SEARCH_FUNCTION,
+    ZEMBRA_CLIENT_FUNCTION,
 } from "./yelpConfig";
 
 export class YelpProvider implements PlatformProvider {
@@ -87,9 +87,9 @@ export class YelpProvider implements PlatformProvider {
         options?: any,
     ): Promise<StandardReview[]> {
         try {
-            if (!YELP_REVIEWS_FUNCTION) {
+            if (!ZEMBRA_CLIENT_FUNCTION) {
                 throw new Error(
-                    "Yelp reviews function URL not configured. Please set REACT_APP_SUPABASE_URL.",
+                    "Zembra client function URL not configured. Please set REACT_APP_SUPABASE_URL.",
                 );
             }
 
@@ -100,13 +100,22 @@ export class YelpProvider implements PlatformProvider {
                 throw new Error("Supabase configuration not found");
             }
 
-            const response = await fetch(YELP_REVIEWS_FUNCTION, {
+            // Get postedAfter from options if provided (for incremental fetches)
+            const postedAfter = options?.postedAfter;
+
+            // Call Zembra client with get-reviews mode
+            const response = await fetch(ZEMBRA_CLIENT_FUNCTION, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${supabaseAnonKey}`,
                 },
-                body: JSON.stringify({ businessId }),
+                body: JSON.stringify({
+                    mode: "get-reviews",
+                    network: "yelp",
+                    slug: businessId,
+                    postedAfter: postedAfter,
+                }),
             });
 
             if (!response.ok) {
@@ -119,11 +128,16 @@ export class YelpProvider implements PlatformProvider {
             }
 
             const data = await response.json();
-            const yelpReviews = data.reviews || [];
 
-            // Transform Yelp reviews to StandardReview format
-            return yelpReviews.map((review: any) =>
-                this.transformYelpReview(review)
+            if (!data.success) {
+                throw new Error(data.error || "Failed to fetch reviews");
+            }
+
+            const zembraReviews = data.reviews || [];
+
+            // Transform Zembra reviews to StandardReview format
+            return zembraReviews.map((review: any) =>
+                this.transformZembraReview(review)
             );
         } catch (error) {
             console.error("Error fetching Yelp reviews:", error);
@@ -131,15 +145,15 @@ export class YelpProvider implements PlatformProvider {
         }
     }
 
-    private transformYelpReview(review: any): StandardReview {
+    private transformZembraReview(review: any): StandardReview {
         return {
             externalId: review.id || this.generateHash(review.text),
-            authorName: review.user?.name || "Anonymous",
-            authorAvatar: review.user?.image_url,
+            authorName: review.author?.name || "Anonymous",
+            authorAvatar: review.author?.photo,
             rating: review.rating || 0,
             content: review.text || "",
             title: undefined,
-            publishedAt: new Date(review.time_created),
+            publishedAt: new Date(review.timestamp),
             replyContent: undefined,
             replyAt: undefined,
             rawData: review,

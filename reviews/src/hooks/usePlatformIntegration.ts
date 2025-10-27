@@ -40,9 +40,157 @@ export function usePlatformIntegration() {
             const pageId = page.id;
             const pageAccessToken = page.metadata?.accessToken;
 
-            // Create platform connection
-            const connection = await reviewsService
-                .getOrCreatePlatformConnection(
+            // For Yelp, we need to create a Zembra job first
+            let connection;
+            if (platformName.toLowerCase() === "yelp") {
+                // Create platform connection first
+                connection = await reviewsService.getOrCreatePlatformConnection(
+                    locationId,
+                    platform.id,
+                    pageId,
+                    page.url,
+                    pageAccessToken,
+                );
+
+                // Create Zembra review job
+                const createJobResponse = await supabase.functions.invoke(
+                    "zembra-client",
+                    {
+                        body: {
+                            mode: "create-review-job",
+                            network: "yelp",
+                            slug: pageId, // businessId is the slug
+                        },
+                    },
+                );
+
+                if (!createJobResponse.data?.success) {
+                    throw new Error(
+                        createJobResponse.data?.error ||
+                            "Failed to create Zembra review job",
+                    );
+                }
+
+                const jobId = createJobResponse.data.jobId;
+
+                // Get full connection to access metadata
+                const { data: fullConnection } = await supabase
+                    .from("platform_connections")
+                    .select("metadata")
+                    .eq("id", connection.id)
+                    .single();
+
+                // Update connection with Zembra job ID in metadata
+                await supabase
+                    .from("platform_connections")
+                    .update({
+                        metadata: {
+                            ...(fullConnection?.metadata || {}),
+                            zembra_job_id: jobId,
+                        },
+                    })
+                    .eq("id", connection.id);
+
+                // Wait 30 seconds for job to process
+                await new Promise((resolve) => setTimeout(resolve, 30000));
+
+                // Fetch reviews from Zembra
+                const getReviewsResponse = await supabase.functions.invoke(
+                    "zembra-client",
+                    {
+                        body: {
+                            mode: "get-reviews",
+                            network: "yelp",
+                            slug: pageId,
+                        },
+                    },
+                );
+
+                if (!getReviewsResponse.data?.success) {
+                    throw new Error(
+                        getReviewsResponse.data?.error ||
+                            "Failed to fetch reviews from Zembra",
+                    );
+                }
+
+                const zembraReviews = getReviewsResponse.data.reviews || [];
+
+                // Transform Zembra reviews to StandardReview format
+                const reviews = zembraReviews.map((review: any) => ({
+                    externalId: review.id,
+                    authorName: review.author?.name || "Anonymous",
+                    authorAvatar: review.author?.photo,
+                    rating: review.rating || 0,
+                    content: review.text || "",
+                    title: undefined,
+                    publishedAt: new Date(review.timestamp),
+                    replyContent: undefined,
+                    replyAt: undefined,
+                    rawData: review,
+                }));
+
+                // Save reviews to database
+                const stats = await reviewsService.saveReviews(
+                    connection.id,
+                    reviews,
+                );
+
+                // Get full connection to access metadata
+                const { data: currentConnection } = await supabase
+                    .from("platform_connections")
+                    .select("metadata")
+                    .eq("id", connection.id)
+                    .single();
+
+                // Update connection with fetch time and count in metadata
+                await supabase
+                    .from("platform_connections")
+                    .update({
+                        metadata: {
+                            ...(currentConnection?.metadata || {}),
+                            zembra_last_fetch_at: new Date().toISOString(),
+                            zembra_review_count: zembraReviews.length,
+                        },
+                    })
+                    .eq("id", connection.id);
+
+                // Trigger sentiment analysis for new reviews
+                if (stats.reviewsNew > 0) {
+                    try {
+                        await supabase.functions.invoke(
+                            "perform-sentiment-analysis",
+                            {
+                                body: { connectionId: connection.id },
+                            },
+                        );
+                        console.log(
+                            `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
+                        );
+                    } catch (err) {
+                        console.error(
+                            "Failed to trigger sentiment analysis:",
+                            err,
+                        );
+                        // Don't fail the whole operation if sentiment analysis fails
+                    }
+                }
+
+                // Create sync log
+                await reviewsService.createSyncLog(connection.id, stats);
+
+                const result: PlatformConnectionResult = {
+                    success: true,
+                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+                };
+
+                setSuccess(
+                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
+                );
+                return result;
+            } else {
+                // Standard flow for other platforms
+                // Create platform connection
+                connection = await reviewsService.getOrCreatePlatformConnection(
                     locationId,
                     platform.id,
                     pageId,
@@ -50,51 +198,55 @@ export function usePlatformIntegration() {
                     pageAccessToken,
                 );
 
-            // Fetch reviews with page access token
-            const reviews = await provider.fetchReviews(
-                pageId,
-                pageAccessToken || "",
-                {
-                    pageAccessToken,
-                },
-            );
+                // Fetch reviews with page access token
+                const reviews = await provider.fetchReviews(
+                    pageId,
+                    pageAccessToken || "",
+                    {
+                        pageAccessToken,
+                    },
+                );
 
-            // Save reviews to database
-            const stats = await reviewsService.saveReviews(
-                connection.id,
-                reviews,
-            );
+                // Save reviews to database
+                const stats = await reviewsService.saveReviews(
+                    connection.id,
+                    reviews,
+                );
 
-            // Trigger sentiment analysis for new reviews
-            if (stats.reviewsNew > 0) {
-                try {
-                    await supabase.functions.invoke(
-                        "perform-sentiment-analysis",
-                        {
-                            body: { connectionId: connection.id },
-                        },
-                    );
-                    console.log(
-                        `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
-                    );
-                } catch (err) {
-                    console.error("Failed to trigger sentiment analysis:", err);
-                    // Don't fail the whole operation if sentiment analysis fails
+                // Trigger sentiment analysis for new reviews
+                if (stats.reviewsNew > 0) {
+                    try {
+                        await supabase.functions.invoke(
+                            "perform-sentiment-analysis",
+                            {
+                                body: { connectionId: connection.id },
+                            },
+                        );
+                        console.log(
+                            `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
+                        );
+                    } catch (err) {
+                        console.error(
+                            "Failed to trigger sentiment analysis:",
+                            err,
+                        );
+                        // Don't fail the whole operation if sentiment analysis fails
+                    }
                 }
+
+                // Create sync log
+                await reviewsService.createSyncLog(connection.id, stats);
+
+                const result: PlatformConnectionResult = {
+                    success: true,
+                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+                };
+
+                setSuccess(
+                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
+                );
+                return result;
             }
-
-            // Create sync log
-            await reviewsService.createSyncLog(connection.id, stats);
-
-            const result: PlatformConnectionResult = {
-                success: true,
-                reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-            };
-
-            setSuccess(
-                `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
-            );
-            return result;
         } catch (err: any) {
             const errorMessage = err.message || "Failed to connect platform";
             setError(errorMessage);
@@ -126,53 +278,157 @@ export function usePlatformIntegration() {
 
             const reviewsService = new ReviewsService(supabase);
 
-            // Authenticate with the platform to get access token
-            const accessToken = await provider.authenticate();
+            // For Yelp, use Zembra client with postedAfter for incremental fetches
+            if (platformName.toLowerCase() === "yelp") {
+                // Get the last fetch time from connection metadata
+                const { data: connection } = await supabase
+                    .from("platform_connections")
+                    .select("metadata")
+                    .eq("id", platformConnectionId)
+                    .single();
 
-            // Get user pages to find the specific page and its token
-            const userPages = await provider.getUserPages(accessToken);
-            const targetPage = userPages.find((page) => page.id === pageId);
+                const metadata = connection?.metadata || {};
+                const postedAfter = metadata.zembra_last_fetch_at;
+                const currentReviewCount = metadata.zembra_review_count || 0;
 
-            if (!targetPage) {
-                throw new Error(`Page ${pageId} not found in user pages`);
-            }
+                // Call Zembra client to get reviews
+                const getReviewsResponse = await supabase.functions.invoke(
+                    "zembra-client",
+                    {
+                        body: {
+                            mode: "get-reviews",
+                            network: "yelp",
+                            slug: pageId,
+                            postedAfter: postedAfter,
+                        },
+                    },
+                );
 
-            // Get the page access token from the page metadata
-            const pageAccessToken = targetPage.metadata?.accessToken;
-            if (!pageAccessToken) {
-                throw new Error(`No access token found for page ${pageId}`);
-            }
+                if (!getReviewsResponse.data?.success) {
+                    throw new Error(
+                        getReviewsResponse.data?.error ||
+                            "Failed to fetch reviews from Zembra",
+                    );
+                }
 
-            // Fetch reviews with page access token
-            const reviews = await provider.fetchReviews(
-                pageId,
-                pageAccessToken,
-                {
+                const zembraReviews = getReviewsResponse.data.reviews || [];
+
+                // Transform Zembra reviews to StandardReview format
+                const reviews = zembraReviews.map((review: any) => ({
+                    externalId: review.id,
+                    authorName: review.author?.name || "Anonymous",
+                    authorAvatar: review.author?.photo,
+                    rating: review.rating || 0,
+                    content: review.text || "",
+                    title: undefined,
+                    publishedAt: new Date(review.timestamp),
+                    replyContent: undefined,
+                    replyAt: undefined,
+                    rawData: review,
+                }));
+
+                // Save reviews to database
+                const stats = await reviewsService.saveReviews(
+                    platformConnectionId,
+                    reviews,
+                );
+
+                // Update connection with fetch time and count in metadata
+                await supabase
+                    .from("platform_connections")
+                    .update({
+                        metadata: {
+                            ...metadata,
+                            zembra_last_fetch_at: new Date().toISOString(),
+                            zembra_review_count: currentReviewCount +
+                                reviews.length,
+                        },
+                    })
+                    .eq("id", platformConnectionId);
+
+                // Trigger sentiment analysis for new reviews
+                if (stats.reviewsNew > 0) {
+                    try {
+                        await supabase.functions.invoke(
+                            "perform-sentiment-analysis",
+                            {
+                                body: { connectionId: platformConnectionId },
+                            },
+                        );
+                        console.log(
+                            `Triggered sentiment analysis for ${stats.reviewsNew} new reviews`,
+                        );
+                    } catch (err) {
+                        console.error(
+                            "Failed to trigger sentiment analysis:",
+                            err,
+                        );
+                        // Don't fail the whole operation if sentiment analysis fails
+                    }
+                }
+
+                // Create sync log
+                await reviewsService.createSyncLog(platformConnectionId, stats);
+
+                const result: PlatformConnectionResult = {
+                    success: true,
+                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+                };
+
+                setSuccess(
+                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
+                );
+                return result;
+            } else {
+                // Standard flow for other platforms
+                // Authenticate with the platform to get access token
+                const accessToken = await provider.authenticate();
+
+                // Get user pages to find the specific page and its token
+                const userPages = await provider.getUserPages(accessToken);
+                const targetPage = userPages.find((page) => page.id === pageId);
+
+                if (!targetPage) {
+                    throw new Error(`Page ${pageId} not found in user pages`);
+                }
+
+                // Get the page access token from the page metadata
+                const pageAccessToken = targetPage.metadata?.accessToken;
+                if (!pageAccessToken) {
+                    throw new Error(`No access token found for page ${pageId}`);
+                }
+
+                // Fetch reviews with page access token
+                const reviews = await provider.fetchReviews(
+                    pageId,
                     pageAccessToken,
-                },
-            );
+                    {
+                        pageAccessToken,
+                    },
+                );
 
-            // Save reviews to database
-            const stats = await reviewsService.saveReviews(
-                platformConnectionId,
-                reviews,
-            );
+                // Save reviews to database
+                const stats = await reviewsService.saveReviews(
+                    platformConnectionId,
+                    reviews,
+                );
 
-            // Note: Sentiment analysis is now triggered automatically by database webhook
-            // when reviews are inserted, so no manual call is needed
+                // Note: Sentiment analysis is now triggered automatically by database webhook
+                // when reviews are inserted, so no manual call is needed
 
-            // Create sync log
-            await reviewsService.createSyncLog(platformConnectionId, stats);
+                // Create sync log
+                await reviewsService.createSyncLog(platformConnectionId, stats);
 
-            const result: PlatformConnectionResult = {
-                success: true,
-                reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-            };
+                const result: PlatformConnectionResult = {
+                    success: true,
+                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+                };
 
-            setSuccess(
-                `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
-            );
-            return result;
+                setSuccess(
+                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
+                );
+                return result;
+            }
         } catch (err: any) {
             const errorMessage = err.message || "Failed to fetch reviews";
             setError(errorMessage);
