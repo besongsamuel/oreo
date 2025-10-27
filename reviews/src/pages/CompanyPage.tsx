@@ -2,6 +2,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
   FilterList as FilterListIcon,
+  Refresh as RefreshIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
@@ -173,6 +174,128 @@ export const CompanyPage = () => {
   // Review-specific filters
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Refresh function
+  const refreshPageData = async () => {
+    if (!profile || !companyId) return;
+
+    setRefreshing(true);
+    try {
+      // Fetch company details
+      const { data: companyData, error: companyError } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", companyId)
+        .eq("owner_id", profile.id)
+        .single();
+
+      if (companyError) {
+        console.error("Error fetching company:", companyError);
+        return;
+      }
+
+      // Fetch company stats
+      const { data: statsData, error: statsError } = await supabase
+        .from("company_stats")
+        .select("*")
+        .eq("company_id", companyId)
+        .single();
+
+      if (!statsError && statsData) {
+        setCompany({
+          ...companyData,
+          total_reviews: statsData.total_reviews || 0,
+          average_rating: statsData.average_rating || 0,
+          positive_reviews: statsData.positive_reviews || 0,
+          negative_reviews: statsData.negative_reviews || 0,
+          neutral_reviews: statsData.neutral_reviews || 0,
+          total_locations: statsData.total_locations || 0,
+        });
+      } else {
+        setCompany({
+          ...companyData,
+          total_reviews: 0,
+          average_rating: 0,
+          positive_reviews: 0,
+          negative_reviews: 0,
+          neutral_reviews: 0,
+          total_locations: 0,
+        });
+      }
+
+      // Fetch locations
+      const { data: locationsData, error: locationsError } = await supabase
+        .from("locations")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (locationsError) {
+        console.error("Error fetching locations:", locationsError);
+        setLocations([]);
+      } else {
+        // For each location, get review stats through platform_connections
+        const locationsWithStats = await Promise.all(
+          (locationsData || []).map(async (location) => {
+            const { data: platformConnections } = await supabase
+              .from("platform_connections")
+              .select("id")
+              .eq("location_id", location.id);
+
+            const platformConnectionIds =
+              platformConnections?.map((pc) => pc.id) || [];
+
+            let reviewStats: { rating: number }[] = [];
+            if (platformConnectionIds.length > 0) {
+              const { data } = await supabase
+                .from("reviews")
+                .select("rating")
+                .in("platform_connection_id", platformConnectionIds);
+              reviewStats = data || [];
+            }
+
+            const totalReviews = reviewStats.length;
+            const averageRating =
+              totalReviews > 0
+                ? reviewStats.reduce((sum, r) => sum + r.rating, 0) /
+                  totalReviews
+                : 0;
+
+            return {
+              ...location,
+              total_reviews: totalReviews,
+              average_rating: averageRating,
+            };
+          })
+        );
+        setLocations(locationsWithStats);
+
+        // Fetch platform connections for each location
+        const reviewsService = new ReviewsService(supabase);
+        const connectionsMap: Record<string, any[]> = {};
+
+        for (const location of locationsWithStats) {
+          try {
+            const connections =
+              await reviewsService.getLocationPlatformConnections(location.id);
+            connectionsMap[location.id] = connections;
+          } catch (err) {
+            console.error(
+              `Error fetching connections for location ${location.id}:`,
+              err
+            );
+            connectionsMap[location.id] = [];
+          }
+        }
+
+        setLocationConnections(connectionsMap);
+      }
+    } catch (error) {
+      console.error("Error refreshing company data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Initial data loading - only runs once
   useEffect(() => {
@@ -1057,28 +1180,39 @@ export const CompanyPage = () => {
         sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
       >
         <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
-          {/* Back Button */}
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/dashboard")}
-            sx={{
-              alignSelf: "flex-start",
-              fontSize: { xs: "0.875rem", sm: "1rem" },
-            }}
-          >
-            <Box
-              component="span"
-              sx={{ display: { xs: "none", sm: "inline" } }}
+          {/* Back Button and Refresh */}
+          <Stack direction="row" spacing={2} justifyContent="space-between">
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate("/dashboard")}
+              sx={{
+                alignSelf: "flex-start",
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+              }}
             >
-              Back to Dashboard
-            </Box>
-            <Box
-              component="span"
-              sx={{ display: { xs: "inline", sm: "none" } }}
+              <Box
+                component="span"
+                sx={{ display: { xs: "none", sm: "inline" } }}
+              >
+                Back to Dashboard
+              </Box>
+              <Box
+                component="span"
+                sx={{ display: { xs: "inline", sm: "none" } }}
+              >
+                Back
+              </Box>
+            </Button>
+
+            <Button
+              startIcon={<RefreshIcon />}
+              onClick={refreshPageData}
+              disabled={refreshing}
+              variant="outlined"
             >
-              Back
-            </Box>
-          </Button>
+              Refresh
+            </Button>
+          </Stack>
 
           {/* Company Header */}
           <CompanyHeader company={company} />

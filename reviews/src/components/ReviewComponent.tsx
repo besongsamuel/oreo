@@ -1,5 +1,13 @@
 import { Star as StarIcon } from "@mui/icons-material";
-import { Box, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
+  Typography,
+} from "@mui/material";
 
 interface Review {
   id: string;
@@ -7,6 +15,7 @@ interface Review {
   title: string;
   content: string;
   author_name: string;
+  author_avatar_url?: string;
   published_at: string;
   sentiment: string;
   location_name: string;
@@ -34,10 +43,16 @@ export const ReviewComponent = ({
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Stack
                 direction="row"
-                spacing={1}
+                spacing={1.5}
                 alignItems="center"
                 flexWrap="wrap"
               >
+                <Avatar
+                  src={review.author_avatar_url}
+                  sx={{ width: 32, height: 32 }}
+                >
+                  {(review.author_name || "A").charAt(0).toUpperCase()}
+                </Avatar>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {review.author_name || "Anonymous"}
                 </Typography>

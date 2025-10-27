@@ -79,6 +79,7 @@ SELECT
   r.title,
   r.content,
   r.author_name,
+  r.author_avatar_url,
   r.published_at,
   r.language,
   sa.sentiment,
