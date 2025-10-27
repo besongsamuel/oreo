@@ -195,7 +195,6 @@ export function usePlatformIntegration() {
 
         const jobId = createJobResponse.data.jobId;
 
-        // Update connection with new Zembra job ID
         await supabase
             .from("platform_connections")
             .update({
