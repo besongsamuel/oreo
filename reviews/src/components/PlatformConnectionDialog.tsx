@@ -295,7 +295,7 @@ export const PlatformConnectionDialog = ({
                   }
                   startIcon={verifying ? <CircularProgress size={20} /> : null}
                 >
-                  {verifying ? "Verifying..." : "Verify"}
+                  {verifying ? "Finding..." : "Find"}
                 </Button>
                 {verificationError && (
                   <Alert severity="error">{verificationError}</Alert>
