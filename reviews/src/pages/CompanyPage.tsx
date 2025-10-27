@@ -205,6 +205,9 @@ export const CompanyPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const reviewsPerPage = 10;
 
+  // Toggle between recent (last 30 days) and all reviews
+  const [showRecentOnly, setShowRecentOnly] = useState(true);
+
   // Chart data state
   const [ratingDistribution, setRatingDistribution] = useState({
     5: 0,
@@ -501,9 +504,21 @@ export const CompanyPage = () => {
           reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
         }
 
-        const { data: reviewsData, error: reviewsError } = await reviewsQuery
-          .order("published_at", { ascending: false })
-          .limit(50);
+        // Apply recent filter (last 30 days) if showRecentOnly is true
+        if (showRecentOnly) {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          reviewsQuery = reviewsQuery.gte(
+            "published_at",
+            thirtyDaysAgo.toISOString()
+          );
+
+          // Limit to 50 most recent reviews
+          reviewsQuery = reviewsQuery.limit(50);
+        }
+
+        const { data: reviewsData, error: reviewsError } =
+          await reviewsQuery.order("published_at", { ascending: false });
 
         if (reviewsError) {
           console.error("Error fetching reviews:", reviewsError);
@@ -850,15 +865,39 @@ export const CompanyPage = () => {
             .order("occurrence_count", { ascending: false });
 
           if (!topicsError && topicsData) {
-            setTopics(
-              topicsData.map((topic: any) => ({
-                id: topic.id,
-                name: topic.name,
-                category: topic.category,
-                description: topic.description,
-                occurrence_count: topic.occurrence_count,
-              }))
-            );
+            // Group topics by name (summing occurrence counts for duplicates)
+            const topicMap = new Map<
+              string,
+              {
+                id: string;
+                name: string;
+                category: string;
+                description: string;
+                occurrence_count: number;
+              }
+            >();
+
+            topicsData.forEach((topic: any) => {
+              const existingTopic = topicMap.get(topic.name);
+              if (existingTopic) {
+                existingTopic.occurrence_count += topic.occurrence_count;
+              } else {
+                topicMap.set(topic.name, {
+                  id: topic.id,
+                  name: topic.name,
+                  category: topic.category,
+                  description: topic.description,
+                  occurrence_count: topic.occurrence_count,
+                });
+              }
+            });
+
+            // Convert to array, sort by occurrence count, and take top 5
+            const groupedTopics = Array.from(topicMap.values())
+              .sort((a, b) => b.occurrence_count - a.occurrence_count)
+              .slice(0, 5);
+
+            setTopics(groupedTopics);
           } else {
             setTopics([]);
           }
@@ -878,6 +917,7 @@ export const CompanyPage = () => {
     filterStartDate,
     filterEndDate,
     loading,
+    showRecentOnly,
     supabase,
   ]);
 
@@ -1834,7 +1874,7 @@ export const CompanyPage = () => {
                 Most frequently mentioned terms in reviews
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {keywords.map((keyword, index) => (
+                {keywords.slice(0, 5).map((keyword, index) => (
                   <Chip
                     key={index}
                     label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
@@ -1842,7 +1882,7 @@ export const CompanyPage = () => {
                     variant="outlined"
                     sx={{
                       fontWeight: 500,
-                      fontSize: index < 5 ? "0.95rem" : "0.875rem",
+                      fontSize: "0.95rem",
                     }}
                   />
                 ))}
@@ -1860,7 +1900,7 @@ export const CompanyPage = () => {
             >
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Recent Reviews
+                  {showRecentOnly ? "Recent Reviews" : "All Reviews"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Showing {paginatedReviews.length} of {filteredReviews.length}{" "}
@@ -1868,19 +1908,32 @@ export const CompanyPage = () => {
                   {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
                 </Typography>
               </Box>
-              {(selectedKeyword !== "all" || selectedRating !== "all") && (
+              <Stack direction="row" spacing={1} alignItems="center">
                 <Button
-                  variant="text"
+                  variant={showRecentOnly ? "outlined" : "text"}
                   size="small"
-                  onClick={handleClearFilters}
+                  onClick={() => setShowRecentOnly(!showRecentOnly)}
                   sx={{
                     textTransform: "none",
                     fontWeight: 500,
                   }}
                 >
-                  Clear filters
+                  {showRecentOnly ? "Show All" : "Recent Only"}
                 </Button>
-              )}
+                {(selectedKeyword !== "all" || selectedRating !== "all") && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={handleClearFilters}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </Stack>
             </Stack>
 
             {/* Review-specific Filters */}

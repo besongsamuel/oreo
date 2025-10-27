@@ -285,7 +285,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
               Most common emotions expressed in reviews
             </Typography>
             <Stack spacing={1} sx={{ mt: 2 }}>
-              {sentimentData.emotions.map((item) => (
+              {sentimentData.emotions.slice(0, 5).map((item) => (
                 <Stack
                   key={item.emoji}
                   direction="row"
