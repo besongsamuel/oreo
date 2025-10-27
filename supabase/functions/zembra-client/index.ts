@@ -106,7 +106,7 @@ serve(async (req) => {
             // Get reviews with retry logic - GET request
             let retryCount = 0;
             const maxRetries = 3;
-            const backoffDelays = [10000, 20000, 40000]; // 10s, 20s, 40s
+            const backoffDelays = [10000, 15000, 20000]; // 10s, 15s, 20s
 
             while (retryCount <= maxRetries) {
                 try {

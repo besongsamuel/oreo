@@ -13,6 +13,265 @@ export function usePlatformIntegration() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    // Helper function to handle Zembra-based platforms (Yelp, Facebook, etc.)
+    const handleZembraPlatformConnection = async (
+        network: string,
+        pageId: string,
+        connection: any,
+        reviewsService: ReviewsService,
+    ): Promise<PlatformConnectionResult> => {
+        // Create Zembra review job
+        const createJobResponse = await supabase.functions.invoke(
+            "zembra-client",
+            {
+                body: {
+                    mode: "create-review-job",
+                    network: network,
+                    slug: pageId,
+                },
+            },
+        );
+
+        if (!createJobResponse.data?.success) {
+            throw new Error(
+                createJobResponse.data?.error ||
+                    "Failed to create Zembra review job",
+            );
+        }
+
+        const jobId = createJobResponse.data.jobId;
+
+        // Get full connection to access metadata
+        const { data: fullConnection } = await supabase
+            .from("platform_connections")
+            .select("metadata")
+            .eq("id", connection.id)
+            .single();
+
+        // Update connection with Zembra job ID in metadata
+        await supabase
+            .from("platform_connections")
+            .update({
+                metadata: {
+                    ...(fullConnection?.metadata || {}),
+                    zembra_job_id: jobId,
+                },
+            })
+            .eq("id", connection.id);
+
+        // Wait for job to process
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+
+        // Fetch reviews from Zembra
+        const getReviewsResponse = await supabase.functions.invoke(
+            "zembra-client",
+            {
+                body: {
+                    mode: "get-reviews",
+                    network: network,
+                    slug: pageId,
+                },
+            },
+        );
+
+        if (!getReviewsResponse.data?.success) {
+            throw new Error(
+                getReviewsResponse.data?.error ||
+                    "Failed to fetch reviews from Zembra",
+            );
+        }
+
+        const zembraReviews = getReviewsResponse.data.reviews || [];
+
+        // Transform Zembra reviews to StandardReview format
+        const reviews = zembraReviews.map((review: any) => ({
+            externalId: review.id,
+            authorName: review.author?.name || "Anonymous",
+            authorAvatar: review.author?.photo,
+            rating: review.rating || 0,
+            content: review.text || "",
+            title: undefined,
+            publishedAt: new Date(review.timestamp),
+            replyContent: undefined,
+            replyAt: undefined,
+            rawData: review,
+        }));
+
+        // Save reviews to database
+        const stats = await reviewsService.saveReviews(connection.id, reviews);
+
+        // Get full connection to access metadata
+        const { data: currentConnection } = await supabase
+            .from("platform_connections")
+            .select("metadata")
+            .eq("id", connection.id)
+            .single();
+
+        // Update connection with fetch time and count in metadata
+        await supabase
+            .from("platform_connections")
+            .update({
+                metadata: {
+                    ...(currentConnection?.metadata || {}),
+                    zembra_last_fetch_at: new Date().toISOString(),
+                    zembra_review_count: zembraReviews.length,
+                },
+            })
+            .eq("id", connection.id);
+
+        // Create sync log
+        await reviewsService.createSyncLog(connection.id, stats);
+
+        return {
+            success: true,
+            reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+        };
+    };
+
+    // Helper function to handle Zembra-based platform fetches (Yelp, Facebook, etc.)
+    const handleZembraPlatformFetch = async (
+        network: string,
+        pageId: string,
+        platformConnectionId: string,
+        reviewsService: ReviewsService,
+    ): Promise<PlatformConnectionResult> => {
+        // Get the last fetch time from connection metadata
+        const { data: connection } = await supabase
+            .from("platform_connections")
+            .select("metadata")
+            .eq("id", platformConnectionId)
+            .single();
+
+        const metadata = connection?.metadata || {};
+        const lastFetchAt = metadata.zembra_last_fetch_at;
+        const currentReviewCount = metadata.zembra_review_count || 0;
+
+        // Calculate time difference if last fetch exists
+        let shouldFetch = true;
+        let postedAfter: string | undefined = undefined;
+
+        if (lastFetchAt) {
+            const now = new Date();
+            const lastFetch = new Date(lastFetchAt);
+            const daysSinceLastFetch = (now.getTime() - lastFetch.getTime()) /
+                (1000 * 60 * 60 * 24);
+
+            if (daysSinceLastFetch < 5) {
+                // Don't fetch if less than 5 days
+                shouldFetch = false;
+                postedAfter = undefined;
+            } else {
+                // Use last fetch time for incremental fetch
+                postedAfter = lastFetchAt;
+            }
+        }
+
+        if (!shouldFetch) {
+            // Return empty results without fetching
+            return {
+                success: true,
+                reviewsImported: 0,
+            };
+        }
+
+        // First, create a new review job to get the latest reviews
+        const createJobResponse = await supabase.functions.invoke(
+            "zembra-client",
+            {
+                body: {
+                    mode: "create-review-job",
+                    network: network,
+                    slug: pageId,
+                },
+            },
+        );
+
+        if (!createJobResponse.data?.success) {
+            throw new Error(
+                createJobResponse.data?.error ||
+                    "Failed to create Zembra review job",
+            );
+        }
+
+        const jobId = createJobResponse.data.jobId;
+
+        // Update connection with new Zembra job ID
+        await supabase
+            .from("platform_connections")
+            .update({
+                metadata: {
+                    ...metadata,
+                    zembra_job_id: jobId,
+                },
+            })
+            .eq("id", platformConnectionId);
+
+        // Wait for job to process
+        await new Promise((resolve) => setTimeout(resolve, 30000));
+
+        // Now call get-reviews with postedAfter if it exists
+        const getReviewsResponse = await supabase.functions.invoke(
+            "zembra-client",
+            {
+                body: {
+                    mode: "get-reviews",
+                    network: network,
+                    slug: pageId,
+                    postedAfter: postedAfter,
+                },
+            },
+        );
+
+        if (!getReviewsResponse.data?.success) {
+            throw new Error(
+                getReviewsResponse.data?.error ||
+                    "Failed to fetch reviews from Zembra",
+            );
+        }
+
+        const zembraReviews = getReviewsResponse.data.reviews || [];
+
+        // Transform Zembra reviews to StandardReview format
+        const reviews = zembraReviews.map((review: any) => ({
+            externalId: review.id,
+            authorName: review.author?.name || "Anonymous",
+            authorAvatar: review.author?.photo,
+            rating: review.rating || 0,
+            content: review.text || "",
+            title: undefined,
+            publishedAt: new Date(review.timestamp),
+            replyContent: undefined,
+            replyAt: undefined,
+            rawData: review,
+        }));
+
+        // Save reviews to database
+        const stats = await reviewsService.saveReviews(
+            platformConnectionId,
+            reviews,
+        );
+
+        // Update connection with fetch time and count in metadata
+        await supabase
+            .from("platform_connections")
+            .update({
+                metadata: {
+                    ...metadata,
+                    zembra_last_fetch_at: new Date().toISOString(),
+                    zembra_review_count: currentReviewCount + reviews.length,
+                },
+            })
+            .eq("id", platformConnectionId);
+
+        // Create sync log
+        await reviewsService.createSyncLog(platformConnectionId, stats);
+
+        return {
+            success: true,
+            reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
+        };
+    };
+
     const connectPlatform = async (
         platformName: string,
         companyId: string,
@@ -40,251 +299,28 @@ export function usePlatformIntegration() {
             const pageId = page.id;
             const pageAccessToken = page.metadata?.accessToken;
 
-            // For Yelp, we need to create a Zembra job first
-            let connection;
-            if (platformName.toLowerCase() === "yelp") {
+            // For Zembra-based platforms (Yelp, Facebook), use the helper function
+            const platformNameLower = platformName.toLowerCase();
+            if (
+                platformNameLower === "yelp" || platformNameLower === "facebook"
+            ) {
                 // Create platform connection first
-                connection = await reviewsService.getOrCreatePlatformConnection(
-                    locationId,
-                    platform.id,
+                const connection = await reviewsService
+                    .getOrCreatePlatformConnection(
+                        locationId,
+                        platform.id,
+                        pageId,
+                        page.url,
+                        pageAccessToken,
+                    );
+
+                // Handle Zembra connection
+                const result = await handleZembraPlatformConnection(
+                    platformNameLower,
                     pageId,
-                    page.url,
-                    pageAccessToken,
+                    connection,
+                    reviewsService,
                 );
-
-                // Create Zembra review job
-                const createJobResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "create-review-job",
-                            network: "yelp",
-                            slug: pageId, // businessId is the slug
-                        },
-                    },
-                );
-
-                if (!createJobResponse.data?.success) {
-                    throw new Error(
-                        createJobResponse.data?.error ||
-                            "Failed to create Zembra review job",
-                    );
-                }
-
-                const jobId = createJobResponse.data.jobId;
-
-                // Get full connection to access metadata
-                const { data: fullConnection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", connection.id)
-                    .single();
-
-                // Update connection with Zembra job ID in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...(fullConnection?.metadata || {}),
-                            zembra_job_id: jobId,
-                        },
-                    })
-                    .eq("id", connection.id);
-
-                // Wait 30 seconds for job to process
-                await new Promise((resolve) => setTimeout(resolve, 30000));
-
-                // Fetch reviews from Zembra
-                const getReviewsResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "get-reviews",
-                            network: "yelp",
-                            slug: pageId,
-                        },
-                    },
-                );
-
-                if (!getReviewsResponse.data?.success) {
-                    throw new Error(
-                        getReviewsResponse.data?.error ||
-                            "Failed to fetch reviews from Zembra",
-                    );
-                }
-
-                const zembraReviews = getReviewsResponse.data.reviews || [];
-
-                // Transform Zembra reviews to StandardReview format
-                const reviews = zembraReviews.map((review: any) => ({
-                    externalId: review.id,
-                    authorName: review.author?.name || "Anonymous",
-                    authorAvatar: review.author?.photo,
-                    rating: review.rating || 0,
-                    content: review.text || "",
-                    title: undefined,
-                    publishedAt: new Date(review.timestamp),
-                    replyContent: undefined,
-                    replyAt: undefined,
-                    rawData: review,
-                }));
-
-                // Save reviews to database
-                const stats = await reviewsService.saveReviews(
-                    connection.id,
-                    reviews,
-                );
-
-                // Get full connection to access metadata
-                const { data: currentConnection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", connection.id)
-                    .single();
-
-                // Update connection with fetch time and count in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...(currentConnection?.metadata || {}),
-                            zembra_last_fetch_at: new Date().toISOString(),
-                            zembra_review_count: zembraReviews.length,
-                        },
-                    })
-                    .eq("id", connection.id);
-
-                // Create sync log
-                await reviewsService.createSyncLog(connection.id, stats);
-
-                const result: PlatformConnectionResult = {
-                    success: true,
-                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-                };
-
-                setSuccess(
-                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
-                );
-                return result;
-            } else if (platformName.toLowerCase() === "facebook") {
-                // Create platform connection first for Facebook
-                connection = await reviewsService.getOrCreatePlatformConnection(
-                    locationId,
-                    platform.id,
-                    pageId,
-                    page.url,
-                    pageAccessToken,
-                );
-
-                // Create Zembra review job for Facebook
-                const createJobResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "create-review-job",
-                            network: "facebook",
-                            slug: pageId,
-                        },
-                    },
-                );
-
-                if (!createJobResponse.data?.success) {
-                    throw new Error(
-                        createJobResponse.data?.error ||
-                            "Failed to create Zembra review job",
-                    );
-                }
-
-                const jobId = createJobResponse.data.jobId;
-
-                // Get full connection to access metadata
-                const { data: fullConnection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", connection.id)
-                    .single();
-
-                // Update connection with Zembra job ID in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...(fullConnection?.metadata || {}),
-                            zembra_job_id: jobId,
-                        },
-                    })
-                    .eq("id", connection.id);
-
-                // Wait 30 seconds for job to process
-                await new Promise((resolve) => setTimeout(resolve, 30000));
-
-                // Fetch reviews from Zembra
-                const getReviewsResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "get-reviews",
-                            network: "facebook",
-                            slug: pageId,
-                        },
-                    },
-                );
-
-                if (!getReviewsResponse.data?.success) {
-                    throw new Error(
-                        getReviewsResponse.data?.error ||
-                            "Failed to fetch reviews from Zembra",
-                    );
-                }
-
-                const zembraReviews = getReviewsResponse.data.reviews || [];
-
-                // Transform Zembra reviews to StandardReview format
-                const reviews = zembraReviews.map((review: any) => ({
-                    externalId: review.id,
-                    authorName: review.author?.name || "Anonymous",
-                    authorAvatar: review.author?.photo,
-                    rating: review.rating || 0,
-                    content: review.text || "",
-                    title: undefined,
-                    publishedAt: new Date(review.timestamp),
-                    replyContent: undefined,
-                    replyAt: undefined,
-                    rawData: review,
-                }));
-
-                // Save reviews to database
-                const stats = await reviewsService.saveReviews(
-                    connection.id,
-                    reviews,
-                );
-
-                // Get full connection to access metadata
-                const { data: currentConnection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", connection.id)
-                    .single();
-
-                // Update connection with fetch time and count in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...(currentConnection?.metadata || {}),
-                            zembra_last_fetch_at: new Date().toISOString(),
-                            zembra_review_count: zembraReviews.length,
-                        },
-                    })
-                    .eq("id", connection.id);
-
-                // Create sync log
-                await reviewsService.createSyncLog(connection.id, stats);
-
-                const result: PlatformConnectionResult = {
-                    success: true,
-                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-                };
 
                 setSuccess(
                     `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
@@ -292,14 +328,14 @@ export function usePlatformIntegration() {
                 return result;
             } else {
                 // Standard flow for other platforms
-                // Create platform connection
-                connection = await reviewsService.getOrCreatePlatformConnection(
-                    locationId,
-                    platform.id,
-                    pageId,
-                    undefined, // platformUrl
-                    pageAccessToken,
-                );
+                const connection = await reviewsService
+                    .getOrCreatePlatformConnection(
+                        locationId,
+                        platform.id,
+                        pageId,
+                        page.url,
+                        pageAccessToken,
+                    );
 
                 // Fetch reviews with page access token
                 const reviews = await provider.fetchReviews(
@@ -360,289 +396,17 @@ export function usePlatformIntegration() {
 
             const reviewsService = new ReviewsService(supabase);
 
-            // For Yelp, use Zembra client with postedAfter for incremental fetches
-            if (platformName.toLowerCase() === "yelp") {
-                // Get the last fetch time from connection metadata
-                const { data: connection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", platformConnectionId)
-                    .single();
-
-                const metadata = connection?.metadata || {};
-                const lastFetchAt = metadata.zembra_last_fetch_at;
-                const currentReviewCount = metadata.zembra_review_count || 0;
-
-                // Calculate time difference if last fetch exists
-                let shouldFetch = true;
-                let postedAfter: string | undefined = undefined;
-
-                if (lastFetchAt) {
-                    const now = new Date();
-                    const lastFetch = new Date(lastFetchAt);
-                    const daysSinceLastFetch =
-                        (now.getTime() - lastFetch.getTime()) /
-                        (1000 * 60 * 60 * 24);
-
-                    if (daysSinceLastFetch < 5) {
-                        // Don't fetch if less than 5 days
-                        shouldFetch = false;
-                        postedAfter = undefined;
-                    } else {
-                        // Use last fetch time for incremental fetch
-                        postedAfter = lastFetchAt;
-                    }
-                }
-
-                if (!shouldFetch) {
-                    // Return empty results without fetching
-                    return {
-                        success: true,
-                        reviewsImported: 0,
-                    };
-                }
-
-                // First, create a new review job to get the latest reviews
-                const createJobResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "create-review-job",
-                            network: "yelp",
-                            slug: pageId,
-                        },
-                    },
-                );
-
-                if (!createJobResponse.data?.success) {
-                    throw new Error(
-                        createJobResponse.data?.error ||
-                            "Failed to create Zembra review job",
-                    );
-                }
-
-                const jobId = createJobResponse.data.jobId;
-
-                // Update connection with new Zembra job ID
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...metadata,
-                            zembra_job_id: jobId,
-                        },
-                    })
-                    .eq("id", platformConnectionId);
-
-                // Wait 30 seconds for job to process
-                await new Promise((resolve) => setTimeout(resolve, 30000));
-
-                // Now call get-reviews with postedAfter if it exists
-                const getReviewsResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "get-reviews",
-                            network: "yelp",
-                            slug: pageId,
-                            postedAfter: postedAfter,
-                        },
-                    },
-                );
-
-                if (!getReviewsResponse.data?.success) {
-                    throw new Error(
-                        getReviewsResponse.data?.error ||
-                            "Failed to fetch reviews from Zembra",
-                    );
-                }
-
-                const zembraReviews = getReviewsResponse.data.reviews || [];
-
-                // Transform Zembra reviews to StandardReview format
-                const reviews = zembraReviews.map((review: any) => ({
-                    externalId: review.id,
-                    authorName: review.author?.name || "Anonymous",
-                    authorAvatar: review.author?.photo,
-                    rating: review.rating || 0,
-                    content: review.text || "",
-                    title: undefined,
-                    publishedAt: new Date(review.timestamp),
-                    replyContent: undefined,
-                    replyAt: undefined,
-                    rawData: review,
-                }));
-
-                // Save reviews to database
-                const stats = await reviewsService.saveReviews(
+            // For Zembra-based platforms (Yelp, Facebook), use the helper function
+            const platformNameLower = platformName.toLowerCase();
+            if (
+                platformNameLower === "yelp" || platformNameLower === "facebook"
+            ) {
+                const result = await handleZembraPlatformFetch(
+                    platformNameLower,
+                    pageId,
                     platformConnectionId,
-                    reviews,
+                    reviewsService,
                 );
-
-                // Update connection with fetch time and count in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...metadata,
-                            zembra_last_fetch_at: new Date().toISOString(),
-                            zembra_review_count: currentReviewCount +
-                                reviews.length,
-                        },
-                    })
-                    .eq("id", platformConnectionId);
-
-                // Create sync log
-                await reviewsService.createSyncLog(platformConnectionId, stats);
-
-                const result: PlatformConnectionResult = {
-                    success: true,
-                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-                };
-
-                setSuccess(
-                    `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,
-                );
-                return result;
-            } else if (platformName.toLowerCase() === "facebook") {
-                // For Facebook, use similar Zembra flow
-                // Get the last fetch time from connection metadata
-                const { data: connection } = await supabase
-                    .from("platform_connections")
-                    .select("metadata")
-                    .eq("id", platformConnectionId)
-                    .single();
-
-                const metadata = connection?.metadata || {};
-                const lastFetchAt = metadata.zembra_last_fetch_at;
-                const currentReviewCount = metadata.zembra_review_count || 0;
-
-                // Calculate time difference if last fetch exists
-                let shouldFetch = true;
-                let postedAfter: string | undefined = undefined;
-
-                if (lastFetchAt) {
-                    const now = new Date();
-                    const lastFetch = new Date(lastFetchAt);
-                    const daysSinceLastFetch =
-                        (now.getTime() - lastFetch.getTime()) /
-                        (1000 * 60 * 60 * 24);
-
-                    if (daysSinceLastFetch < 5) {
-                        // Don't fetch if less than 5 days
-                        shouldFetch = false;
-                        postedAfter = undefined;
-                    } else {
-                        // Use last fetch time for incremental fetch
-                        postedAfter = lastFetchAt;
-                    }
-                }
-
-                if (!shouldFetch) {
-                    // Return empty results without fetching
-                    return {
-                        success: true,
-                        reviewsImported: 0,
-                    };
-                }
-
-                // First, create a new review job to get the latest reviews
-                const createJobResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "create-review-job",
-                            network: "facebook",
-                            slug: pageId,
-                        },
-                    },
-                );
-
-                if (!createJobResponse.data?.success) {
-                    throw new Error(
-                        createJobResponse.data?.error ||
-                            "Failed to create Zembra review job",
-                    );
-                }
-
-                const jobId = createJobResponse.data.jobId;
-
-                // Update connection with new Zembra job ID
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...metadata,
-                            zembra_job_id: jobId,
-                        },
-                    })
-                    .eq("id", platformConnectionId);
-
-                // Wait 30 seconds for job to process
-                await new Promise((resolve) => setTimeout(resolve, 30000));
-
-                // Now call get-reviews with postedAfter if it exists
-                const getReviewsResponse = await supabase.functions.invoke(
-                    "zembra-client",
-                    {
-                        body: {
-                            mode: "get-reviews",
-                            network: "facebook",
-                            slug: pageId,
-                            postedAfter: postedAfter,
-                        },
-                    },
-                );
-
-                if (!getReviewsResponse.data?.success) {
-                    throw new Error(
-                        getReviewsResponse.data?.error ||
-                            "Failed to fetch reviews from Zembra",
-                    );
-                }
-
-                const zembraReviews = getReviewsResponse.data.reviews || [];
-
-                // Transform Zembra reviews to StandardReview format
-                const reviews = zembraReviews.map((review: any) => ({
-                    externalId: review.id,
-                    authorName: review.author?.name || "Anonymous",
-                    authorAvatar: review.author?.photo,
-                    rating: review.rating || 0,
-                    content: review.text || "",
-                    title: undefined,
-                    publishedAt: new Date(review.timestamp),
-                    replyContent: undefined,
-                    replyAt: undefined,
-                    rawData: review,
-                }));
-
-                // Save reviews to database
-                const stats = await reviewsService.saveReviews(
-                    platformConnectionId,
-                    reviews,
-                );
-
-                // Update connection with fetch time and count in metadata
-                await supabase
-                    .from("platform_connections")
-                    .update({
-                        metadata: {
-                            ...metadata,
-                            zembra_last_fetch_at: new Date().toISOString(),
-                            zembra_review_count: currentReviewCount +
-                                reviews.length,
-                        },
-                    })
-                    .eq("id", platformConnectionId);
-
-                // Create sync log
-                await reviewsService.createSyncLog(platformConnectionId, stats);
-
-                const result: PlatformConnectionResult = {
-                    success: true,
-                    reviewsImported: stats.reviewsNew + stats.reviewsUpdated,
-                };
 
                 setSuccess(
                     `Successfully imported ${result.reviewsImported} reviews from ${platformName}`,

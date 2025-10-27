@@ -13,7 +13,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getPlatformProvider } from "../services/platforms/platformRegistry";
 import { PlatformPage } from "../services/platforms/types";
 
@@ -47,51 +47,62 @@ export const PlatformConnectionDialog = ({
   const [connecting, setConnecting] = useState(false);
   const [searching, setSearching] = useState(false);
 
-  const fetchPages = async (location?: {
-    id: string;
-    name: string;
-    address: string;
-    city?: string;
-  }) => {
-    setLoading(true);
-    setError(null);
+  const fetchPages = useCallback(
+    async (location?: {
+      id: string;
+      name: string;
+      address: string;
+      city?: string;
+    }) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const provider = getPlatformProvider(platformName);
-      if (!provider) {
-        throw new Error(`${platformName} is not available`);
-      }
-
-      const accessToken = await provider.authenticate();
-
-      // Special handling for Yelp
-      if (platformName.toLowerCase() === "yelp") {
-        if (!location) {
-          setLoading(false);
-          return;
+      try {
+        const provider = getPlatformProvider(platformName);
+        if (!provider) {
+          throw new Error(`${platformName} is not available`);
         }
-        setSearching(true);
-        const yelpProvider = provider as any;
-        if (yelpProvider.searchBusinesses) {
-          const businesses = await yelpProvider.searchBusinesses(
-            companyName,
-            location.city || location.address
-          );
-          setPages(businesses);
+
+        const accessToken = await provider.authenticate();
+
+        // Special handling for Yelp
+        if (platformName.toLowerCase() === "yelp") {
+          if (!location) {
+            setLoading(false);
+            return;
+          }
+          setSearching(true);
+          const yelpProvider = provider as any;
+          if (yelpProvider.searchBusinesses) {
+            const businesses = await yelpProvider.searchBusinesses(
+              companyName,
+              location.city || location.address
+            );
+            setPages(businesses);
+          } else {
+            throw new Error("Yelp provider searchBusinesses method not found");
+          }
+          setSearching(false);
         } else {
-          throw new Error("Yelp provider searchBusinesses method not found");
+          const userPages = await provider.getUserPages(accessToken);
+          setPages(userPages);
         }
-        setSearching(false);
-      } else {
-        const userPages = await provider.getUserPages(accessToken);
-        setPages(userPages);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch pages");
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch pages");
-    } finally {
-      setLoading(false);
+    },
+    [platformName, companyName]
+  );
+
+  // Fetch pages automatically when dialog opens for Facebook and Google
+  useEffect(() => {
+    if (open && platformName.toLowerCase() !== "yelp") {
+      fetchPages();
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, platformName]);
 
   const handleConnect = async () => {
     if (!selectedPage || !selectedLocation) return;
@@ -142,6 +153,18 @@ export const PlatformConnectionDialog = ({
                 <Typography variant="h6" gutterBottom>
                   Select Location
                 </Typography>
+                {platformName.toLowerCase() !== "yelp" && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Please select a location to connect this{" "}
+                    {platformName.charAt(0).toUpperCase() +
+                      platformName.slice(1)}{" "}
+                    account to
+                  </Typography>
+                )}
                 <Stack spacing={1}>
                   {locations.map((location) => (
                     <Card
