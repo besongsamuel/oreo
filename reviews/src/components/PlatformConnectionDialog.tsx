@@ -64,6 +64,10 @@ const getPlatformIdLabel = (platformName: string): string => {
       return "Place ID";
     case "yelp":
       return "Business ID";
+    case "opentable":
+      return "Restaurant ID";
+    case "tripadvisor":
+      return "Location ID";
     default:
       return "Location ID";
   }
@@ -77,6 +81,10 @@ const getPlatformIdPlaceholder = (platformName: string): string => {
       return "e.g., ChIJN1t_tDeuEmsRUsoyG83frY4";
     case "yelp":
       return "e.g., cafe-de-olla-san-francisco-2";
+    case "opentable":
+      return "e.g., restaurant-name";
+    case "tripadvisor":
+      return "e.g., g1234567";
     default:
       return "Enter platform location ID";
   }

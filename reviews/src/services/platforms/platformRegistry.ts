@@ -39,6 +39,23 @@ export const PLATFORM_REGISTRY: Record<string, PlatformRegistryEntry> = {
         status: "active",
         provider: null,
     },
+    opentable: {
+        name: "opentable",
+        displayName: "OpenTable",
+        color: "#D73A52",
+        iconUrl: "https://www.opentable.com/favicon.ico",
+        status: "active",
+        provider: null,
+    },
+    tripadvisor: {
+        name: "tripadvisor",
+        displayName: "TripAdvisor",
+        color: "#34E0A1",
+        iconUrl:
+            "https://static.tacdn.com/img2/brand_refresh/Tripadvisor_lockup_horizontal_secondary_registered.svg",
+        status: "active",
+        provider: null,
+    },
 };
 
 export function getPlatformProvider(
