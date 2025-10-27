@@ -1679,7 +1679,7 @@ export const CompanyPage = () => {
                 sm: "repeat(2, 1fr)",
                 md: "repeat(4, 1fr)",
               },
-              gap: 3,
+              gap: { xs: 2, sm: 3 },
             }}
           >
             <StatCardWithTrend
@@ -1713,7 +1713,7 @@ export const CompanyPage = () => {
                 xs: "1fr",
                 lg: "1fr 1fr",
               },
-              gap: 3,
+              gap: { xs: 2, sm: 3 },
             }}
           >
             {/* Rating Distribution Chart */}
@@ -1738,11 +1738,17 @@ export const CompanyPage = () => {
 
           {/* Timeline Chart */}
           {timelineData.length > 0 && (
-            <ReviewsTimelineChart data={timelineData} />
+            <Box sx={{ mb: { xs: 2, sm: 0 } }}>
+              <ReviewsTimelineChart data={timelineData} />
+            </Box>
           )}
 
           {/* Sentiment Analysis */}
-          {sentimentData && <SentimentAnalysis sentimentData={sentimentData} />}
+          {sentimentData && (
+            <Box sx={{ mt: { xs: 2, sm: 0 } }}>
+              <SentimentAnalysis sentimentData={sentimentData} />
+            </Box>
+          )}
 
           {/* Topics Section */}
           {topics.length > 0 && (
@@ -1777,7 +1783,17 @@ export const CompanyPage = () => {
                   }}
                 >
                   {topics.map((topic) => (
-                    <Card key={topic.id} variant="outlined">
+                    <Card
+                      key={topic.id}
+                      variant="outlined"
+                      sx={{
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                          boxShadow: 2,
+                          transform: "translateY(-2px)",
+                        },
+                      }}
+                    >
                       <CardContent>
                         <Stack spacing={1}>
                           <Stack

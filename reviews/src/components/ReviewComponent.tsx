@@ -32,7 +32,16 @@ export const ReviewComponent = ({
   getSentimentColor,
 }: ReviewComponentProps) => {
   return (
-    <Card variant="outlined">
+    <Card
+      variant="outlined"
+      sx={{
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          boxShadow: 2,
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
       <CardContent>
         <Stack spacing={1}>
           <Stack
