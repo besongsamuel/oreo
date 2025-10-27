@@ -54,5 +54,8 @@
     "react-helmet-async": {
       "react": "$react"
     }
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.58.1"
   }
 }

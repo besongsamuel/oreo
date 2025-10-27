@@ -1,6 +1,6 @@
 import { Session, User } from "@supabase/supabase-js";
 import React, { createContext, useEffect, useState } from "react";
-import { useSupabase } from "../hooks/useSupabase";
+import { supabase } from "../lib/supabaseClient";
 
 interface Profile {
   id: string;
@@ -33,7 +33,6 @@ export const UserContext = createContext<UserContextType | undefined>(
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const supabase = useSupabase();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -61,28 +60,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
 
     // Listen for auth changes
     const {
@@ -104,7 +81,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
+  }, []);
 
   const signOut = async () => {
     try {

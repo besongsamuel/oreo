@@ -10,10 +10,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import { useSupabase } from "../hooks/useSupabase";
+
+// Google Maps types
+declare global {
+  interface Window {
+    google: any; // Google Maps API will be loaded from script tag
+  }
+}
+
+// Define type for Google Maps Autocomplete
+type GoogleAutocomplete = any;
 
 interface LocationFormData {
   name: string;
@@ -44,6 +54,78 @@ export const AddLocation = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autocompleteRef = useRef<HTMLInputElement>(null);
+  const autocomplete = useRef<GoogleAutocomplete | null>(null);
+
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    if (autocompleteRef.current && window.google) {
+      const autocompleteInstance = new window.google.maps.places.Autocomplete(
+        autocompleteRef.current,
+        {
+          componentRestrictions: { country: ["us", "ca"] },
+          fields: ["address_components", "formatted_address", "geometry"],
+        }
+      );
+
+      autocompleteInstance.addListener("place_changed", () => {
+        const place = autocompleteInstance.getPlace();
+
+        if (!place.address_components) return;
+
+        // Parse address components
+        let streetNumber = "";
+        let route = "";
+        let city = "";
+        let state = "";
+        let country = "";
+        let postalCode = "";
+
+        for (const component of place.address_components) {
+          const types = component.types;
+
+          if (types.includes("street_number")) {
+            streetNumber = component.long_name;
+          } else if (types.includes("route")) {
+            route = component.short_name;
+          } else if (types.includes("locality")) {
+            city = component.long_name;
+          } else if (types.includes("administrative_area_level_1")) {
+            state = component.short_name;
+          } else if (types.includes("country")) {
+            country = component.long_name;
+          } else if (types.includes("postal_code")) {
+            postalCode = component.long_name;
+          }
+        }
+
+        const fullAddress = place.formatted_address || "";
+        const address =
+          streetNumber && route
+            ? `${streetNumber} ${route}`
+            : route || fullAddress;
+
+        setFormData((prev) => ({
+          ...prev,
+          address,
+          city: city || prev.city,
+          state: state || prev.state,
+          country: country || prev.country,
+          postal_code: postalCode || prev.postal_code,
+        }));
+      });
+
+      autocomplete.current = autocompleteInstance;
+    }
+
+    return () => {
+      if (autocomplete.current) {
+        window.google?.maps?.event?.clearInstanceListeners(
+          autocomplete.current
+        );
+      }
+    };
+  }, []);
 
   const handleInputChange =
     (field: keyof LocationFormData) =>
@@ -154,14 +236,15 @@ export const AddLocation = () => {
                     disabled={loading}
                   />
 
-                  {/* Address */}
+                  {/* Address with Autocomplete */}
                   <TextField
+                    inputRef={autocompleteRef}
                     label="Street Address"
                     required
                     fullWidth
                     value={formData.address}
                     onChange={handleInputChange("address")}
-                    placeholder="123 Main Street"
+                    placeholder="Start typing an address..."
                     disabled={loading}
                   />
 
