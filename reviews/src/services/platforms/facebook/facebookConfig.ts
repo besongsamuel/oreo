@@ -19,3 +19,8 @@ export const FACEBOOK_API_VERSION = "v24.0";
 
 export const FACEBOOK_GRAPH_API_BASE =
     `https://graph.facebook.com/${FACEBOOK_API_VERSION}`;
+
+export const ZEMBRA_CLIENT_FUNCTION = process.env
+        .REACT_APP_SUPABASE_URL
+    ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/zembra-client`
+    : "";

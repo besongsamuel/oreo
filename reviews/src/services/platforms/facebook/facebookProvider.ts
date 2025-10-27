@@ -3,6 +3,7 @@ import {
     FACEBOOK_CONFIG,
     FACEBOOK_GRAPH_API_BASE,
     FACEBOOK_PERMISSIONS,
+    ZEMBRA_CLIENT_FUNCTION,
 } from "./facebookConfig";
 
 // Extend Window interface to include FB
@@ -102,93 +103,80 @@ export class FacebookProvider implements PlatformProvider {
     async fetchReviews(
         pageId: string,
         accessToken: string,
-        options?: { pageAccessToken?: string },
+        options?: any,
     ): Promise<StandardReview[]> {
         try {
-            const reviews: StandardReview[] = [];
-
-            // Use page access token if available, otherwise fall back to user access token
-            const tokenToUse = options?.pageAccessToken || accessToken;
-
-            // Try to fetch page ratings/reviews (may fail due to permissions)
-            try {
-                const ratingsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/ratings?access_token=${tokenToUse}&limit=100`,
-                );
-
-                if (ratingsResponse.ok) {
-                    const ratingsData = await ratingsResponse.json();
-                    console.log(
-                        `Fetched ${
-                            ratingsData.data?.length || 0
-                        } ratings from Facebook`,
-                    );
-
-                    for (const rating of ratingsData.data || []) {
-                        const review = this.transformRatingToReview(rating);
-                        if (review) {
-                            reviews.push(review);
-                        }
-                    }
-                } else if (ratingsResponse.status === 403) {
-                    console.warn(
-                        "Access to page ratings denied. This may be due to Facebook's restricted access to ratings API.",
-                    );
-                } else {
-                    console.warn(
-                        `Failed to fetch ratings: ${ratingsResponse.status} ${ratingsResponse.statusText}`,
-                    );
-                }
-            } catch (ratingsError) {
-                console.warn("Failed to fetch page ratings:", ratingsError);
-            }
-
-            // Fetch page posts with comments (this should work with current permissions)
-            try {
-                const postsResponse = await fetch(
-                    `${FACEBOOK_GRAPH_API_BASE}/${pageId}/feed?fields=from,id,admin_creator,created_time,message&access_token=${tokenToUse}&limit=50`,
-                );
-
-                if (postsResponse.ok) {
-                    const postsData = await postsResponse.json();
-                    console.log(
-                        `Fetched ${
-                            postsData.data?.length || 0
-                        } posts from Facebook`,
-                    );
-
-                    for (const post of postsData.data || []) {
-                        if (post.message) {
-                            const review = this.transformCommentToReview(
-                                post,
-                            );
-                            if (review) {
-                                reviews.push(review);
-                            }
-                        }
-                    }
-                } else {
-                    console.warn(
-                        `Failed to fetch posts: ${postsResponse.status} ${postsResponse.statusText}`,
-                    );
-                }
-            } catch (postsError) {
-                console.warn("Failed to fetch page posts:", postsError);
-            }
-
-            // If no reviews found, throw an informative error
-            if (reviews.length === 0) {
+            if (!ZEMBRA_CLIENT_FUNCTION) {
                 throw new Error(
-                    "No reviews found. Facebook has restricted access to page ratings. " +
-                        "Consider using Facebook Business Manager or alternative review collection methods.",
+                    "Zembra client function URL not configured. Please set REACT_APP_SUPABASE_URL.",
                 );
             }
 
-            return reviews;
+            const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+            const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+            if (!supabaseUrl || !supabaseAnonKey) {
+                throw new Error("Supabase configuration not found");
+            }
+
+            // Get postedAfter from options if provided (for incremental fetches)
+            const postedAfter = options?.postedAfter;
+
+            // Call Zembra client with get-reviews mode for Facebook
+            const response = await fetch(ZEMBRA_CLIENT_FUNCTION, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${supabaseAnonKey}`,
+                },
+                body: JSON.stringify({
+                    mode: "get-reviews",
+                    network: "facebook",
+                    slug: pageId,
+                    postedAfter: postedAfter,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    `Failed to fetch Facebook reviews: ${
+                        errorData.error || "Unknown error"
+                    }`,
+                );
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || "Failed to fetch reviews");
+            }
+
+            const zembraReviews = data.reviews || [];
+
+            // Transform Zembra reviews to StandardReview format
+            return zembraReviews.map((review: any) =>
+                this.transformZembraReview(review)
+            );
         } catch (error) {
             console.error("Error fetching Facebook reviews:", error);
             throw error;
         }
+    }
+
+    private transformZembraReview(review: any): StandardReview {
+        return {
+            externalId: review.id || this.generateHash(review.text),
+            authorName: review.author?.name || "Anonymous",
+            authorAvatar: review.author?.photo,
+            rating: review.rating || 0,
+            content: review.text || "",
+            title: undefined,
+            publishedAt: new Date(review.timestamp),
+            replyContent: undefined,
+            replyAt: undefined,
+            rawData: review,
+        };
     }
 
     private transformRatingToReview(rating: any): StandardReview | null {

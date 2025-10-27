@@ -42,11 +42,41 @@ export const FetchPlatformReviews = ({
         gutterBottom
         sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
       >
-        Fetch Reviews from Platforms
+        Connect Platform to Locations
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Connect to review platforms to import and analyze customer feedback
+        Connect a platform business to one of your locations
       </Typography>
+      <Box
+        sx={{
+          bgcolor: "grey.50",
+          p: 2,
+          borderRadius: 2,
+          mb: 3,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <strong>What happens when you connect a platform:</strong>
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          component="ul"
+          sx={{ mb: 0, pl: 2 }}
+        >
+          <li style={{ marginBottom: "8px" }}>
+            A platform location or business will be connected to one of your
+            locations
+          </li>
+          <li style={{ marginBottom: "8px" }}>
+            Reviews will be pulled from the platform and linked to that location
+          </li>
+          <li>
+            You will then be able to pull reviews for that location in the
+            future
+          </li>
+        </Typography>
+      </Box>
       <Box
         sx={{
           display: "grid",
