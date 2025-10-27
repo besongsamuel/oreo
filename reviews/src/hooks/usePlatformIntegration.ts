@@ -84,18 +84,32 @@ export function usePlatformIntegration() {
         const zembraReviews = getReviewsResponse.data.reviews || [];
 
         // Transform Zembra reviews to StandardReview format
-        const reviews = zembraReviews.map((review: any) => ({
-            externalId: review.id,
-            authorName: review.author?.name || "Anonymous",
-            authorAvatar: review.author?.photo,
-            rating: review.rating || 0,
-            content: review.text || "",
-            title: undefined,
-            publishedAt: new Date(review.timestamp),
-            replyContent: undefined,
-            replyAt: undefined,
-            rawData: review,
-        }));
+        const reviews = zembraReviews.map((review: any) => {
+            // Calculate rating: use rating if available, otherwise map recommendation
+            let rating = review.rating;
+            if (rating === null || rating === undefined) {
+                if (review.recommendation === 1) {
+                    rating = 5;
+                } else if (review.recommendation === -1) {
+                    rating = 1;
+                } else {
+                    rating = 0;
+                }
+            }
+
+            return {
+                externalId: review.id,
+                authorName: review.author?.name || "Anonymous",
+                authorAvatar: review.author?.photo,
+                rating: rating,
+                content: review.text || "",
+                title: undefined,
+                publishedAt: new Date(review.timestamp),
+                replyContent: undefined,
+                replyAt: undefined,
+                rawData: review,
+            };
+        });
 
         // Save reviews to database
         const stats = await reviewsService.saveReviews(connection.id, reviews);
@@ -231,18 +245,32 @@ export function usePlatformIntegration() {
         const zembraReviews = getReviewsResponse.data.reviews || [];
 
         // Transform Zembra reviews to StandardReview format
-        const reviews = zembraReviews.map((review: any) => ({
-            externalId: review.id,
-            authorName: review.author?.name || "Anonymous",
-            authorAvatar: review.author?.photo,
-            rating: review.rating || 0,
-            content: review.text || "",
-            title: undefined,
-            publishedAt: new Date(review.timestamp),
-            replyContent: undefined,
-            replyAt: undefined,
-            rawData: review,
-        }));
+        const reviews = zembraReviews.map((review: any) => {
+            // Calculate rating: use rating if available, otherwise map recommendation
+            let rating = review.rating;
+            if (rating === null || rating === undefined) {
+                if (review.recommendation === 1) {
+                    rating = 5;
+                } else if (review.recommendation === -1) {
+                    rating = 1;
+                } else {
+                    rating = 0;
+                }
+            }
+
+            return {
+                externalId: review.id,
+                authorName: review.author?.name || "Anonymous",
+                authorAvatar: review.author?.photo,
+                rating: rating,
+                content: review.text || "",
+                title: undefined,
+                publishedAt: new Date(review.timestamp),
+                replyContent: undefined,
+                replyAt: undefined,
+                rawData: review,
+            };
+        });
 
         // Save reviews to database
         const stats = await reviewsService.saveReviews(

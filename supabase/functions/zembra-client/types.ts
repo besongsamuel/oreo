@@ -13,7 +13,7 @@ export interface ZembraReview {
     text: string;
     timestamp: string;
     rating: number;
-    recommendation: string | null;
+    recommendation: number | null;
     translation: string | null;
     author: ZembraAuthor;
 }

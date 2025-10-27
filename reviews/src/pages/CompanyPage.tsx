@@ -115,6 +115,11 @@ interface SentimentData {
     avgScore: number;
     count: number;
   }[];
+  emotions: {
+    emoji: string;
+    count: number;
+    percentage: number;
+  }[];
 }
 
 export const CompanyPage = () => {
@@ -507,7 +512,8 @@ export const CompanyPage = () => {
               published_at,
               sentiment_analysis (
                 sentiment,
-                sentiment_score
+                sentiment_score,
+                emotions
               )
             `
               )
@@ -541,6 +547,7 @@ export const CompanyPage = () => {
                 .map((r: any) => ({
                   sentiment: r.sentiment_analysis.sentiment,
                   score: r.sentiment_analysis.sentiment_score,
+                  emotions: r.sentiment_analysis.emotions || {},
                   gender: r.reviewer_gender,
                   ageRange: r.reviewer_age_range,
                 }));
@@ -637,6 +644,44 @@ export const CompanyPage = () => {
                   })
                 );
 
+                // Aggregate emotions from emoticons
+                const emotionCounts = new Map<string, number>();
+                sentiments.forEach((s: any) => {
+                  // Handle emotions as JSONB object
+                  if (s.emotions) {
+                    try {
+                      // Parse emotions if it's a string, otherwise use as object
+                      let emotionsData = s.emotions;
+                      if (typeof s.emotions === "string") {
+                        emotionsData = JSON.parse(s.emotions);
+                      }
+
+                      // Check if emoticons array exists
+                      if (
+                        emotionsData &&
+                        Array.isArray(emotionsData.emoticons)
+                      ) {
+                        emotionsData.emoticons.forEach((emoji: string) => {
+                          emotionCounts.set(
+                            emoji,
+                            (emotionCounts.get(emoji) || 0) + 1
+                          );
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Error parsing emotions:", error);
+                    }
+                  }
+                });
+
+                const emotionAggregate = Array.from(emotionCounts.entries())
+                  .map(([emoji, count]) => ({
+                    emoji,
+                    count,
+                    percentage: (count / totalReviewsWithSentiment) * 100,
+                  }))
+                  .sort((a, b) => b.count - a.count);
+
                 setSentimentData({
                   overallScore: avgScore,
                   overallSentiment,
@@ -646,6 +691,7 @@ export const CompanyPage = () => {
                   negativeCount,
                   byAgeGroup,
                   byGender,
+                  emotions: emotionAggregate,
                 });
               } else {
                 setSentimentData(null);

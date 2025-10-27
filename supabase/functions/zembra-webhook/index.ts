@@ -70,7 +70,7 @@ interface ZembraWebhookPayload {
             text: string;
             timestamp: string;
             rating: number;
-            recommendation: string | null;
+            recommendation: number | null;
             translation: string | null;
             author: {
                 id: string;
@@ -256,18 +256,32 @@ serve(async (req) => {
         const connectionId = connections[0].id;
 
         // Transform Zembra reviews to StandardReview format
-        const standardReviews: StandardReview[] = reviews.map((review) => ({
-            externalId: review.id,
-            authorName: review.author.name || "Anonymous",
-            authorAvatar: review.author.photo,
-            rating: review.rating || 0,
-            content: review.text || "",
-            title: undefined,
-            publishedAt: new Date(review.timestamp),
-            replyContent: undefined,
-            replyAt: undefined,
-            rawData: review as Record<string, unknown>,
-        }));
+        const standardReviews: StandardReview[] = reviews.map((review) => {
+            // Calculate rating: use rating if available, otherwise map recommendation
+            let rating = review.rating;
+            if (rating === null || rating === undefined) {
+                if (review.recommendation === 1) {
+                    rating = 5;
+                } else if (review.recommendation === -1) {
+                    rating = 1;
+                } else {
+                    rating = 0;
+                }
+            }
+
+            return {
+                externalId: review.id,
+                authorName: review.author.name || "Anonymous",
+                authorAvatar: review.author.photo,
+                rating: rating,
+                content: review.text || "",
+                title: undefined,
+                publishedAt: new Date(review.timestamp),
+                replyContent: undefined,
+                replyAt: undefined,
+                rawData: review as Record<string, unknown>,
+            };
+        });
 
         console.log(
             `Transformed ${standardReviews.length} reviews for connection: ${connectionId}`,
