@@ -66,7 +66,10 @@ serve(async (req) => {
 
         // Add postedAfter parameter if provided (for incremental fetches)
         if (postedAfter) {
-            baseUrl.searchParams.set("postedAfter", postedAfter);
+            // Convert ISO timestamp to Unix timestamp (milliseconds)
+            const date = new Date(postedAfter);
+            const unixTimestamp = Math.floor(date.getTime()).toString();
+            baseUrl.searchParams.set("postedAfter", unixTimestamp);
         }
 
         const headers = {

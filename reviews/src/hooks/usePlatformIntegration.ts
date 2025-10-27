@@ -288,10 +288,74 @@ export function usePlatformIntegration() {
                     .single();
 
                 const metadata = connection?.metadata || {};
-                const postedAfter = metadata.zembra_last_fetch_at;
+                const lastFetchAt = metadata.zembra_last_fetch_at;
                 const currentReviewCount = metadata.zembra_review_count || 0;
 
-                // Call Zembra client to get reviews
+                // Calculate time difference if last fetch exists
+                let shouldFetch = true;
+                let postedAfter: string | undefined = undefined;
+
+                if (lastFetchAt) {
+                    const now = new Date();
+                    const lastFetch = new Date(lastFetchAt);
+                    const daysSinceLastFetch =
+                        (now.getTime() - lastFetch.getTime()) /
+                        (1000 * 60 * 60 * 24);
+
+                    if (daysSinceLastFetch < 5) {
+                        // Don't fetch if less than 5 days
+                        shouldFetch = false;
+                        postedAfter = undefined;
+                    } else {
+                        // Use last fetch time for incremental fetch
+                        postedAfter = lastFetchAt;
+                    }
+                }
+
+                if (!shouldFetch) {
+                    // Return empty results without fetching
+                    return {
+                        success: true,
+                        reviewsImported: 0,
+                    };
+                }
+
+                // First, create a new review job to get the latest reviews
+                const createJobResponse = await supabase.functions.invoke(
+                    "zembra-client",
+                    {
+                        body: {
+                            mode: "create-review-job",
+                            network: "yelp",
+                            slug: pageId,
+                        },
+                    },
+                );
+
+                if (!createJobResponse.data?.success) {
+                    throw new Error(
+                        createJobResponse.data?.error ||
+                            "Failed to create Zembra review job",
+                    );
+                }
+
+                const jobId = createJobResponse.data.jobId;
+
+                // Update connection with new Zembra job ID
+                await supabase
+                    .from("platform_connections")
+                    .update({
+                        metadata: {
+                            ...metadata,
+                            zembra_job_id: jobId,
+                        },
+                    })
+                    .eq("id", platformConnectionId);
+
+                // Wait 30 seconds for job to process
+                await new Promise((resolve) => setTimeout(resolve, 30000));
+
+                // Now call get-reviews with postedAfter if it exists
                 const getReviewsResponse = await supabase.functions.invoke(
                     "zembra-client",
                     {
