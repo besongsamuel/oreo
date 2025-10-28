@@ -255,13 +255,44 @@ Deno.serve(async (req: Request) => {
             }
         }
 
+        // Fetch previous month's summary for comparison
+        let previousMonthSummary = null;
+        const previousMonth = month === 1 ? 12 : month - 1;
+        const previousYear = month === 1 ? year - 1 : year;
+        const previousMonthYear = `${previousYear}-${
+            String(previousMonth).padStart(2, "0")
+        }`;
+
+        const { data: prevSummary } = await supabaseClient
+            .from("monthly_summaries")
+            .select(
+                "summary, total_reviews, average_rating, sentiment_breakdown",
+            )
+            .eq("company_id", company_id)
+            .eq("month_year", previousMonthYear)
+            .single();
+
+        if (prevSummary) {
+            previousMonthSummary = {
+                month_year: previousMonthYear,
+                total_reviews: prevSummary.total_reviews,
+                average_rating: prevSummary.average_rating,
+                sentiment_breakdown: prevSummary.sentiment_breakdown,
+                summary: prevSummary.summary,
+            };
+        }
+
         // Call OpenAI to generate summary
         const reviewTexts = reviews
             .filter((r) => r.content && r.content.trim().length > 0)
             .map((r) => r.content)
             .join("\n\n");
 
-        const summary = await callOpenAIForSummary(reviewTexts, openaiApiKey);
+        const summary = await callOpenAIForSummary(
+            reviewTexts,
+            openaiApiKey,
+            previousMonthSummary,
+        );
 
         // Calculate statistics
         const totalReviews = reviews.length;
@@ -353,17 +384,43 @@ Deno.serve(async (req: Request) => {
     }
 });
 
+interface PreviousMonthSummary {
+    month_year: string;
+    total_reviews: number;
+    average_rating: string | number;
+    sentiment_breakdown: {
+        positive: number;
+        neutral: number;
+        negative: number;
+    };
+    summary: string | null;
+}
+
 async function callOpenAIForSummary(
     reviewTexts: string,
     apiKey: string,
+    previousMonthSummary?: PreviousMonthSummary | null,
 ): Promise<string> {
-    const prompt =
-        `Based on the following customer reviews, generate a concise 4-6 line summary of customer sentiment for this month. Focus on key themes, common feedback, and overall customer experience. Be objective and professional.
+    let prompt =
+        `Based on the following customer reviews, generate a concise 4-6 line summary of customer sentiment for this month. Focus on key themes, common feedback, and overall customer experience. Be objective and professional.`;
 
-Reviews:
+    if (previousMonthSummary) {
+        prompt +=
+            `\n\nPrevious Month Summary (${previousMonthSummary.month_year}):
+Total Reviews: ${previousMonthSummary.total_reviews}
+Average Rating: ${previousMonthSummary.average_rating}/5.0
+Positive: ${previousMonthSummary.sentiment_breakdown.positive}, Neutral: ${previousMonthSummary.sentiment_breakdown.neutral}, Negative: ${previousMonthSummary.sentiment_breakdown.negative}
+Summary: ${previousMonthSummary.summary}
+
+Compare this month's reviews with the previous month and highlight any notable changes, trends, or improvements.`;
+    }
+
+    prompt += `\n\nCurrent Month Reviews:
 ${reviewTexts}
 
 Summary:`;
+
+    const fullPrompt = prompt;
 
     const openaiResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -383,7 +440,7 @@ Summary:`;
                     },
                     {
                         role: "user",
-                        content: prompt,
+                        content: fullPrompt,
                     },
                 ],
                 temperature: 0.3,
