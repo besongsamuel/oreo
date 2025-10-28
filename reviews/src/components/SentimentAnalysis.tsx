@@ -1,4 +1,5 @@
 import {
+  ContentCopy as ContentCopyIcon,
   Lightbulb as LightbulbIcon,
   SentimentDissatisfied as NegativeIcon,
   SentimentNeutral as NeutralIcon,
@@ -6,6 +7,7 @@ import {
   TrendingUp as TrendingUpIcon,
 } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -16,9 +18,11 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  IconButton,
   Paper,
   Skeleton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
@@ -75,6 +79,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const [actionPlanOpen, setActionPlanOpen] = useState(false);
   const [actionPlan, setActionPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleGenerateActionPlan = async () => {
     if (!companyId) return;
@@ -116,7 +121,78 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const handleCloseActionPlan = () => {
     setActionPlanOpen(false);
     setActionPlan(null);
+    setCopied(false);
   };
+
+  const handleCopyActionPlan = async () => {
+    if (actionPlan) {
+      try {
+        await navigator.clipboard.writeText(actionPlan);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy to clipboard:", error);
+        // Fallback: try using deprecated clipboard API
+        const textArea = document.createElement("textarea");
+        textArea.value = actionPlan;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand("copy");
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error("Fallback copy also failed:", err);
+        }
+        document.body.removeChild(textArea);
+      }
+    }
+  };
+
+  const getActiveFilters = () => {
+    const filters = [];
+    if (filterLocation && filterLocation !== "all") {
+      filters.push(`Location: ${filterLocation}`);
+    }
+    if (filterStartDate) {
+      filters.push(`From: ${new Date(filterStartDate).toLocaleDateString()}`);
+    }
+    if (filterEndDate) {
+      filters.push(`To: ${new Date(filterEndDate).toLocaleDateString()}`);
+    }
+    if (selectedKeyword && selectedKeyword !== "all") {
+      filters.push(`Keyword: ${selectedKeyword}`);
+    }
+    if (selectedRating && selectedRating !== "all") {
+      filters.push(`Rating: ${selectedRating} stars`);
+    }
+    if (selectedTopic && selectedTopic !== "all") {
+      filters.push(`Topic: ${selectedTopic}`);
+    }
+    return filters;
+  };
+
+  const formatActionPlan = (plan: string) => {
+    // Convert markdown-style formatting to HTML
+    return plan
+      .replace(
+        /^## (.+)$/gm,
+        '<h3 style="margin-top: 1.5em; margin-bottom: 0.5em; font-size: 1.1em; font-weight: 600;">$1</h3>'
+      )
+      .replace(
+        /^#### (.+)$/gm,
+        '<h4 style="margin-top: 1em; margin-bottom: 0.3em; font-size: 1em; font-weight: 600;">$1</h4>'
+      )
+      .replace(/^\d+\. (.+)$/gm, '<div style="margin: 0.5em 0;">$1</div>')
+      .replace(
+        /^- (.+)$/gm,
+        '<div style="margin: 0.3em 0; padding-left: 1em;">• $1</div>'
+      )
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n\n/g, "<br /><br />")
+      .replace(/\n/g, " ");
+  };
+
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment.toLowerCase()) {
       case "positive":
@@ -410,7 +486,22 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Proposed Action Plan</DialogTitle>
+        <DialogTitle>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h6">Proposed Action Plan</Typography>
+            {actionPlan && (
+              <Tooltip title={copied ? "Copied!" : "Copy to clipboard"}>
+                <IconButton size="small" onClick={handleCopyActionPlan}>
+                  <ContentCopyIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
+        </DialogTitle>
         <DialogContent>
           {loadingPlan ? (
             <Stack spacing={2} sx={{ py: 2 }}>
@@ -425,12 +516,66 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
               </Box>
             </Stack>
           ) : actionPlan ? (
-            <Box
-              sx={{ whiteSpace: "pre-wrap" }}
-              dangerouslySetInnerHTML={{
-                __html: actionPlan.replace(/\n/g, "<br />"),
-              }}
-            />
+            <Stack spacing={2}>
+              {/* Active Filters */}
+              {getActiveFilters().length > 0 && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="caption" fontWeight={600} gutterBottom>
+                    Filters Applied:
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    flexWrap="wrap"
+                    gap={0.5}
+                    sx={{ mt: 0.5 }}
+                  >
+                    {getActiveFilters().map((filter, index) => (
+                      <Chip
+                        key={index}
+                        label={filter}
+                        size="small"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Stack>
+                </Alert>
+              )}
+
+              {/* Action Plan Content */}
+              <Box
+                sx={{
+                  maxHeight: "60vh",
+                  overflow: "auto",
+                  "& h3": {
+                    mt: 3,
+                    mb: 1,
+                    fontSize: "1.1em",
+                    fontWeight: 600,
+                    color: "primary.main",
+                  },
+                  "& h4": {
+                    mt: 2,
+                    mb: 0.5,
+                    fontSize: "1em",
+                    fontWeight: 600,
+                  },
+                  "& strong": {
+                    fontWeight: 600,
+                  },
+                  "& ul, & ol": {
+                    pl: 2,
+                    mb: 1,
+                  },
+                  "& li": {
+                    mb: 0.5,
+                  },
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: formatActionPlan(actionPlan),
+                }}
+              />
+            </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary">
               No action plan available.
