@@ -1032,6 +1032,7 @@ export const CompanyPage = () => {
     };
 
     fetchFilteredData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     companyId,
     filterLocation,
@@ -1040,11 +1041,8 @@ export const CompanyPage = () => {
     selectedKeyword,
     selectedRating,
     selectedTopic,
-    reviewKeywordsMap,
-    reviewTopicsMap,
     loading,
     showRecentOnly,
-    supabase,
   ]);
 
   // Calculate chart data from reviews
@@ -1173,6 +1171,7 @@ export const CompanyPage = () => {
     };
 
     calculateChartData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     reviews,
     allReviews,
@@ -1182,8 +1181,6 @@ export const CompanyPage = () => {
     selectedKeyword,
     selectedRating,
     selectedTopic,
-    reviewKeywordsMap,
-    reviewTopicsMap,
   ]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
