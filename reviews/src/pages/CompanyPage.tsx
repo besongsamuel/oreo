@@ -163,6 +163,12 @@ export const CompanyPage = () => {
     null
   );
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [reviewKeywordsMap, setReviewKeywordsMap] = useState<
+    Record<string, string[]>
+  >({});
+  const [reviewTopicsMap, setReviewTopicsMap] = useState<
+    Record<string, string[]>
+  >({});
   const [locationConnections, setLocationConnections] = useState<
     Record<
       string,
@@ -820,6 +826,7 @@ export const CompanyPage = () => {
             .from("review_keywords")
             .select(
               `
+              review_id,
               keyword_id,
               keywords (
                 text,
@@ -830,6 +837,19 @@ export const CompanyPage = () => {
             .in("review_id", reviewIds);
 
           if (reviewKeywordsData) {
+            // Build review keywords map (lowercased for comparison)
+            const keywordsMap: Record<string, string[]> = {};
+            reviewKeywordsData.forEach((rk: any) => {
+              if (rk.keywords && rk.review_id) {
+                const reviewId = rk.review_id;
+                if (!keywordsMap[reviewId]) {
+                  keywordsMap[reviewId] = [];
+                }
+                keywordsMap[reviewId].push(rk.keywords.text.toLowerCase());
+              }
+            });
+            setReviewKeywordsMap(keywordsMap);
+
             // Count occurrences of each keyword
             const keywordMap = new Map<
               string,
@@ -910,6 +930,38 @@ export const CompanyPage = () => {
               .slice(0, 5);
 
             setTopics(groupedTopics);
+
+            // Fetch review_topics mapping
+            const topicIds = groupedTopics.map((t) => t.id);
+            if (topicIds.length > 0) {
+              const { data: reviewTopicsData } = await supabase
+                .from("review_topics")
+                .select(
+                  `
+                  review_id,
+                  topic_id,
+                  topics (
+                    name
+                  )
+                `
+                )
+                .in("topic_id", topicIds);
+
+              if (reviewTopicsData) {
+                // Build review topics map (lowercased for comparison)
+                const topicsMap: Record<string, string[]> = {};
+                reviewTopicsData.forEach((rt: any) => {
+                  if (rt.review_id && rt.topics) {
+                    const reviewId = rt.review_id;
+                    if (!topicsMap[reviewId]) {
+                      topicsMap[reviewId] = [];
+                    }
+                    topicsMap[reviewId].push(rt.topics.name.toLowerCase());
+                  }
+                });
+                setReviewTopicsMap(topicsMap);
+              }
+            }
           } else {
             setTopics([]);
           }
@@ -1292,10 +1344,10 @@ export const CompanyPage = () => {
   // Filter reviews based on review-specific filters (keyword, rating, topic)
   // Location and date filters are already applied at the query level
   const filteredReviews = reviews.filter((review) => {
-    // Filter by keyword (check if review content contains the keyword)
+    // Filter by keyword (check review_keywords mapping, compare in lowercase)
     if (selectedKeyword !== "all") {
-      const contentLower = (review.content + " " + review.title).toLowerCase();
-      if (!contentLower.includes(selectedKeyword.toLowerCase())) {
+      const reviewKeywords = reviewKeywordsMap[review.id] || [];
+      if (!reviewKeywords.includes(selectedKeyword.toLowerCase())) {
         return false;
       }
     }
@@ -1322,10 +1374,10 @@ export const CompanyPage = () => {
       }
     }
 
-    // Filter by topic (check if review content contains the topic)
+    // Filter by topic (check review_topics mapping, compare in lowercase)
     if (selectedTopic !== "all") {
-      const contentLower = (review.content + " " + review.title).toLowerCase();
-      if (!contentLower.includes(selectedTopic.toLowerCase())) {
+      const reviewTopics = reviewTopicsMap[review.id] || [];
+      if (!reviewTopics.includes(selectedTopic.toLowerCase())) {
         return false;
       }
     }

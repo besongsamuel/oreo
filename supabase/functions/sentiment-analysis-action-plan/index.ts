@@ -17,7 +17,36 @@ interface ActionPlanResponse {
     error?: string;
 }
 
+interface Location {
+    id: string;
+    name: string;
+}
+
+interface PlatformConnection {
+    id: string;
+}
+
+interface Review {
+    id: string;
+    content: string;
+    rating: number;
+    title: string;
+    published_at: string;
+}
+
 Deno.serve(async (req: Request) => {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+        return new Response(null, {
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers":
+                    "authorization, x-client-info, apikey, content-type",
+            },
+        });
+    }
+
     try {
         // Initialize Supabase client
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -62,19 +91,25 @@ Deno.serve(async (req: Request) => {
                     error: "No locations found for this company",
                 } as ActionPlanResponse),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
                     status: 400,
                 },
             );
         }
 
         // Filter locations if needed
-        let locationIds = locationsData.map((loc: any) => loc.id);
+        let locationIds = locationsData.map((loc) => loc.id);
         if (filterLocation && filterLocation !== "all") {
             const filteredLocs = locationsData.filter(
-                (loc: any) => loc.name === filterLocation,
+                (loc) => loc.name === filterLocation,
             );
-            locationIds = filteredLocs.map((loc: any) => loc.id);
+            locationIds = filteredLocs.map((loc) => loc.id);
         }
 
         // Get platform connections for these locations
@@ -90,9 +125,8 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const platformConnectionIds = platformConnections?.map((pc: any) =>
-            pc.id
-        ) || [];
+        const platformConnectionIds = platformConnections?.map((pc) => pc.id) ||
+            [];
 
         if (platformConnectionIds.length === 0) {
             return new Response(
@@ -101,7 +135,13 @@ Deno.serve(async (req: Request) => {
                     error: "No platform connections found",
                 } as ActionPlanResponse),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
                     status: 400,
                 },
             );
@@ -143,16 +183,22 @@ Deno.serve(async (req: Request) => {
                     error: "No reviews found matching the filters",
                 } as ActionPlanResponse),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
                     status: 400,
                 },
             );
         }
 
         // Filter reviews by keyword and topic (client-side filtering)
-        let filteredReviews = reviewsData;
+        let filteredReviews = reviewsData as Review[];
         if (selectedKeyword && selectedKeyword !== "all") {
-            filteredReviews = filteredReviews.filter((review: any) => {
+            filteredReviews = filteredReviews.filter((review) => {
                 const content = `${review.content || ""} ${review.title || ""}`
                     .toLowerCase();
                 return content.includes(selectedKeyword.toLowerCase());
@@ -160,7 +206,7 @@ Deno.serve(async (req: Request) => {
         }
 
         if (selectedTopic && selectedTopic !== "all") {
-            filteredReviews = filteredReviews.filter((review: any) => {
+            filteredReviews = filteredReviews.filter((review) => {
                 const content = `${review.content || ""} ${review.title || ""}`
                     .toLowerCase();
                 return content.includes(selectedTopic.toLowerCase());
@@ -168,7 +214,7 @@ Deno.serve(async (req: Request) => {
         }
 
         if (selectedRating && selectedRating !== "all") {
-            filteredReviews = filteredReviews.filter((review: any) => {
+            filteredReviews = filteredReviews.filter((review) => {
                 return Math.floor(review.rating) === Number(selectedRating);
             });
         }
@@ -180,7 +226,13 @@ Deno.serve(async (req: Request) => {
                     error: "No reviews match the selected filters",
                 } as ActionPlanResponse),
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
                     status: 400,
                 },
             );
@@ -188,7 +240,7 @@ Deno.serve(async (req: Request) => {
 
         // Generate action plan using OpenAI
         const reviewsText = filteredReviews
-            .map((r: any) => `${r.title || ""}: ${r.content}`)
+            .map((r) => `${r.title || ""}: ${r.content}`)
             .join("\n\n");
 
         const actionPlan = await generateActionPlan(
@@ -202,7 +254,15 @@ Deno.serve(async (req: Request) => {
                 success: true,
                 actionPlan,
             } as ActionPlanResponse),
-            { headers: { "Content-Type": "application/json" } },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers":
+                        "authorization, x-client-info, apikey, content-type",
+                },
+            },
         );
     } catch (error) {
         console.error("Error generating action plan:", error);
@@ -216,7 +276,13 @@ Deno.serve(async (req: Request) => {
                 error: errorMessage,
             } as ActionPlanResponse),
             {
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers":
+                        "authorization, x-client-info, apikey, content-type",
+                },
                 status: 500,
             },
         );

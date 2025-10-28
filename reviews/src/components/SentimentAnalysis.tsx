@@ -261,7 +261,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                       fullWidth
                       sx={{ mt: 2 }}
                     >
-                      Generate Action Plan
+                      Propose Action Plan
                     </Button>
                   </Box>
                 )}
@@ -410,7 +410,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Customer Feedback Action Plan</DialogTitle>
+        <DialogTitle>Proposed Action Plan</DialogTitle>
         <DialogContent>
           {loadingPlan ? (
             <Stack spacing={2} sx={{ py: 2 }}>
