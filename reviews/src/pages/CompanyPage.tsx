@@ -1347,7 +1347,11 @@ export const CompanyPage = () => {
     // Filter by keyword (check review_keywords mapping, compare in lowercase)
     if (selectedKeyword !== "all") {
       const reviewKeywords = reviewKeywordsMap[review.id] || [];
-      if (!reviewKeywords.includes(selectedKeyword.toLowerCase())) {
+      const selectedKeywordLower = selectedKeyword.toLowerCase();
+      const keywordExists = reviewKeywords.some(
+        (k) => k.toLowerCase() === selectedKeywordLower
+      );
+      if (!keywordExists) {
         return false;
       }
     }
@@ -1377,7 +1381,11 @@ export const CompanyPage = () => {
     // Filter by topic (check review_topics mapping, compare in lowercase)
     if (selectedTopic !== "all") {
       const reviewTopics = reviewTopicsMap[review.id] || [];
-      if (!reviewTopics.includes(selectedTopic.toLowerCase())) {
+      const selectedTopicLower = selectedTopic.toLowerCase();
+      const topicExists = reviewTopics.some(
+        (t) => t.toLowerCase() === selectedTopicLower
+      );
+      if (!topicExists) {
         return false;
       }
     }
