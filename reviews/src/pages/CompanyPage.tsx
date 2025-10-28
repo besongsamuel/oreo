@@ -69,6 +69,7 @@ interface CompanyDetails {
   negative_reviews: number;
   neutral_reviews: number;
   total_locations: number;
+  logo_url?: string;
 }
 
 interface Location {
@@ -199,6 +200,7 @@ export const CompanyPage = () => {
   // Review-specific filters
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
+  const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
 
   // Pagination for reviews
@@ -206,7 +208,7 @@ export const CompanyPage = () => {
   const reviewsPerPage = 10;
 
   // Toggle between recent (last 30 days) and all reviews
-  const [showRecentOnly, setShowRecentOnly] = useState(true);
+  const [showRecentOnly, setShowRecentOnly] = useState(false);
 
   // Chart data state
   const [ratingDistribution, setRatingDistribution] = useState({
@@ -1287,7 +1289,7 @@ export const CompanyPage = () => {
 
   const platforms = getAllPlatforms();
 
-  // Filter reviews based on review-specific filters (keyword and rating)
+  // Filter reviews based on review-specific filters (keyword, rating, topic)
   // Location and date filters are already applied at the query level
   const filteredReviews = reviews.filter((review) => {
     // Filter by keyword (check if review content contains the keyword)
@@ -1320,6 +1322,14 @@ export const CompanyPage = () => {
       }
     }
 
+    // Filter by topic (check if review content contains the topic)
+    if (selectedTopic !== "all") {
+      const contentLower = (review.content + " " + review.title).toLowerCase();
+      if (!contentLower.includes(selectedTopic.toLowerCase())) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -1332,7 +1342,7 @@ export const CompanyPage = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedKeyword, selectedRating]);
+  }, [selectedKeyword, selectedRating, selectedTopic]);
 
   // Get unique locations from all locations (not just filtered reviews)
   const uniqueLocations = locations.map((loc) => loc.name).sort();
@@ -1343,6 +1353,7 @@ export const CompanyPage = () => {
   const handleClearFilters = () => {
     setSelectedKeyword("all");
     setSelectedRating("all");
+    setSelectedTopic("all");
   };
 
   const handleClearAllFilters = () => {
@@ -1351,6 +1362,7 @@ export const CompanyPage = () => {
     setFilterEndDate("");
     setSelectedKeyword("all");
     setSelectedRating("all");
+    setSelectedTopic("all");
   };
 
   if (loading) {
@@ -1476,7 +1488,12 @@ export const CompanyPage = () => {
           </Stack>
 
           {/* Company Header */}
-          <CompanyHeader company={company} />
+          <CompanyHeader
+            company={company}
+            onLogoUpdate={(logoUrl) => {
+              setCompany({ ...company, logo_url: logoUrl });
+            }}
+          />
 
           {/* Monthly Summary */}
           {companyId && <MonthlySummary companyId={companyId} />}
@@ -1537,7 +1554,7 @@ export const CompanyPage = () => {
             />
           )}
 
-          {/* Page-level Filters */}
+          {/* Unified Filters */}
           <Paper
             elevation={0}
             sx={{
@@ -1558,12 +1575,16 @@ export const CompanyPage = () => {
                     Data Filters
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Filter all data on this page by location and date range
+                    Filter all data on this page by location, date, keyword,
+                    rating, and topic
                   </Typography>
                 </Box>
                 {(filterLocation !== "all" ||
                   filterStartDate ||
-                  filterEndDate) && (
+                  filterEndDate ||
+                  selectedKeyword !== "all" ||
+                  selectedRating !== "all" ||
+                  selectedTopic !== "all") && (
                   <Button
                     variant="text"
                     size="small"
@@ -1583,7 +1604,8 @@ export const CompanyPage = () => {
                   display: "grid",
                   gridTemplateColumns: {
                     xs: "1fr",
-                    sm: "repeat(3, 1fr)",
+                    sm: "repeat(2, 1fr)",
+                    md: "repeat(3, 1fr)",
                   },
                   gap: 2,
                 }}
@@ -1635,12 +1657,75 @@ export const CompanyPage = () => {
                   }}
                   sx={{ bgcolor: "background.paper" }}
                 />
+
+                {/* Keyword Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="keyword-filter-label">Keyword</InputLabel>
+                  <Select
+                    labelId="keyword-filter-label"
+                    value={selectedKeyword}
+                    label="Keyword"
+                    onChange={(e) => setSelectedKeyword(e.target.value)}
+                    sx={{ bgcolor: "background.paper" }}
+                  >
+                    <MenuItem value="all">All Keywords</MenuItem>
+                    {topKeywordsForFilter.map((keyword) => (
+                      <MenuItem
+                        key={keyword.keyword_text}
+                        value={keyword.keyword_text}
+                      >
+                        {keyword.keyword_text} ({keyword.occurrence_count})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Rating Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="rating-filter-label">Rating</InputLabel>
+                  <Select
+                    labelId="rating-filter-label"
+                    value={selectedRating}
+                    label="Rating"
+                    onChange={(e) => setSelectedRating(e.target.value)}
+                    sx={{ bgcolor: "background.paper" }}
+                  >
+                    <MenuItem value="all">All Ratings</MenuItem>
+                    <MenuItem value="5">5 stars</MenuItem>
+                    <MenuItem value="4">4 stars</MenuItem>
+                    <MenuItem value="3">3 stars</MenuItem>
+                    <MenuItem value="2">2 stars</MenuItem>
+                    <MenuItem value="1">1 star</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {/* Topic Filter */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="topic-filter-label">Topic</InputLabel>
+                  <Select
+                    labelId="topic-filter-label"
+                    value={selectedTopic}
+                    label="Topic"
+                    onChange={(e) => setSelectedTopic(e.target.value)}
+                    sx={{ bgcolor: "background.paper" }}
+                  >
+                    <MenuItem value="all">All Topics</MenuItem>
+                    {topics.map((topic) => (
+                      <MenuItem key={topic.id} value={topic.name}>
+                        {topic.name} ({topic.occurrence_count})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Box>
 
               {/* Active Filters Display */}
               {(filterLocation !== "all" ||
                 filterStartDate ||
-                filterEndDate) && (
+                filterEndDate ||
+                selectedKeyword !== "all" ||
+                selectedRating !== "all" ||
+                selectedTopic !== "all") && (
                 <Stack
                   direction="row"
                   spacing={1}
@@ -1676,6 +1761,30 @@ export const CompanyPage = () => {
                       size="small"
                       variant="outlined"
                       onDelete={() => setFilterEndDate("")}
+                    />
+                  )}
+                  {selectedKeyword !== "all" && (
+                    <Chip
+                      label={`Keyword: ${selectedKeyword}`}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setSelectedKeyword("all")}
+                    />
+                  )}
+                  {selectedRating !== "all" && (
+                    <Chip
+                      label={`${selectedRating} stars`}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setSelectedRating("all")}
+                    />
+                  )}
+                  {selectedTopic !== "all" && (
+                    <Chip
+                      label={`Topic: ${selectedTopic}`}
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setSelectedTopic("all")}
                     />
                   )}
                 </Stack>
@@ -1742,9 +1851,18 @@ export const CompanyPage = () => {
           )}
 
           {/* Sentiment Analysis */}
-          {sentimentData && (
+          {sentimentData && companyId && (
             <Box sx={{ mt: { xs: 2, sm: 0 } }}>
-              <SentimentAnalysis sentimentData={sentimentData} />
+              <SentimentAnalysis
+                sentimentData={sentimentData}
+                companyId={companyId}
+                filterLocation={filterLocation}
+                filterStartDate={filterStartDate}
+                filterEndDate={filterEndDate}
+                selectedKeyword={selectedKeyword}
+                selectedRating={selectedRating}
+                selectedTopic={selectedTopic}
+              />
             </Box>
           )}
 
@@ -1780,67 +1898,85 @@ export const CompanyPage = () => {
                     gap: 2,
                   }}
                 >
-                  {topics.map((topic) => (
-                    <Card
-                      key={topic.id}
-                      variant="outlined"
-                      sx={{
-                        transition: "all 0.2s ease-in-out",
-                        "&:hover": {
-                          boxShadow: 2,
-                          transform: "translateY(-2px)",
-                        },
-                      }}
-                    >
-                      <CardContent>
-                        <Stack spacing={1}>
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="flex-start"
-                          >
-                            <Box>
-                              <Typography variant="subtitle1" fontWeight={600}>
-                                {topic.name}
+                  {topics.map((topic) => {
+                    const isSelected = selectedTopic === topic.name;
+                    return (
+                      <Card
+                        key={topic.id}
+                        variant="outlined"
+                        onClick={() =>
+                          setSelectedTopic(isSelected ? "all" : topic.name)
+                        }
+                        sx={{
+                          transition: "all 0.2s ease-in-out",
+                          cursor: "pointer",
+                          border: isSelected ? 2 : 1,
+                          borderColor: isSelected ? "primary.main" : "divider",
+                          "&:hover": {
+                            boxShadow: 2,
+                            transform: "translateY(-2px)",
+                          },
+                        }}
+                      >
+                        <CardContent>
+                          <Stack spacing={1}>
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="flex-start"
+                            >
+                              <Box>
+                                <Typography
+                                  variant="subtitle1"
+                                  fontWeight={600}
+                                >
+                                  {topic.name}
+                                </Typography>
+                                <Chip
+                                  label={topic.category}
+                                  size="small"
+                                  color={
+                                    topic.category === "satisfaction"
+                                      ? "success"
+                                      : topic.category === "dissatisfaction"
+                                      ? "error"
+                                      : "default"
+                                  }
+                                  sx={{ mt: 0.5 }}
+                                />
+                              </Box>
+                            </Stack>
+                            {topic.description && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {topic.description}
                               </Typography>
-                              <Chip
-                                label={topic.category}
-                                size="small"
-                                color={
-                                  topic.category === "satisfaction"
-                                    ? "success"
-                                    : topic.category === "dissatisfaction"
-                                    ? "error"
-                                    : "default"
-                                }
-                                sx={{ mt: 0.5 }}
-                              />
-                            </Box>
+                            )}
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Mentioned in
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                {topic.occurrence_count}{" "}
+                                {topic.occurrence_count === 1
+                                  ? "review"
+                                  : "reviews"}
+                              </Typography>
+                            </Stack>
                           </Stack>
-                          {topic.description && (
-                            <Typography variant="body2" color="text.secondary">
-                              {topic.description}
-                            </Typography>
-                          )}
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                          >
-                            <Typography variant="body2" color="text.secondary">
-                              Mentioned in
-                            </Typography>
-                            <Typography variant="body2" fontWeight={600}>
-                              {topic.occurrence_count}{" "}
-                              {topic.occurrence_count === 1
-                                ? "review"
-                                : "reviews"}
-                            </Typography>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </Box>
               </AccordionDetails>
             </Accordion>
@@ -1902,18 +2038,28 @@ export const CompanyPage = () => {
                 Most frequently mentioned terms in reviews
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {keywords.slice(0, 5).map((keyword, index) => (
-                  <Chip
-                    key={index}
-                    label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                    color={getCategoryColor(keyword.category || "other")}
-                    variant="outlined"
-                    sx={{
-                      fontWeight: 500,
-                      fontSize: "0.95rem",
-                    }}
-                  />
-                ))}
+                {keywords.slice(0, 5).map((keyword, index) => {
+                  const isSelected = selectedKeyword === keyword.keyword_text;
+                  return (
+                    <Chip
+                      key={index}
+                      label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                      color={getCategoryColor(keyword.category || "other")}
+                      variant={isSelected ? "filled" : "outlined"}
+                      onClick={() =>
+                        setSelectedKeyword(
+                          isSelected ? "all" : keyword.keyword_text
+                        )
+                      }
+                      sx={{
+                        fontWeight: 500,
+                        fontSize: "0.95rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease-in-out",
+                      }}
+                    />
+                  );
+                })}
               </Stack>
             </Paper>
           )}
@@ -1963,95 +2109,6 @@ export const CompanyPage = () => {
                 )}
               </Stack>
             </Stack>
-
-            {/* Review-specific Filters */}
-            {reviews.length > 0 && (
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2,
-                  bgcolor: "background.default",
-                  borderRadius: 1,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mb: 1.5, display: "block" }}
-                >
-                  Additional filters:
-                </Typography>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(3, 1fr)",
-                    },
-                    gap: 2,
-                  }}
-                >
-                  {/* Keyword Filter */}
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="keyword-filter-label">Keyword</InputLabel>
-                    <Select
-                      labelId="keyword-filter-label"
-                      value={selectedKeyword}
-                      label="Keyword"
-                      onChange={(e) => setSelectedKeyword(e.target.value)}
-                    >
-                      <MenuItem value="all">All Keywords</MenuItem>
-                      {topKeywordsForFilter.map((keyword) => (
-                        <MenuItem
-                          key={keyword.keyword_text}
-                          value={keyword.keyword_text}
-                        >
-                          {keyword.keyword_text} ({keyword.occurrence_count})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  {/* Rating Filter */}
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="rating-filter-label">Rating</InputLabel>
-                    <Select
-                      labelId="rating-filter-label"
-                      value={selectedRating}
-                      label="Rating"
-                      onChange={(e) => setSelectedRating(e.target.value)}
-                    >
-                      <MenuItem value="all">All Ratings</MenuItem>
-                      <MenuItem value="5">5 stars</MenuItem>
-                      <MenuItem value="4">4 stars</MenuItem>
-                      <MenuItem value="3">3 stars</MenuItem>
-                      <MenuItem value="2">2 stars</MenuItem>
-                      <MenuItem value="1">1 star</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  {/* Location Filter */}
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="additional-location-filter-label">
-                      Location
-                    </InputLabel>
-                    <Select
-                      labelId="additional-location-filter-label"
-                      value={filterLocation}
-                      label="Location"
-                      onChange={(e) => setFilterLocation(e.target.value)}
-                    >
-                      <MenuItem value="all">All Locations</MenuItem>
-                      {locations.map((location) => (
-                        <MenuItem key={location.id} value={location.name}>
-                          {location.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              </Box>
-            )}
 
             {filteredReviews.length === 0 ? (
               <Box sx={{ textAlign: "center", py: 6 }}>

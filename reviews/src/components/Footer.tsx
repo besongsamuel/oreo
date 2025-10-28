@@ -1,4 +1,16 @@
-import { Box, Container, Link, Stack, Typography } from "@mui/material";
+import {
+  Instagram as InstagramIcon,
+  LinkedIn as LinkedInIcon,
+  MusicNote as TikTokIcon,
+} from "@mui/icons-material";
+import {
+  Box,
+  Container,
+  IconButton,
+  Link,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 export const Footer = () => {
@@ -19,6 +31,58 @@ export const Footer = () => {
     >
       <Container maxWidth="lg">
         <Stack spacing={3}>
+          {/* Social Media Links */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 2,
+            }}
+          >
+            <IconButton
+              component="a"
+              href="https://www.instagram.com/boreshacx"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                },
+              }}
+            >
+              <InstagramIcon />
+            </IconButton>
+            <IconButton
+              component="a"
+              href="https://www.tiktok.com/@boreshacx"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                },
+              }}
+            >
+              <TikTokIcon />
+            </IconButton>
+            <IconButton
+              component="a"
+              href="https://www.linkedin.com/company/boreshacx"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                },
+              }}
+            >
+              <LinkedInIcon />
+            </IconButton>
+          </Box>
+
           {/* Legal Links */}
           <Box
             sx={{

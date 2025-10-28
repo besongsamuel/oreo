@@ -1,4 +1,5 @@
 import {
+  Lightbulb as LightbulbIcon,
   SentimentDissatisfied as NegativeIcon,
   SentimentNeutral as NeutralIcon,
   SentimentSatisfiedAlt as PositiveIcon,
@@ -6,16 +7,24 @@ import {
 } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Paper,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import { PieChart } from "@mui/x-charts/PieChart";
+import { useState } from "react";
+import { useSupabase } from "../hooks/useSupabase";
 
 interface SentimentData {
   overallScore: number;
@@ -43,11 +52,71 @@ interface SentimentData {
 
 interface SentimentAnalysisProps {
   sentimentData: SentimentData;
+  companyId?: string;
+  filterLocation?: string;
+  filterStartDate?: string;
+  filterEndDate?: string;
+  selectedKeyword?: string;
+  selectedRating?: string;
+  selectedTopic?: string;
 }
 
 export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   sentimentData,
+  companyId,
+  filterLocation,
+  filterStartDate,
+  filterEndDate,
+  selectedKeyword,
+  selectedRating,
+  selectedTopic,
 }) => {
+  const supabase = useSupabase();
+  const [actionPlanOpen, setActionPlanOpen] = useState(false);
+  const [actionPlan, setActionPlan] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+
+  const handleGenerateActionPlan = async () => {
+    if (!companyId) return;
+
+    setLoadingPlan(true);
+    setActionPlanOpen(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "sentiment-analysis-action-plan",
+        {
+          body: {
+            companyId,
+            filterLocation,
+            filterStartDate,
+            filterEndDate,
+            selectedKeyword,
+            selectedRating,
+            selectedTopic,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      if (data?.success && data?.actionPlan) {
+        setActionPlan(data.actionPlan);
+      } else {
+        setActionPlan("Failed to generate action plan. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error generating action plan:", error);
+      setActionPlan("Error generating action plan. Please try again.");
+    } finally {
+      setLoadingPlan(false);
+    }
+  };
+
+  const handleCloseActionPlan = () => {
+    setActionPlanOpen(false);
+    setActionPlan(null);
+  };
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment.toLowerCase()) {
       case "positive":
@@ -181,6 +250,21 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     />
                   </Stack>
                 </Box>
+
+                {/* Action Plan Button */}
+                {companyId && (
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      startIcon={<LightbulbIcon />}
+                      onClick={handleGenerateActionPlan}
+                      fullWidth
+                      sx={{ mt: 2 }}
+                    >
+                      Generate Action Plan
+                    </Button>
+                  </Box>
+                )}
 
                 <Divider />
 
@@ -318,6 +402,45 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
           </Box>
         )}
       </Stack>
+
+      {/* Action Plan Dialog */}
+      <Dialog
+        open={actionPlanOpen}
+        onClose={handleCloseActionPlan}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Customer Feedback Action Plan</DialogTitle>
+        <DialogContent>
+          {loadingPlan ? (
+            <Stack spacing={2} sx={{ py: 2 }}>
+              <Skeleton variant="rectangular" height={200} />
+              <Skeleton variant="text" width="80%" />
+              <Skeleton variant="text" width="60%" />
+              <Skeleton variant="text" width="70%" />
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Generating your action plan...
+                </Typography>
+              </Box>
+            </Stack>
+          ) : actionPlan ? (
+            <Box
+              sx={{ whiteSpace: "pre-wrap" }}
+              dangerouslySetInnerHTML={{
+                __html: actionPlan.replace(/\n/g, "<br />"),
+              }}
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No action plan available.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseActionPlan}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };

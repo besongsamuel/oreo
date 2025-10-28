@@ -274,6 +274,26 @@ export const PlatformConnectionDialog = ({
               <Typography variant="h6" gutterBottom>
                 Enter {getPlatformIdLabel(platformName)}
               </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {platformName.toLowerCase() === "facebook" &&
+                  "Find your Page ID in Page Settings > About"}
+                {platformName.toLowerCase() === "google" &&
+                  "Use Google Place ID Finder or find in Google My Business URL"}
+                {platformName.toLowerCase() === "yelp" &&
+                  "Found in your business URL: yelp.com/biz/[business-id]"}
+                {platformName.toLowerCase() === "opentable" &&
+                  "Found in your restaurant URL or OpenTable settings"}
+                {platformName.toLowerCase() === "tripadvisor" &&
+                  "Found in your location URL (e.g., tripadvisor.com/Restaurant_Review...)"}
+                {![
+                  "facebook",
+                  "google",
+                  "yelp",
+                  "opentable",
+                  "tripadvisor",
+                ].includes(platformName.toLowerCase()) &&
+                  "Enter the location identifier from your platform account"}
+              </Typography>
               <Stack spacing={2}>
                 <TextField
                   fullWidth
