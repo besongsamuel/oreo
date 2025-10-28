@@ -1,6 +1,9 @@
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
+  EmojiEvents as EmojiEventsIcon,
+  Insights as InsightsIcon,
+  TrendingUp as TrendingUpIcon,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -9,6 +12,7 @@ import {
   Card,
   CardContent,
   FormControl,
+  Grid,
   IconButton,
   MenuItem,
   Paper,
@@ -379,12 +383,29 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
       <Stack spacing={3}>
         {/* Title */}
         <Box>
-          <Typography variant="h5" fontWeight={600} gutterBottom>
-            Monthly Summary
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            AI-generated insights from customer reviews
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: "primary.main",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <InsightsIcon sx={{ fontSize: 28 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={600} gutterBottom>
+                Monthly Summary
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                AI-generated insights from customer reviews
+              </Typography>
+            </Box>
+          </Stack>
         </Box>
 
         {/* Navigation */}
@@ -492,89 +513,280 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
             </CardContent>
           </Card>
         ) : summaryExists && summaryData ? (
-          <Card variant="outlined">
+          <Card
+            variant="outlined"
+            sx={{
+              border: "none",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              borderRadius: 3,
+              overflow: "hidden",
+            }}
+          >
             <CardContent>
-              <Stack spacing={3}>
-                {/* Summary text */}
-                <Box>
+              <Stack spacing={4}>
+                {/* Summary text with enhanced styling */}
+                <Box
+                  sx={{
+                    p: 3,
+                    bgcolor: "grey.50",
+                    borderRadius: 2,
+                    borderLeft: "4px solid",
+                    borderColor: "primary.main",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ mb: 2 }}
+                  >
+                    <EmojiEventsIcon
+                      sx={{ color: "primary.main", fontSize: 20 }}
+                    />
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
+                      color="primary.main"
+                    >
+                      AI Insights
+                    </Typography>
+                  </Stack>
                   <Typography
                     variant="body1"
                     sx={{
                       lineHeight: 1.8,
                       whiteSpace: "pre-wrap",
+                      fontSize: "1.05rem",
+                      color: "grey.800",
                     }}
                   >
                     {summaryData.summary}
                   </Typography>
                 </Box>
 
-                {/* Stats */}
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "3fr" },
-                    gap: 2,
-                    pt: 2,
-                    borderTop: 1,
-                    borderColor: "divider",
-                  }}
-                >
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Total Reviews
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {summaryData.total_reviews}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Average Rating
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {Number(summaryData.average_rating).toFixed(1)} / 5.0
-                    </Typography>
-                  </Box>
-
-                  {summaryData.sentiment_breakdown && (
-                    <>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Positive
+                {/* Stats with enhanced cards */}
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={600}
+                    sx={{ mb: 2 }}
+                  >
+                    Key Metrics
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Paper
+                        sx={{
+                          p: 2.5,
+                          textAlign: "center",
+                          borderRadius: 2,
+                          bgcolor: "grey.50",
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: 2,
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mb: 0.5, display: "block" }}
+                        >
+                          Total Reviews
                         </Typography>
                         <Typography
-                          variant="h6"
-                          fontWeight={600}
-                          color="success.main"
+                          variant="h4"
+                          fontWeight={700}
+                          color="primary.main"
                         >
-                          {summaryData.sentiment_breakdown.positive}
+                          {summaryData.total_reviews}
                         </Typography>
-                      </Box>
+                      </Paper>
+                    </Grid>
 
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Neutral
-                        </Typography>
-                        <Typography variant="h6" fontWeight={600}>
-                          {summaryData.sentiment_breakdown.neutral}
-                        </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Negative
-                        </Typography>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <Paper
+                        sx={{
+                          p: 2.5,
+                          textAlign: "center",
+                          borderRadius: 2,
+                          bgcolor: "grey.50",
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: 2,
+                          },
+                        }}
+                      >
                         <Typography
-                          variant="h6"
-                          fontWeight={600}
-                          color="error.main"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mb: 0.5, display: "block" }}
                         >
-                          {summaryData.sentiment_breakdown.negative}
+                          Average Rating
                         </Typography>
-                      </Box>
-                    </>
-                  )}
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="center"
+                          spacing={0.5}
+                        >
+                          <TrendingUpIcon
+                            sx={{ color: "warning.main", fontSize: 24 }}
+                          />
+                          <Typography
+                            variant="h4"
+                            fontWeight={700}
+                            color="warning.main"
+                          >
+                            {Number(summaryData.average_rating).toFixed(1)}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.5 }}
+                          >
+                            / 5.0
+                          </Typography>
+                        </Stack>
+                      </Paper>
+                    </Grid>
+
+                    {summaryData.sentiment_breakdown && (
+                      <>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <Paper
+                            sx={{
+                              p: 2.5,
+                              textAlign: "center",
+                              borderRadius: 2,
+                              bgcolor: "rgba(76, 175, 80, 0.08)",
+                              transition: "all 0.2s",
+                              "&:hover": {
+                                transform: "translateY(-2px)",
+                                boxShadow: 2,
+                              },
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              fontWeight={600}
+                              color="success.dark"
+                              sx={{ mb: 0.5, display: "block" }}
+                            >
+                              Positive
+                            </Typography>
+                            <Typography
+                              variant="h4"
+                              fontWeight={700}
+                              color="success.main"
+                            >
+                              {summaryData.sentiment_breakdown.positive}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {summaryData.sentiment_breakdown.positive > 0 &&
+                                summaryData.total_reviews > 0 &&
+                                Math.round(
+                                  (summaryData.sentiment_breakdown.positive /
+                                    summaryData.total_reviews) *
+                                    100
+                                )}
+                              % of reviews
+                            </Typography>
+                          </Paper>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <Paper
+                            sx={{
+                              p: 2.5,
+                              textAlign: "center",
+                              borderRadius: 2,
+                              bgcolor: "grey.50",
+                              transition: "all 0.2s",
+                              "&:hover": {
+                                transform: "translateY(-2px)",
+                                boxShadow: 2,
+                              },
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ mb: 0.5, display: "block" }}
+                            >
+                              Neutral
+                            </Typography>
+                            <Typography variant="h4" fontWeight={700}>
+                              {summaryData.sentiment_breakdown.neutral}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {summaryData.sentiment_breakdown.neutral > 0 &&
+                                summaryData.total_reviews > 0 &&
+                                Math.round(
+                                  (summaryData.sentiment_breakdown.neutral /
+                                    summaryData.total_reviews) *
+                                    100
+                                )}
+                              % of reviews
+                            </Typography>
+                          </Paper>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <Paper
+                            sx={{
+                              p: 2.5,
+                              textAlign: "center",
+                              borderRadius: 2,
+                              bgcolor: "rgba(244, 67, 54, 0.08)",
+                              transition: "all 0.2s",
+                              "&:hover": {
+                                transform: "translateY(-2px)",
+                                boxShadow: 2,
+                              },
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              fontWeight={600}
+                              color="error.dark"
+                              sx={{ mb: 0.5, display: "block" }}
+                            >
+                              Negative
+                            </Typography>
+                            <Typography
+                              variant="h4"
+                              fontWeight={700}
+                              color="error.main"
+                            >
+                              {summaryData.sentiment_breakdown.negative}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {summaryData.sentiment_breakdown.negative > 0 &&
+                                summaryData.total_reviews > 0 &&
+                                Math.round(
+                                  (summaryData.sentiment_breakdown.negative /
+                                    summaryData.total_reviews) *
+                                    100
+                                )}
+                              % of reviews
+                            </Typography>
+                          </Paper>
+                        </Grid>
+                      </>
+                    )}
+                  </Grid>
                 </Box>
               </Stack>
             </CardContent>
