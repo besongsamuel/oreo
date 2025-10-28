@@ -612,8 +612,60 @@ export const CompanyPage = () => {
               await sentimentQuery;
 
             if (!sentimentError && sentimentResults) {
+              // Apply additional filters (keyword, rating, topic) to sentiment results
+              let filteredSentimentResults = sentimentResults;
+
+              // Filter by keyword
+              if (selectedKeyword !== "all") {
+                filteredSentimentResults = filteredSentimentResults.filter(
+                  (r: any) => {
+                    const reviewKeywords = reviewKeywordsMap[r.id] || [];
+                    const selectedKeywordLower = selectedKeyword.toLowerCase();
+                    return reviewKeywords.some(
+                      (k) => k.toLowerCase() === selectedKeywordLower
+                    );
+                  }
+                );
+              }
+
+              // Filter by rating
+              if (selectedRating !== "all") {
+                filteredSentimentResults = filteredSentimentResults.filter(
+                  (r: any) => {
+                    const rating = r.rating;
+                    switch (selectedRating) {
+                      case "5":
+                        return rating >= 5;
+                      case "4":
+                        return rating >= 4 && rating < 5;
+                      case "3":
+                        return rating >= 3 && rating < 4;
+                      case "2":
+                        return rating >= 2 && rating < 3;
+                      case "1":
+                        return rating >= 1 && rating < 2;
+                      default:
+                        return true;
+                    }
+                  }
+                );
+              }
+
+              // Filter by topic
+              if (selectedTopic !== "all") {
+                filteredSentimentResults = filteredSentimentResults.filter(
+                  (r: any) => {
+                    const reviewTopics = reviewTopicsMap[r.id] || [];
+                    const selectedTopicLower = selectedTopic.toLowerCase();
+                    return reviewTopics.some(
+                      (t) => t.toLowerCase() === selectedTopicLower
+                    );
+                  }
+                );
+              }
+
               // Calculate overall sentiment
-              const sentiments = sentimentResults
+              const sentiments = filteredSentimentResults
                 .filter(
                   (r: any) =>
                     r.sentiment_analysis &&
@@ -821,149 +873,154 @@ export const CompanyPage = () => {
         }
 
         if (reviewIds.length > 0) {
-          // Get keywords for these reviews
-          const { data: reviewKeywordsData } = await supabase
-            .from("review_keywords")
+          // Get reviews with their keywords and topics in a single query
+          const { data: reviewsWithData } = await supabase
+            .from("reviews")
             .select(
               `
-              review_id,
-              keyword_id,
-              keywords (
-                text,
-                category
+              id,
+              review_keywords (
+                keywords (
+                  text,
+                  category
+                )
               )
             `
             )
-            .in("review_id", reviewIds);
+            .in("id", reviewIds);
 
-          if (reviewKeywordsData) {
-            // Build review keywords map (lowercased for comparison)
+          if (reviewsWithData && reviewsWithData.length > 0) {
+            // Build review keywords map and count occurrences
             const keywordsMap: Record<string, string[]> = {};
-            reviewKeywordsData.forEach((rk: any) => {
-              if (rk.keywords && rk.review_id) {
-                const reviewId = rk.review_id;
-                if (!keywordsMap[reviewId]) {
-                  keywordsMap[reviewId] = [];
-                }
-                keywordsMap[reviewId].push(rk.keywords.text.toLowerCase());
-              }
-            });
-            setReviewKeywordsMap(keywordsMap);
-
-            // Count occurrences of each keyword
-            const keywordMap = new Map<
+            const keywordCountMap = new Map<
               string,
               { keyword_text: string; category: string; count: number }
             >();
 
-            reviewKeywordsData.forEach((rk: any) => {
-              if (rk.keywords) {
-                const key = rk.keywords.text;
-                const existing = keywordMap.get(key);
-                if (existing) {
-                  existing.count++;
-                } else {
-                  keywordMap.set(key, {
-                    keyword_text: rk.keywords.text,
-                    category: rk.keywords.category || "other",
-                    count: 1,
-                  });
-                }
+            reviewsWithData.forEach((review: any) => {
+              if (review.review_keywords && review.review_keywords.length > 0) {
+                // Build keywords map for this review
+                keywordsMap[review.id] = review.review_keywords.map((rk: any) =>
+                  rk.keywords.text.toLowerCase()
+                );
+
+                // Count keyword occurrences
+                review.review_keywords.forEach((rk: any) => {
+                  if (rk.keywords) {
+                    const key = rk.keywords.text;
+                    const existing = keywordCountMap.get(key);
+                    if (existing) {
+                      existing.count++;
+                    } else {
+                      keywordCountMap.set(key, {
+                        keyword_text: rk.keywords.text,
+                        category: rk.keywords.category || "other",
+                        count: 1,
+                      });
+                    }
+                  }
+                });
               }
             });
 
+            setReviewKeywordsMap(keywordsMap);
+
             // Convert to array and sort by count
-            const keywordsArray = Array.from(keywordMap.values())
+            const keywordsArray = Array.from(keywordCountMap.values())
               .map((k) => ({
                 keyword_text: k.keyword_text,
                 category: k.category,
                 occurrence_count: k.count,
               }))
               .sort((a, b) => b.occurrence_count - a.occurrence_count)
-              .slice(0, 20);
+              .slice(0, 10);
 
             setKeywords(keywordsArray);
             analyzeKeywords(keywordsArray);
           } else {
             setKeywords([]);
+            setReviewKeywordsMap({});
           }
 
-          // Fetch topics for this company
-          const { data: topicsData, error: topicsError } = await supabase
-            .from("topics")
-            .select("*")
-            .eq("company_id", companyId)
-            .eq("is_active", true)
-            .order("occurrence_count", { ascending: false });
+          // Fetch reviews with their topics
+          const { data: reviewsWithTopicsData } = await supabase
+            .from("reviews")
+            .select(
+              `
+              id,
+              review_topics (
+                topics (
+                  id,
+                  name,
+                  category,
+                  description
+                )
+              )
+            `
+            )
+            .in("id", reviewIds);
 
-          if (!topicsError && topicsData) {
-            // Group topics by name (summing occurrence counts for duplicates)
-            const topicMap = new Map<
+          if (reviewsWithTopicsData && reviewsWithTopicsData.length > 0) {
+            // Build review topics map and count occurrences
+            const topicsMap: Record<string, string[]> = {};
+            const topicCountMap = new Map<
               string,
               {
                 id: string;
                 name: string;
                 category: string;
                 description: string;
-                occurrence_count: number;
+                count: number;
               }
             >();
 
-            topicsData.forEach((topic: any) => {
-              const existingTopic = topicMap.get(topic.name);
-              if (existingTopic) {
-                existingTopic.occurrence_count += topic.occurrence_count;
-              } else {
-                topicMap.set(topic.name, {
-                  id: topic.id,
-                  name: topic.name,
-                  category: topic.category,
-                  description: topic.description,
-                  occurrence_count: topic.occurrence_count,
+            reviewsWithTopicsData.forEach((review: any) => {
+              if (review.review_topics && review.review_topics.length > 0) {
+                // Build topics map for this review
+                topicsMap[review.id] = review.review_topics.map((rt: any) =>
+                  rt.topics.name.toLowerCase()
+                );
+
+                // Count topic occurrences
+                review.review_topics.forEach((rt: any) => {
+                  if (rt.topics) {
+                    const topicId = rt.topics.id;
+                    const topicName = rt.topics.name;
+                    const existing = topicCountMap.get(topicName);
+                    if (existing) {
+                      existing.count++;
+                    } else {
+                      topicCountMap.set(topicName, {
+                        id: topicId,
+                        name: rt.topics.name,
+                        category: rt.topics.category || "neutral",
+                        description: rt.topics.description || "",
+                        count: 1,
+                      });
+                    }
+                  }
                 });
               }
             });
 
-            // Convert to array, sort by occurrence count, and take top 5
-            const groupedTopics = Array.from(topicMap.values())
+            setReviewTopicsMap(topicsMap);
+
+            // Convert to array and sort by count
+            const topicsArray = Array.from(topicCountMap.values())
+              .map((t) => ({
+                id: t.id,
+                name: t.name,
+                category: t.category,
+                description: t.description,
+                occurrence_count: t.count,
+              }))
               .sort((a, b) => b.occurrence_count - a.occurrence_count)
-              .slice(0, 5);
+              .slice(0, 6);
 
-            setTopics(groupedTopics);
-
-            // Fetch review_topics mapping
-            const topicIds = groupedTopics.map((t) => t.id);
-            if (topicIds.length > 0) {
-              const { data: reviewTopicsData } = await supabase
-                .from("review_topics")
-                .select(
-                  `
-                  review_id,
-                  topic_id,
-                  topics (
-                    name
-                  )
-                `
-                )
-                .in("topic_id", topicIds);
-
-              if (reviewTopicsData) {
-                // Build review topics map (lowercased for comparison)
-                const topicsMap: Record<string, string[]> = {};
-                reviewTopicsData.forEach((rt: any) => {
-                  if (rt.review_id && rt.topics) {
-                    const reviewId = rt.review_id;
-                    if (!topicsMap[reviewId]) {
-                      topicsMap[reviewId] = [];
-                    }
-                    topicsMap[reviewId].push(rt.topics.name.toLowerCase());
-                  }
-                });
-                setReviewTopicsMap(topicsMap);
-              }
-            }
+            setTopics(topicsArray);
           } else {
             setTopics([]);
+            setReviewTopicsMap({});
           }
         } else {
           // No reviews found, set empty keywords
@@ -980,6 +1037,11 @@ export const CompanyPage = () => {
     filterLocation,
     filterStartDate,
     filterEndDate,
+    selectedKeyword,
+    selectedRating,
+    selectedTopic,
+    reviewKeywordsMap,
+    reviewTopicsMap,
     loading,
     showRecentOnly,
     supabase,
@@ -988,7 +1050,7 @@ export const CompanyPage = () => {
   // Calculate chart data from reviews
   useEffect(() => {
     const calculateChartData = async () => {
-      // Filter reviews based on active filters for charts
+      // Filter reviews based on ALL active filters for charts (location, date, keyword, rating, topic)
       let filteredForCharts = allReviews.length > 0 ? allReviews : reviews;
 
       // Apply location filter
@@ -1010,6 +1072,49 @@ export const CompanyPage = () => {
           (review: any) =>
             new Date(review.published_at) <= new Date(filterEndDate)
         );
+      }
+
+      // Apply keyword filter
+      if (selectedKeyword !== "all") {
+        filteredForCharts = filteredForCharts.filter((review: any) => {
+          const reviewKeywords = reviewKeywordsMap[review.id] || [];
+          const selectedKeywordLower = selectedKeyword.toLowerCase();
+          return reviewKeywords.some(
+            (k) => k.toLowerCase() === selectedKeywordLower
+          );
+        });
+      }
+
+      // Apply rating filter
+      if (selectedRating !== "all") {
+        filteredForCharts = filteredForCharts.filter((review: any) => {
+          const rating = review.rating;
+          switch (selectedRating) {
+            case "5":
+              return rating >= 5;
+            case "4":
+              return rating >= 4 && rating < 5;
+            case "3":
+              return rating >= 3 && rating < 4;
+            case "2":
+              return rating >= 2 && rating < 3;
+            case "1":
+              return rating >= 1 && rating < 2;
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Apply topic filter
+      if (selectedTopic !== "all") {
+        filteredForCharts = filteredForCharts.filter((review: any) => {
+          const reviewTopics = reviewTopicsMap[review.id] || [];
+          const selectedTopicLower = selectedTopic.toLowerCase();
+          return reviewTopics.some(
+            (t) => t.toLowerCase() === selectedTopicLower
+          );
+        });
       }
 
       if (filteredForCharts.length === 0) {
@@ -1068,7 +1173,18 @@ export const CompanyPage = () => {
     };
 
     calculateChartData();
-  }, [reviews, allReviews, filterLocation, filterStartDate, filterEndDate]);
+  }, [
+    reviews,
+    allReviews,
+    filterLocation,
+    filterStartDate,
+    filterEndDate,
+    selectedKeyword,
+    selectedRating,
+    selectedTopic,
+    reviewKeywordsMap,
+    reviewTopicsMap,
+  ]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
   useEffect(() => {
@@ -2098,7 +2214,7 @@ export const CompanyPage = () => {
                 Most frequently mentioned terms in reviews
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {keywords.slice(0, 5).map((keyword, index) => {
+                {keywords.slice(0, 10).map((keyword, index) => {
                   const isSelected = selectedKeyword === keyword.keyword_text;
                   return (
                     <Chip
