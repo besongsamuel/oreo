@@ -90,27 +90,27 @@ Deno.serve(async (req: Request) => {
             `Generating summary for company ${company_id}, ${year}-${month}`,
         );
 
-        // Check if current date is the last day of the specified month
+        // Check if we should allow generation based on new conditions
         const now = new Date();
         const targetMonth = month - 1; // JavaScript months are 0-indexed
-        const targetDate = new Date(year, targetMonth);
-        const lastDayOfMonth = new Date(year, targetMonth + 1, 0);
 
-        // Check if we're at the end of the target month
-        const isLastDayOfTargetMonth = now.getMonth() === targetMonth &&
-            now.getFullYear() === year &&
-            now.getDate() === lastDayOfMonth.getDate();
-
+        const isCurrentMonth = now.getMonth() === targetMonth &&
+            now.getFullYear() === year;
         const isPastTargetMonth = now.getFullYear() > year ||
             (now.getFullYear() === year && now.getMonth() > targetMonth);
 
-        if (!isLastDayOfTargetMonth && !isPastTargetMonth) {
+        // New conditions: allow if past the 15th OR on/after the 28th of current month, OR past month
+        const currentDay = now.getDate();
+        const allowCurrentMonthGeneration = isCurrentMonth &&
+            (currentDay > 15 || currentDay >= 28);
+
+        if (!allowCurrentMonthGeneration && !isPastTargetMonth) {
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: "Cannot generate summary - month not complete",
+                    error: "Cannot generate summary - month not eligible",
                     message:
-                        "You can only generate summaries for months that have ended or on the last day of the current month.",
+                        "You can only generate summaries for months that have ended, or for the current month after the 15th or on/after the 28th.",
                 }),
                 {
                     headers: {
@@ -216,7 +216,7 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Found ${reviews.length} reviews for ${year}-${month}`);
 
-        // Check if summary already exists
+        // Check if summary already exists and when it was last generated
         const monthYear = `${year}-${String(month).padStart(2, "0")}`;
         const { data: existingSummary } = await supabaseClient
             .from("monthly_summaries")
@@ -226,21 +226,33 @@ Deno.serve(async (req: Request) => {
             .single();
 
         if (existingSummary) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Summary already exists",
-                    message:
-                        "A summary for this month has already been generated.",
-                }),
-                {
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "application/json",
-                    },
-                    status: 409,
-                },
+            // Check if it's been at least 10 days since last generation
+            const lastGenerated = new Date(
+                existingSummary.updated_at || existingSummary.created_at,
             );
+            const daysSinceGeneration = Math.floor(
+                (now.getTime() - lastGenerated.getTime()) /
+                    (1000 * 60 * 60 * 24),
+            );
+
+            if (daysSinceGeneration < 10) {
+                return new Response(
+                    JSON.stringify({
+                        success: false,
+                        error: "Summary already exists",
+                        message:
+                            "A summary for this month was generated recently. Please wait at least 10 days before regenerating.",
+                        existing_summary: existingSummary,
+                    }),
+                    {
+                        headers: {
+                            ...corsHeaders,
+                            "Content-Type": "application/json",
+                        },
+                        status: 409,
+                    },
+                );
+            }
         }
 
         // Call OpenAI to generate summary
@@ -268,19 +280,35 @@ Deno.serve(async (req: Request) => {
             negative: negativeCount,
         };
 
-        // Insert monthly summary
-        const { error: insertError } = await supabaseClient
-            .from("monthly_summaries")
-            .insert({
-                company_id,
-                month_year: monthYear,
-                total_reviews: totalReviews,
-                average_rating: averageRating.toFixed(2),
-                sentiment_breakdown: sentimentBreakdown,
-                summary,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            });
+        // Insert or update monthly summary
+        const summaryData = {
+            company_id,
+            month_year: monthYear,
+            total_reviews: totalReviews,
+            average_rating: averageRating.toFixed(2),
+            sentiment_breakdown: sentimentBreakdown,
+            summary,
+            updated_at: new Date().toISOString(),
+        };
+
+        let insertError;
+        if (existingSummary) {
+            // Update existing summary
+            const { error } = await supabaseClient
+                .from("monthly_summaries")
+                .update(summaryData)
+                .eq("id", existingSummary.id);
+            insertError = error;
+        } else {
+            // Insert new summary
+            const { error } = await supabaseClient
+                .from("monthly_summaries")
+                .insert({
+                    ...summaryData,
+                    created_at: new Date().toISOString(),
+                });
+            insertError = error;
+        }
 
         if (insertError) {
             throw new Error(`Error inserting summary: ${insertError.message}`);

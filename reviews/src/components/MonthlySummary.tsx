@@ -47,6 +47,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
   const supabase = useSupabase();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [autoGenerating, setAutoGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -64,10 +65,22 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
-  // Fetch summary when month/year changes
+  // Fetch summary when month/year changes and try auto-generating if needed
   useEffect(() => {
     if (availableMonths.length > 0) {
       fetchSummary();
+      // Try auto-generating for current month if conditions are met
+      const now = new Date();
+      const isCurrentMonth =
+        currentYear === now.getFullYear() &&
+        currentMonth === now.getMonth() + 1;
+      const hasReviewsForCurrentMonth = availableMonths.some(
+        (m) => m.year === currentYear && m.month === currentMonth
+      );
+
+      if (isCurrentMonth && hasReviewsForCurrentMonth) {
+        autoGenerateSummary();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth, availableMonths.length]);
@@ -141,6 +154,79 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     } catch (err) {
       console.error("Error fetching available months:", err);
       setLoading(false);
+    }
+  };
+
+  const autoGenerateSummary = async () => {
+    // Check conditions: past 15th OR on/after 28th, has reviews, and no summary exists or old enough
+    const now = new Date();
+    const currentDay = now.getDate();
+    const shouldGenerate = currentDay > 15 || currentDay >= 28;
+
+    if (!shouldGenerate) {
+      return; // Don't generate yet
+    }
+
+    setAutoGenerating(true);
+    try {
+      // Fetch summary to check if exists
+      const monthYear = `${currentYear}-${String(currentMonth).padStart(
+        2,
+        "0"
+      )}`;
+      const { data: existingSummary } = await supabase
+        .from("monthly_summaries")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("month_year", monthYear)
+        .single();
+
+      let shouldCallAPI = false;
+
+      if (!existingSummary) {
+        shouldCallAPI = true;
+      } else {
+        // Check if it's been at least 10 days since last generation
+        const lastGenerated = new Date(
+          existingSummary.updated_at || existingSummary.created_at
+        );
+        const daysSinceGeneration = Math.floor(
+          (now.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        shouldCallAPI = daysSinceGeneration >= 10;
+      }
+
+      if (shouldCallAPI) {
+        // Silently call the edge function
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+        if (!supabaseUrl) return;
+
+        await fetch(`${supabaseUrl}/functions/v1/generate-monthly-summary`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            company_id: companyId,
+            year: currentYear,
+            month: currentMonth,
+          }),
+        });
+
+        // Refresh summary after auto-generation
+        await fetchSummary();
+      }
+    } catch (err) {
+      console.error("Error auto-generating summary:", err);
+      // Silently fail - user can still manually generate
+    } finally {
+      setAutoGenerating(false);
     }
   };
 
@@ -270,7 +356,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     );
   };
 
-  if (loading) {
+  if (loading || autoGenerating) {
     return (
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <MonthlySummarySkeleton />
@@ -502,22 +588,53 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                   color="text.secondary"
                   align="center"
                 >
-                  No summary generated yet for this month
+                  No monthly summary currently available
                 </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleGenerateSummary}
-                  disabled={generating || summaryExists || !hasReviews}
-                  sx={{ borderRadius: 980, minWidth: 200 }}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  align="center"
                 >
-                  {generating
-                    ? "Generating..."
-                    : !hasReviews
-                    ? "No reviews for this month"
-                    : summaryExists
-                    ? "Summary already generated"
-                    : "Generate Summary"}
-                </Button>
+                  {(() => {
+                    const now = new Date();
+                    const isCurrentMonth =
+                      currentYear === now.getFullYear() &&
+                      currentMonth === now.getMonth() + 1;
+
+                    if (isCurrentMonth) {
+                      return "Summaries are automatically generated for the current month after the 15th or on/after the 28th.";
+                    }
+                    return "Summaries can be generated manually for past months.";
+                  })()}
+                </Typography>
+                {(() => {
+                  const now = new Date();
+                  const isCurrentMonth =
+                    currentYear === now.getFullYear() &&
+                    currentMonth === now.getMonth() + 1;
+
+                  // Don't show button for current month (auto-generated)
+                  if (isCurrentMonth) {
+                    return null;
+                  }
+
+                  return (
+                    <Button
+                      variant="contained"
+                      onClick={handleGenerateSummary}
+                      disabled={generating || summaryExists || !hasReviews}
+                      sx={{ borderRadius: 980, minWidth: 200 }}
+                    >
+                      {generating
+                        ? "Generating..."
+                        : !hasReviews
+                        ? "No reviews for this month"
+                        : summaryExists
+                        ? "Summary already generated"
+                        : "Generate Summary"}
+                    </Button>
+                  );
+                })()}
               </Stack>
             </CardContent>
           </Card>
