@@ -216,6 +216,10 @@ export const CompanyPage = () => {
   // Toggle between recent (last 30 days) and all reviews
   const [showRecentOnly, setShowRecentOnly] = useState(false);
 
+  // Toggle for showing all topics and keywords
+  const [showAllTopics, setShowAllTopics] = useState(false);
+  const [showAllKeywords, setShowAllKeywords] = useState(false);
+
   // Chart data state
   const [ratingDistribution, setRatingDistribution] = useState({
     5: 0,
@@ -2050,14 +2054,39 @@ export const CompanyPage = () => {
                   },
                 }}
               >
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    Topics
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Common themes discussed in reviews
-                  </Typography>
-                </Box>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ width: "100%", pr: 2 }}
+                >
+                  <Box>
+                    <Typography variant="h6" fontWeight={600}>
+                      Topics
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Common themes discussed in reviews
+                    </Typography>
+                  </Box>
+                  {topics.length > 6 && (
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAllTopics(!showAllTopics);
+                      }}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {showAllTopics
+                        ? "Show Less"
+                        : `Show All (${topics.length})`}
+                    </Button>
+                  )}
+                </Stack>
               </AccordionSummary>
               <AccordionDetails>
                 <Box
@@ -2071,85 +2100,89 @@ export const CompanyPage = () => {
                     gap: 2,
                   }}
                 >
-                  {topics.map((topic) => {
-                    const isSelected = selectedTopic === topic.name;
-                    return (
-                      <Card
-                        key={topic.id}
-                        variant="outlined"
-                        onClick={() =>
-                          setSelectedTopic(isSelected ? "all" : topic.name)
-                        }
-                        sx={{
-                          transition: "all 0.2s ease-in-out",
-                          cursor: "pointer",
-                          border: isSelected ? 2 : 1,
-                          borderColor: isSelected ? "primary.main" : "divider",
-                          "&:hover": {
-                            boxShadow: 2,
-                            transform: "translateY(-2px)",
-                          },
-                        }}
-                      >
-                        <CardContent>
-                          <Stack spacing={1}>
-                            <Stack
-                              direction="row"
-                              justifyContent="space-between"
-                              alignItems="flex-start"
-                            >
-                              <Box>
+                  {(showAllTopics ? topics : topics.slice(0, 6)).map(
+                    (topic) => {
+                      const isSelected = selectedTopic === topic.name;
+                      return (
+                        <Card
+                          key={topic.id}
+                          variant="outlined"
+                          onClick={() =>
+                            setSelectedTopic(isSelected ? "all" : topic.name)
+                          }
+                          sx={{
+                            transition: "all 0.2s ease-in-out",
+                            cursor: "pointer",
+                            border: isSelected ? 2 : 1,
+                            borderColor: isSelected
+                              ? "primary.main"
+                              : "divider",
+                            "&:hover": {
+                              boxShadow: 2,
+                              transform: "translateY(-2px)",
+                            },
+                          }}
+                        >
+                          <CardContent>
+                            <Stack spacing={1}>
+                              <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="flex-start"
+                              >
+                                <Box>
+                                  <Typography
+                                    variant="subtitle1"
+                                    fontWeight={600}
+                                  >
+                                    {topic.name}
+                                  </Typography>
+                                  <Chip
+                                    label={topic.category}
+                                    size="small"
+                                    color={
+                                      topic.category === "satisfaction"
+                                        ? "success"
+                                        : topic.category === "dissatisfaction"
+                                        ? "error"
+                                        : "default"
+                                    }
+                                    sx={{ mt: 0.5 }}
+                                  />
+                                </Box>
+                              </Stack>
+                              {topic.description && (
                                 <Typography
-                                  variant="subtitle1"
-                                  fontWeight={600}
+                                  variant="body2"
+                                  color="text.secondary"
                                 >
-                                  {topic.name}
+                                  {topic.description}
                                 </Typography>
-                                <Chip
-                                  label={topic.category}
-                                  size="small"
-                                  color={
-                                    topic.category === "satisfaction"
-                                      ? "success"
-                                      : topic.category === "dissatisfaction"
-                                      ? "error"
-                                      : "default"
-                                  }
-                                  sx={{ mt: 0.5 }}
-                                />
-                              </Box>
-                            </Stack>
-                            {topic.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
+                              )}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
                               >
-                                {topic.description}
-                              </Typography>
-                            )}
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Mentioned in
-                              </Typography>
-                              <Typography variant="body2" fontWeight={600}>
-                                {topic.occurrence_count}{" "}
-                                {topic.occurrence_count === 1
-                                  ? "review"
-                                  : "reviews"}
-                              </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  Mentioned in
+                                </Typography>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {topic.occurrence_count}{" "}
+                                  {topic.occurrence_count === 1
+                                    ? "review"
+                                    : "reviews"}
+                                </Typography>
+                              </Stack>
                             </Stack>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                  )}
                 </Box>
               </AccordionDetails>
             </Accordion>
@@ -2204,35 +2237,65 @@ export const CompanyPage = () => {
           {/* Trending Keywords */}
           {keywords.length > 0 && (
             <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-              <Typography variant="h6" gutterBottom>
-                Trending Keywords
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Most frequently mentioned terms in reviews
-              </Typography>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Trending Keywords
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    Most frequently mentioned terms in reviews
+                  </Typography>
+                </Box>
+                {keywords.length > 10 && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setShowAllKeywords(!showAllKeywords)}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {showAllKeywords
+                      ? "Show Less"
+                      : `Show All (${keywords.length})`}
+                  </Button>
+                )}
+              </Stack>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {keywords.slice(0, 10).map((keyword, index) => {
-                  const isSelected = selectedKeyword === keyword.keyword_text;
-                  return (
-                    <Chip
-                      key={index}
-                      label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                      color={getCategoryColor(keyword.category || "other")}
-                      variant={isSelected ? "filled" : "outlined"}
-                      onClick={() =>
-                        setSelectedKeyword(
-                          isSelected ? "all" : keyword.keyword_text
-                        )
-                      }
-                      sx={{
-                        fontWeight: 500,
-                        fontSize: "0.95rem",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease-in-out",
-                      }}
-                    />
-                  );
-                })}
+                {(showAllKeywords ? keywords : keywords.slice(0, 10)).map(
+                  (keyword, index) => {
+                    const isSelected = selectedKeyword === keyword.keyword_text;
+                    return (
+                      <Chip
+                        key={index}
+                        label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                        color={getCategoryColor(keyword.category || "other")}
+                        variant={isSelected ? "filled" : "outlined"}
+                        onClick={() =>
+                          setSelectedKeyword(
+                            isSelected ? "all" : keyword.keyword_text
+                          )
+                        }
+                        sx={{
+                          fontWeight: 500,
+                          fontSize: "0.95rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease-in-out",
+                        }}
+                      />
+                    );
+                  }
+                )}
               </Stack>
             </Paper>
           )}

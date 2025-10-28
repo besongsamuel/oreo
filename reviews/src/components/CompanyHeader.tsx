@@ -41,12 +41,25 @@ interface CompanyHeaderProps {
   company: CompanyDetails;
   onLogoUpdate?: (logoUrl: string) => void;
   onCompanyUpdate?: () => void;
+  subscriptionTier?: string;
 }
+
+const getSubscriptionColor = (tier?: string) => {
+  switch (tier) {
+    case "paid":
+      return "success";
+    case "free":
+      return "default";
+    default:
+      return "default";
+  }
+};
 
 export const CompanyHeader = ({
   company,
   onLogoUpdate,
   onCompanyUpdate,
+  subscriptionTier,
 }: CompanyHeaderProps) => {
   const supabase = useSupabase();
   const fileInputRef = useRef<HTMLInputElement>(null);

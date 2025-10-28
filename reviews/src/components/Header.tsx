@@ -6,6 +6,7 @@ import {
   Avatar,
   Box,
   Button,
+  Chip,
   Container,
   Divider,
   Drawer,
@@ -151,27 +152,65 @@ export const Header = () => {
           {/* User Avatar or Login Button */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {user ? (
-              <IconButton
-                size="small"
-                onClick={handleMenuOpen}
-                color="inherit"
-                sx={{
-                  p: 0,
-                }}
-              >
-                <Avatar
+              <>
+                {/* Subscription Tier Badge */}
+                {profile?.subscription_tier && (
+                  <Chip
+                    label={
+                      profile.subscription_tier === "paid" ? "Pro" : "Free"
+                    }
+                    size="small"
+                    color={
+                      profile.subscription_tier === "paid"
+                        ? "success"
+                        : "default"
+                    }
+                    variant="outlined"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      textTransform: "capitalize",
+                    }}
+                  />
+                )}
+
+                {/* Admin Role Badge */}
+                {profile?.role === "admin" && (
+                  <Chip
+                    label="Admin"
+                    size="small"
+                    color="primary"
+                    variant="filled"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      textTransform: "capitalize",
+                    }}
+                  />
+                )}
+
+                <IconButton
+                  size="small"
+                  onClick={handleMenuOpen}
+                  color="inherit"
                   sx={{
-                    width: 32,
-                    height: 32,
-                    bgcolor: "secondary.main",
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
+                    p: 0,
                   }}
                 >
-                  {profile?.full_name?.charAt(0)?.toUpperCase() ||
-                    user?.email?.charAt(0)?.toUpperCase()}
-                </Avatar>
-              </IconButton>
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: "secondary.main",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                      user?.email?.charAt(0)?.toUpperCase()}
+                  </Avatar>
+                </IconButton>
+              </>
             ) : (
               <Button
                 variant="contained"
