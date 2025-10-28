@@ -1,15 +1,21 @@
 import {
   Business as BusinessIcon,
   CameraAlt as CameraIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import {
-  Avatar,
   Box,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   LinearProgress,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useRef, useState } from "react";
@@ -19,6 +25,8 @@ interface CompanyDetails {
   id: string;
   name: string;
   industry: string;
+  description?: string;
+  website?: string;
   created_at: string;
   total_reviews: number;
   average_rating: number;
@@ -32,18 +40,73 @@ interface CompanyDetails {
 interface CompanyHeaderProps {
   company: CompanyDetails;
   onLogoUpdate?: (logoUrl: string) => void;
+  onCompanyUpdate?: () => void;
 }
 
 export const CompanyHeader = ({
   company,
   onLogoUpdate,
+  onCompanyUpdate,
 }: CompanyHeaderProps) => {
   const supabase = useSupabase();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: company.name,
+    industry: company.industry,
+    description: company.description || "",
+    website: company.website || "",
+  });
 
   const handleLogoClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleEditClick = () => {
+    setFormData({
+      name: company.name,
+      industry: company.industry,
+      description: company.description || "",
+      website: company.website || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+  };
+
+  const handleFormSubmit = async () => {
+    setEditing(true);
+
+    try {
+      const { error } = await supabase
+        .from("companies")
+        .update({
+          name: formData.name,
+          industry: formData.industry,
+          description: formData.description || null,
+          website: formData.website || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", company.id);
+
+      if (error) throw error;
+
+      // Notify parent to refresh
+      if (onCompanyUpdate) {
+        onCompanyUpdate();
+      }
+
+      setEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating company:", error);
+      alert("Failed to update company details. Please try again.");
+    } finally {
+      setEditing(false);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,76 +176,107 @@ export const CompanyHeader = ({
   return (
     <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="flex-start">
-        <Box sx={{ position: "relative" }}>
-          <Avatar
-            src={company.logo_url}
-            sx={{
-              bgcolor: "secondary.main",
-              width: { xs: 48, sm: 56, md: 72 },
-              height: { xs: 48, sm: 56, md: 72 },
-              cursor: "pointer",
-              "&:hover": {
-                opacity: 0.8,
-              },
-            }}
-            onClick={handleLogoClick}
-          >
-            {!company.logo_url && (
-              <BusinessIcon sx={{ fontSize: { xs: 24, sm: 32, md: 40 } }} />
-            )}
-          </Avatar>
-          {uploading && (
-            <LinearProgress
-              sx={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 2,
-              }}
-            />
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ display: "none" }}
-          />
+        <Stack direction="row" spacing={1} alignItems="center">
+          {/* Upload button outside the square */}
           <IconButton
+            size="small"
             sx={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
               bgcolor: "primary.main",
               color: "white",
-              width: 24,
-              height: 24,
+              width: 32,
+              height: 32,
               "&:hover": {
                 bgcolor: "primary.dark",
               },
             }}
             onClick={handleLogoClick}
           >
-            <CameraIcon sx={{ fontSize: 14 }} />
+            <CameraIcon />
           </IconButton>
-        </Box>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
+
+          {/* Square logo container */}
+          <Box
+            sx={{
+              width: { xs: 80, sm: 100, md: 120 },
+              height: { xs: 80, sm: 100, md: 120 },
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 2,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: company.logo_url ? "transparent" : "secondary.main",
+              cursor: "pointer",
+              position: "relative",
+              "&:hover": {
+                opacity: 0.9,
+              },
+            }}
+            onClick={handleLogoClick}
           >
-            {company.name}
-          </Typography>
+            {company.logo_url ? (
+              <Box
+                component="img"
+                src={company.logo_url}
+                alt={`${company.name} logo`}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  p: 1,
+                }}
+              />
+            ) : (
+              <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 } }} />
+            )}
+            {uploading && (
+              <LinearProgress
+                sx={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                }}
+              />
+            )}
+          </Box>
+        </Stack>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
+        <Box sx={{ flexGrow: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "3rem" } }}
+            >
+              {company.name}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleEditClick}
+              sx={{ color: "primary.main" }}
+            >
+              <EditIcon />
+            </IconButton>
+          </Stack>
           <Stack
             direction="row"
             spacing={2}
             alignItems="center"
             flexWrap="wrap"
           >
-            <Chip label={company.industry} variant="outlined" />
+            {company.industry && (
+              <Chip label={company.industry} variant="outlined" />
+            )}
             <Typography variant="body2" color="text.secondary">
               {company.total_locations} location
               {company.total_locations !== 1 ? "s" : ""}
@@ -193,6 +287,69 @@ export const CompanyHeader = ({
           </Stack>
         </Box>
       </Stack>
+
+      {/* Edit Company Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={handleEditClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Edit Company Details</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              label="Company Name"
+              fullWidth
+              required
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+            <TextField
+              label="Industry"
+              fullWidth
+              value={formData.industry}
+              onChange={(e) =>
+                setFormData({ ...formData, industry: e.target.value })
+              }
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={4}
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+            <TextField
+              label="Website"
+              fullWidth
+              type="url"
+              placeholder="https://example.com"
+              value={formData.website}
+              onChange={(e) =>
+                setFormData({ ...formData, website: e.target.value })
+              }
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleEditClose} disabled={editing}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleFormSubmit}
+            variant="contained"
+            disabled={editing || !formData.name}
+          >
+            {editing ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
