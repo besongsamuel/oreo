@@ -1,5 +1,6 @@
 import { Box, Card, Stack, Typography } from "@mui/material";
 import Chart from "react-apexcharts";
+import { useTranslation } from "react-i18next";
 
 interface ReviewDataPoint {
   date: string;
@@ -18,13 +19,14 @@ export const ReviewsTimelineChart = ({
   data,
   onDateRangeChange,
 }: ReviewsTimelineChartProps) => {
+  const { t } = useTranslation();
   const dates = data.map((d) => d.date);
   const reviewCounts = data.map((d) => d.count);
   const avgRatings = data.map((d) => d.avgRating);
 
   const series = [
     {
-      name: "Reviews",
+      name: t("charts.reviews"),
       data: reviewCounts,
     },
   ];
@@ -90,11 +92,11 @@ export const ReviewsTimelineChart = ({
           <div style="padding: 12px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 14px;">${date}</div>
             <div style="margin-bottom: 4px; color: #666; font-size: 13px;">${count} ${
-          count === 1 ? "review" : "reviews"
+          count === 1 ? t("charts.review") : t("charts.reviews")
         }</div>
             <div style="color: #666; font-size: 13px;">⭐ ${avgRating.toFixed(
               1
-            )} avg rating</div>
+            )} ${t("charts.avgRating")}</div>
           </div>
         `;
       },
@@ -133,10 +135,10 @@ export const ReviewsTimelineChart = ({
       <Stack spacing={2}>
         <Box>
           <Typography variant="h6" fontWeight={600} gutterBottom>
-            Reviews Over Time
+            {t("charts.reviewsOverTime")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Review volume trends over time with zoom capability
+            {t("charts.reviewsOverTimeDescription")}
           </Typography>
         </Box>
         <Box sx={{ height: 350 }}>
@@ -149,7 +151,7 @@ export const ReviewsTimelineChart = ({
               sx={{ height: "100%", color: "text.secondary" }}
             >
               <Typography variant="body2">
-                No timeline data available
+                {t("charts.noTimelineData")}
               </Typography>
             </Stack>
           )}

@@ -1,5 +1,6 @@
 import { Box, Card, Stack, Typography } from "@mui/material";
 import Chart from "react-apexcharts";
+import { useTranslation } from "react-i18next";
 
 interface SentimentDonutChartProps {
   positive: number;
@@ -14,8 +15,13 @@ export const SentimentDonutChart = ({
   negative,
   total,
 }: SentimentDonutChartProps) => {
+  const { t } = useTranslation();
   const data = [positive, neutral, negative];
-  const labels = ["Positive", "Neutral", "Negative"];
+  const labels = [
+    t("monthlySummary.positive"),
+    t("monthlySummary.neutral"),
+    t("monthlySummary.negative"),
+  ];
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -63,7 +69,7 @@ export const SentimentDonutChart = ({
             },
             total: {
               show: true,
-              label: "Total Reviews",
+              label: t("charts.totalReviews"),
               fontSize: "14px",
               fontWeight: 400,
               color: "#666",
@@ -78,7 +84,9 @@ export const SentimentDonutChart = ({
         formatter: (val: number) => {
           const count = Math.round((val / 100) * total);
           const percentage = ((count / total) * 100).toFixed(1);
-          return `${count} review${count !== 1 ? "s" : ""} (${percentage}%)`;
+          const reviewLabel =
+            count !== 1 ? t("charts.reviews") : t("charts.review");
+          return `${count} ${reviewLabel} (${percentage}%)`;
         },
       },
     },
@@ -101,7 +109,7 @@ export const SentimentDonutChart = ({
     <Card sx={{ p: 2, borderRadius: "18px", boxShadow: 2 }}>
       <Stack spacing={2}>
         <Typography variant="h6" fontWeight={600}>
-          Sentiment Breakdown
+          {t("charts.sentimentBreakdown")}
         </Typography>
         <Box sx={{ height: 300 }}>
           <Chart options={options} series={data} type="donut" height={300} />

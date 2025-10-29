@@ -2333,12 +2333,20 @@ export const CompanyPage = () => {
             >
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  {showRecentOnly ? "Recent Reviews" : "All Reviews"}
+                  {showRecentOnly
+                    ? t("companyPage.recentReviews")
+                    : t("companyPage.allReviews")}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Showing {paginatedReviews.length} of {filteredReviews.length}{" "}
-                  reviews
-                  {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
+                  {t("companyPage.showingReviews", {
+                    shown: paginatedReviews.length,
+                    total: filteredReviews.length,
+                  })}
+                  {totalPages > 1 &&
+                    t("companyPage.pageOf", {
+                      current: currentPage,
+                      total: totalPages,
+                    })}
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1} alignItems="center">

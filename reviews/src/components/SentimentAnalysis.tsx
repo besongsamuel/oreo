@@ -28,6 +28,7 @@ import {
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface SentimentData {
@@ -75,6 +76,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   selectedRating,
   selectedTopic,
 }) => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const [actionPlanOpen, setActionPlanOpen] = useState(false);
   const [actionPlan, setActionPlan] = useState<string | null>(null);
@@ -108,11 +110,11 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
       if (data?.success && data?.actionPlan) {
         setActionPlan(data.actionPlan);
       } else {
-        setActionPlan("Failed to generate action plan. Please try again.");
+        setActionPlan(t("sentimentAnalysis.failedGenerate"));
       }
     } catch (error) {
       console.error("Error generating action plan:", error);
-      setActionPlan("Error generating action plan. Please try again.");
+      setActionPlan(t("sentimentAnalysis.errorGenerating"));
     } finally {
       setLoadingPlan(false);
     }
@@ -152,22 +154,40 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const getActiveFilters = () => {
     const filters = [];
     if (filterLocation && filterLocation !== "all") {
-      filters.push(`Location: ${filterLocation}`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.location")} ${filterLocation}`
+      );
     }
     if (filterStartDate) {
-      filters.push(`From: ${new Date(filterStartDate).toLocaleDateString()}`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.from")} ${new Date(
+          filterStartDate
+        ).toLocaleDateString()}`
+      );
     }
     if (filterEndDate) {
-      filters.push(`To: ${new Date(filterEndDate).toLocaleDateString()}`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.to")} ${new Date(
+          filterEndDate
+        ).toLocaleDateString()}`
+      );
     }
     if (selectedKeyword && selectedKeyword !== "all") {
-      filters.push(`Keyword: ${selectedKeyword}`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.keyword")} ${selectedKeyword}`
+      );
     }
     if (selectedRating && selectedRating !== "all") {
-      filters.push(`Rating: ${selectedRating} stars`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.rating")} ${selectedRating} ${t(
+          "sentimentAnalysis.filterLabels.stars"
+        )}`
+      );
     }
     if (selectedTopic && selectedTopic !== "all") {
-      filters.push(`Topic: ${selectedTopic}`);
+      filters.push(
+        `${t("sentimentAnalysis.filterLabels.topic")} ${selectedTopic}`
+      );
     }
     return filters;
   };
@@ -223,19 +243,19 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
     {
       id: 0,
       value: sentimentData.positiveCount,
-      label: "Positive",
+      label: t("monthlySummary.positive"),
       color: "#4caf50",
     },
     {
       id: 1,
       value: sentimentData.neutralCount,
-      label: "Neutral",
+      label: t("monthlySummary.neutral"),
       color: "#ff9800",
     },
     {
       id: 2,
       value: sentimentData.negativeCount,
-      label: "Negative",
+      label: t("monthlySummary.negative"),
       color: "#f44336",
     },
   ];
@@ -248,12 +268,13 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
             <TrendingUpIcon color="primary" />
             <Typography variant="h5" fontWeight={600}>
-              Sentiment Analysis
+              {t("sentimentAnalysis.title")}
             </Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            AI-powered sentiment insights from {sentimentData.totalReviews}{" "}
-            reviews
+            {t("sentimentAnalysis.description", {
+              count: sentimentData.totalReviews,
+            })}
           </Typography>
         </Box>
 
@@ -300,7 +321,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     color: "text.secondary",
                   }}
                 >
-                  Sentiment Score
+                  {t("sentimentAnalysis.sentimentScore")}
                 </Typography>
               </Box>
 
@@ -312,7 +333,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     color="text.secondary"
                     gutterBottom
                   >
-                    Overall Sentiment
+                    {t("sentimentAnalysis.overallSentiment")}
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1}>
                     {getSentimentIcon(sentimentData.overallSentiment)}
@@ -337,7 +358,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                       fullWidth
                       sx={{ mt: 2 }}
                     >
-                      Propose Action Plan
+                      {t("sentimentAnalysis.proposeActionPlan")}
                     </Button>
                   </Box>
                 )}
@@ -351,7 +372,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     color="text.secondary"
                     gutterBottom
                   >
-                    Sentiment Distribution
+                    {t("sentimentAnalysis.sentimentDistribution")}
                   </Typography>
                   <Stack spacing={1}>
                     <Stack
@@ -384,7 +405,9 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                         <NeutralIcon
                           sx={{ color: "warning.main", fontSize: 18 }}
                         />
-                        <Typography variant="body2">Neutral</Typography>
+                        <Typography variant="body2">
+                          {t("monthlySummary.neutral")}
+                        </Typography>
                       </Stack>
                       <Typography variant="body2" fontWeight={600}>
                         {sentimentData.neutralCount} (
@@ -405,7 +428,9 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                         <NegativeIcon
                           sx={{ color: "error.main", fontSize: 18 }}
                         />
-                        <Typography variant="body2">Negative</Typography>
+                        <Typography variant="body2">
+                          {t("monthlySummary.negative")}
+                        </Typography>
                       </Stack>
                       <Typography variant="body2" fontWeight={600}>
                         {sentimentData.negativeCount} (
@@ -442,7 +467,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         {sentimentData.emotions && sentimentData.emotions.length > 0 && (
           <Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Most common emotions expressed in reviews
+              {t("sentimentAnalysis.mostCommonEmotions")}
             </Typography>
             <Stack spacing={1} sx={{ mt: 2 }}>
               {sentimentData.emotions.slice(0, 5).map((item) => (
@@ -462,10 +487,12 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     <Typography variant="h4">{item.emoji}</Typography>
                     <Box>
                       <Typography variant="body2" fontWeight={600}>
-                        {item.count} occurrences
+                        {item.count} {t("sentimentAnalysis.occurrences")}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {item.percentage.toFixed(1)}% of reviews
+                        {t("sentimentAnalysis.percentOfReviews", {
+                          percent: item.percentage.toFixed(1),
+                        })}
                       </Typography>
                     </Box>
                   </Stack>
@@ -511,7 +538,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
               <Skeleton variant="text" width="70%" />
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Generating your action plan...
+                  {t("sentimentAnalysis.generatingActionPlan")}
                 </Typography>
               </Box>
             </Stack>
@@ -521,7 +548,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
               {getActiveFilters().length > 0 && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                   <Typography variant="caption" fontWeight={600} gutterBottom>
-                    Filters Applied:
+                    {t("sentimentAnalysis.filtersApplied")}
                   </Typography>
                   <Stack
                     direction="row"
@@ -578,12 +605,14 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary">
-              No action plan available.
+              {t("sentimentAnalysis.noActionPlan")}
             </Typography>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseActionPlan}>Close</Button>
+          <Button onClick={handleCloseActionPlan}>
+            {t("sentimentAnalysis.close")}
+          </Button>
         </DialogActions>
       </Dialog>
     </Paper>

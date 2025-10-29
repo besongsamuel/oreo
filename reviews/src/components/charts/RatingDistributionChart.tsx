@@ -1,5 +1,6 @@
 import { Box, Card, Stack, Typography } from "@mui/material";
 import Chart from "react-apexcharts";
+import { useTranslation } from "react-i18next";
 
 interface RatingDistributionChartProps {
   ratings: {
@@ -18,6 +19,7 @@ export const RatingDistributionChart = ({
   totalReviews,
   onRatingClick,
 }: RatingDistributionChartProps) => {
+  const { t } = useTranslation();
   const data = [
     {
       rating: 5,
@@ -55,7 +57,7 @@ export const RatingDistributionChart = ({
   // For horizontal bar chart, create single series with all data points
   const series = [
     {
-      name: "Reviews",
+      name: t("charts.reviews"),
       data: data.map((d) => d.count),
     },
   ];
@@ -109,7 +111,8 @@ export const RatingDistributionChart = ({
     },
     xaxis: {
       categories: data.map(
-        (d) => `${d.rating} Star${d.rating !== 1 ? "s" : ""}`
+        (d) =>
+          `${d.rating} ${d.rating !== 1 ? t("charts.stars") : t("charts.star")}`
       ),
     },
     yaxis: {
@@ -118,7 +121,7 @@ export const RatingDistributionChart = ({
     tooltip: {
       y: {
         formatter: (val: number) =>
-          `${val} review${val !== 1 ? "s" : ""} (${(
+          `${val} ${val !== 1 ? t("charts.reviews") : t("charts.review")} (${(
             (val / totalReviews) *
             100
           ).toFixed(1)}%)`,
@@ -134,7 +137,7 @@ export const RatingDistributionChart = ({
     <Card sx={{ p: 2, borderRadius: "18px", boxShadow: 2 }}>
       <Stack spacing={2}>
         <Typography variant="h6" fontWeight={600}>
-          Rating Distribution
+          {t("charts.ratingDistribution")}
         </Typography>
         <Box sx={{ height: 250 }}>
           <Chart options={options} series={series} type="bar" height={250} />
@@ -146,7 +149,7 @@ export const RatingDistributionChart = ({
             align="center"
             sx={{ py: 4 }}
           >
-            No rating data available
+            {t("charts.noRatingData")}
           </Typography>
         )}
       </Stack>
