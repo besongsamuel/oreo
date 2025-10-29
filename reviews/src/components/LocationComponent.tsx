@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { getPlatformConfig } from "../services/platforms/platformRegistry";
@@ -59,6 +60,7 @@ export const LocationComponent = ({
   companyId,
   onReviewsFetched,
 }: LocationComponentProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { fetchReviews, connecting, error, success } = usePlatformIntegration();
   const [fetchingForConnection, setFetchingForConnection] = useState<
@@ -90,10 +92,10 @@ export const LocationComponent = ({
         <Box sx={{ textAlign: "center", py: 4 }}>
           <BusinessIcon sx={{ fontSize: 64, color: "text.secondary", mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No locations yet
+            {t("location.noLocationsYet")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Add your first location to start tracking reviews
+            {t("location.addFirstLocation")}
           </Typography>
           <Button
             variant="contained"
@@ -105,7 +107,7 @@ export const LocationComponent = ({
               fontWeight: 500,
             }}
           >
-            Add Location
+            {t("location.addLocation")}
           </Button>
         </Box>
       </Paper>
@@ -120,7 +122,7 @@ export const LocationComponent = ({
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography variant="h6">Locations</Typography>
+        <Typography variant="h6">{t("location.title")}</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -131,7 +133,7 @@ export const LocationComponent = ({
             fontWeight: 500,
           }}
         >
-          Add Location
+          {t("location.addLocation")}
         </Button>
       </Stack>
 
@@ -204,7 +206,7 @@ export const LocationComponent = ({
                         color="text.secondary"
                         fontWeight={500}
                       >
-                        Fetch Reviews:
+                        {t("location.fetchReviews")}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap">
                         {connections.map((connection) => {
@@ -248,8 +250,10 @@ export const LocationComponent = ({
                               }}
                             >
                               {isFetching
-                                ? "Fetching..."
-                                : `Fetch ${connection.platform.display_name}`}
+                                ? t("location.fetching")
+                                : t("location.fetch", {
+                                    platform: connection.platform.display_name,
+                                  })}
                             </Button>
                           );
                         })}
@@ -265,7 +269,7 @@ export const LocationComponent = ({
                         {location.total_reviews}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Reviews
+                        {t("companies.reviews")}
                       </Typography>
                     </Box>
                     <Box>
@@ -281,7 +285,7 @@ export const LocationComponent = ({
                         />
                       </Stack>
                       <Typography variant="caption" color="text.secondary">
-                        Avg Rating
+                        {t("companies.avgRating")}
                       </Typography>
                     </Box>
                   </Stack>

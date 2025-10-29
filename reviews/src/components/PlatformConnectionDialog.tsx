@@ -15,6 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface ZembraListing {
@@ -56,38 +57,28 @@ interface PlatformConnectionDialogProps {
   }>;
 }
 
-const getPlatformIdLabel = (platformName: string): string => {
+const getPlatformIdLabel = (platformName: string, t: any): string => {
   switch (platformName.toLowerCase()) {
     case "facebook":
-      return "Page ID";
+      return t("platform.platformIdLabels.pageId");
     case "google":
-      return "Place ID";
+      return t("platform.platformIdLabels.placeId");
     case "yelp":
-      return "Business ID";
+      return t("platform.platformIdLabels.businessId");
     case "opentable":
-      return "Restaurant ID";
+      return t("platform.platformIdLabels.restaurantId");
     case "tripadvisor":
-      return "Location ID";
+      return t("platform.platformIdLabels.locationId");
     default:
-      return "Location ID";
+      return t("platform.platformIdLabels.locationId");
   }
 };
 
-const getPlatformIdPlaceholder = (platformName: string): string => {
-  switch (platformName.toLowerCase()) {
-    case "facebook":
-      return "e.g., 123456789012345";
-    case "google":
-      return "e.g., ChIJN1t_tDeuEmsRUsoyG83frY4";
-    case "yelp":
-      return "e.g., cafe-de-olla-san-francisco-2";
-    case "opentable":
-      return "e.g., restaurant-name";
-    case "tripadvisor":
-      return "e.g., g1234567";
-    default:
-      return "Enter platform location ID";
-  }
+const getPlatformIdPlaceholder = (platformName: string, t: any): string => {
+  const key = platformName.toLowerCase();
+  return t(`platform.platformIdPlaceholders.${key}`, {
+    defaultValue: "Enter platform location ID",
+  });
 };
 
 export const PlatformConnectionDialog = ({
@@ -98,6 +89,7 @@ export const PlatformConnectionDialog = ({
   companyName,
   locations,
 }: PlatformConnectionDialogProps) => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [platformLocationId, setPlatformLocationId] = useState("");
@@ -158,7 +150,7 @@ export const PlatformConnectionDialog = ({
 
   const handleVerify = async () => {
     if (!platformLocationId.trim()) {
-      setVerificationError("Please enter a Platform Location ID");
+      setVerificationError(t("platform.pleaseEnterPlatformId"));
       return;
     }
 
@@ -181,9 +173,7 @@ export const PlatformConnectionDialog = ({
 
       setVerifiedListing(response.data.listing);
     } catch (err: any) {
-      setVerificationError(
-        err.message || "Failed to verify listing. Please check the ID."
-      );
+      setVerificationError(err.message || t("platform.failedVerifyListing"));
     } finally {
       setVerifying(false);
     }
@@ -203,7 +193,7 @@ export const PlatformConnectionDialog = ({
       );
       handleClose();
     } catch (err: any) {
-      setError(err.message || "Failed to connect platform");
+      setError(err.message || t("platform.failedConnectPlatform"));
     } finally {
       setConnecting(false);
     }
@@ -221,8 +211,11 @@ export const PlatformConnectionDialog = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Connect {platformName.charAt(0).toUpperCase() + platformName.slice(1)}{" "}
-        to {companyName}
+        {t("platform.connectTo", {
+          platform:
+            platformName.charAt(0).toUpperCase() + platformName.slice(1),
+          company: companyName,
+        })}
       </DialogTitle>
 
       <DialogContent>
@@ -232,12 +225,13 @@ export const PlatformConnectionDialog = ({
           {/* Location Selection */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              Select Location
+              {t("platform.selectLocation")}
             </Typography>
             {availableLocations.length === 0 ? (
               <Alert severity="info">
-                All locations are already connected to {platformName}. Please
-                add a new location to connect.
+                {t("platform.allLocationsConnected", {
+                  platform: platformName,
+                })}
               </Alert>
             ) : (
               <Stack spacing={1}>
@@ -272,33 +266,24 @@ export const PlatformConnectionDialog = ({
           {selectedLocation && (
             <Box>
               <Typography variant="h6" gutterBottom>
-                Enter {getPlatformIdLabel(platformName)}
+                {t("platform.enterPlaceId", {
+                  label: getPlatformIdLabel(platformName, t),
+                })}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {platformName.toLowerCase() === "facebook" &&
-                  "Find your Page ID in Page Settings > About"}
-                {platformName.toLowerCase() === "google" &&
-                  "Use Google Place ID Finder or find in Google My Business URL"}
-                {platformName.toLowerCase() === "yelp" &&
-                  "Found in your business URL: yelp.com/biz/[business-id]"}
-                {platformName.toLowerCase() === "opentable" &&
-                  "Found in your restaurant URL or OpenTable settings"}
-                {platformName.toLowerCase() === "tripadvisor" &&
-                  "Found in your location URL (e.g., tripadvisor.com/Restaurant_Review...)"}
-                {![
-                  "facebook",
-                  "google",
-                  "yelp",
-                  "opentable",
-                  "tripadvisor",
-                ].includes(platformName.toLowerCase()) &&
-                  "Enter the location identifier from your platform account"}
+                {t(
+                  `platform.platformIdInstructions.${platformName.toLowerCase()}` as any,
+                  {
+                    defaultValue:
+                      "Enter the location identifier from your platform account",
+                  }
+                )}
               </Typography>
               <Stack spacing={2}>
                 <TextField
                   fullWidth
-                  label={getPlatformIdLabel(platformName)}
-                  placeholder={getPlatformIdPlaceholder(platformName)}
+                  label={getPlatformIdLabel(platformName, t)}
+                  placeholder={getPlatformIdPlaceholder(platformName, t)}
                   value={platformLocationId}
                   onChange={(e) => {
                     setPlatformLocationId(e.target.value);
@@ -315,7 +300,7 @@ export const PlatformConnectionDialog = ({
                   }
                   startIcon={verifying ? <CircularProgress size={20} /> : null}
                 >
-                  {verifying ? "Finding..." : "Find"}
+                  {verifying ? t("platform.finding") : t("platform.find")}
                 </Button>
                 {verificationError && (
                   <Alert severity="error">{verificationError}</Alert>
@@ -328,7 +313,7 @@ export const PlatformConnectionDialog = ({
           {verifiedListing && (
             <Box>
               <Typography variant="h6" gutterBottom>
-                Verified Listing
+                {t("platform.verifiedListing")}
               </Typography>
               <Card
                 sx={{
@@ -368,12 +353,16 @@ export const PlatformConnectionDialog = ({
                         )}
                       {verifiedListing.globalRating && (
                         <Typography variant="body2" color="text.secondary">
-                          Rating: {verifiedListing.globalRating} / 5.0
+                          {t("platform.rating", {
+                            rating: verifiedListing.globalRating,
+                          })}
                         </Typography>
                       )}
                       {verifiedListing.reviewCount && (
                         <Typography variant="body2" color="text.secondary">
-                          {verifiedListing.reviewCount.native.active} reviews
+                          {t("platform.reviewsCount", {
+                            count: verifiedListing.reviewCount.native.active,
+                          })}
                         </Typography>
                       )}
                     </Box>
@@ -387,7 +376,7 @@ export const PlatformConnectionDialog = ({
 
       <DialogActions>
         <Button onClick={handleClose} disabled={connecting}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           onClick={handleConnect}
@@ -399,7 +388,7 @@ export const PlatformConnectionDialog = ({
             !availableLocations.length
           }
         >
-          {connecting ? "Connecting..." : "Connect"}
+          {connecting ? t("platform.connecting") : t("platform.connect")}
         </Button>
       </DialogActions>
     </Dialog>

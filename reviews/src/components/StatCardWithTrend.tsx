@@ -1,5 +1,6 @@
 import { TrendingDown, TrendingUp } from "@mui/icons-material";
 import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface StatCardWithTrendProps {
   title: string;
@@ -22,6 +23,7 @@ export const StatCardWithTrend = ({
   color = "primary",
   sparkline,
 }: StatCardWithTrendProps) => {
+  const { t } = useTranslation();
   const TrendIcon = trend?.isPositive ? TrendingUp : TrendingDown;
   const trendColor = trend?.isPositive ? "success.main" : "error.main";
 
@@ -83,7 +85,7 @@ export const StatCardWithTrend = ({
               </Typography>
               {trend.period && (
                 <Typography variant="caption" color="text.secondary">
-                  vs {trend.period}
+                  {t("platform.vs")} {trend.period}
                 </Typography>
               )}
             </Box>

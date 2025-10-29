@@ -5,6 +5,7 @@ import {
   Star as StarIcon,
 } from "@mui/icons-material";
 import { Box, Button, Chip, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PlatformRegistryEntry } from "../services/platforms/platformRegistry";
 
 interface FetchPlatformReviewsProps {
@@ -18,6 +19,7 @@ export const FetchPlatformReviews = ({
   connecting,
   onPlatformClick,
 }: FetchPlatformReviewsProps) => {
+  const { t } = useTranslation();
   // Get platform icon based on platform name
   const getPlatformIcon = (platformName: string) => {
     switch (platformName.toLowerCase()) {
@@ -42,10 +44,10 @@ export const FetchPlatformReviews = ({
         gutterBottom
         sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
       >
-        Connect Platform to Locations
+        {t("platform.connectToLocations")}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Connect a platform business to one of your locations
+        {t("platform.connectDescription")}
       </Typography>
       <Box
         sx={{
@@ -56,7 +58,7 @@ export const FetchPlatformReviews = ({
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          <strong>What happens when you connect a platform:</strong>
+          <strong>{t("platform.whatHappens")}</strong>
         </Typography>
         <Typography
           variant="body2"
@@ -64,17 +66,9 @@ export const FetchPlatformReviews = ({
           component="ul"
           sx={{ mb: 0, pl: 2 }}
         >
-          <li style={{ marginBottom: "8px" }}>
-            A platform location or business will be connected to one of your
-            locations
-          </li>
-          <li style={{ marginBottom: "8px" }}>
-            Reviews will be pulled from the platform and linked to that location
-          </li>
-          <li>
-            You will then be able to pull reviews for that location in the
-            future
-          </li>
+          <li style={{ marginBottom: "8px" }}>{t("platform.connectPoint1")}</li>
+          <li style={{ marginBottom: "8px" }}>{t("platform.connectPoint2")}</li>
+          <li>{t("platform.connectPoint3")}</li>
         </Typography>
       </Box>
       <Box
@@ -118,7 +112,7 @@ export const FetchPlatformReviews = ({
             {platform.displayName}
             {platform.status === "coming_soon" && (
               <Chip
-                label="Soon"
+                label={t("platform.soon")}
                 size="small"
                 sx={{
                   ml: 1,

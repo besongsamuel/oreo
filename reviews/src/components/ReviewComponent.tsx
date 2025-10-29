@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface Review {
   id: string;
@@ -31,6 +32,7 @@ export const ReviewComponent = ({
   review,
   getSentimentColor,
 }: ReviewComponentProps) => {
+  const { t } = useTranslation();
   return (
     <Card
       variant="outlined"
@@ -63,7 +65,7 @@ export const ReviewComponent = ({
                   {(review.author_name || "A").charAt(0).toUpperCase()}
                 </Avatar>
                 <Typography variant="subtitle1" fontWeight="bold">
-                  {review.author_name || "Anonymous"}
+                  {review.author_name || t("dashboard.anonymous")}
                 </Typography>
                 <Chip
                   label={review.platform_name}

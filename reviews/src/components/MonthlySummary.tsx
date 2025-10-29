@@ -21,6 +21,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
 import { MonthlySummarySkeleton } from "./SkeletonLoaders";
 
@@ -48,6 +49,7 @@ interface SummaryData {
 }
 
 export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -305,7 +307,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
         throw new Error(result.error || "Failed to generate summary");
       }
 
-      setSuccessMessage("Summary generated successfully!");
+      setSuccessMessage(t("monthlySummary.summaryGeneratedSuccess"));
       await fetchSummary(); // Refresh summary data
     } catch (err) {
       console.error("Error generating summary:", err);
@@ -399,10 +401,10 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
             </Box>
             <Box>
               <Typography variant="h5" fontWeight={600} gutterBottom>
-                Monthly Summary
+                {t("monthlySummary.title")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                AI-generated insights from customer reviews
+                {t("monthlySummary.subtitle")}
               </Typography>
             </Box>
           </Stack>
@@ -451,7 +453,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                   "December",
                 ].map((month, index) => (
                   <MenuItem key={index + 1} value={index + 1}>
-                    {month}
+                    {t(`monthlySummary.${month.toLowerCase()}` as any)}
                   </MenuItem>
                 ))}
               </Select>
@@ -508,7 +510,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                 align="center"
                 sx={{ py: 4 }}
               >
-                No reviews for this month
+                {t("monthlySummary.noReviews")}
               </Typography>
             </CardContent>
           </Card>
@@ -548,7 +550,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                       fontWeight={600}
                       color="primary.main"
                     >
-                      AI Insights
+                      {t("monthlySummary.aiInsights")}
                     </Typography>
                   </Stack>
                   <Typography
@@ -571,7 +573,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                     fontWeight={600}
                     sx={{ mb: 2 }}
                   >
-                    Key Metrics
+                    {t("monthlySummary.keyMetrics")}
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -593,7 +595,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                           color="text.secondary"
                           sx={{ mb: 0.5, display: "block" }}
                         >
-                          Total Reviews
+                          {t("monthlySummary.totalReviews")}
                         </Typography>
                         <Typography
                           variant="h4"
@@ -624,7 +626,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                           color="text.secondary"
                           sx={{ mb: 0.5, display: "block" }}
                         >
-                          Average Rating
+                          {t("monthlySummary.averageRating")}
                         </Typography>
                         <Stack
                           direction="row"
@@ -647,7 +649,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                             color="text.secondary"
                             sx={{ mt: 0.5 }}
                           >
-                            / 5.0
+                            {t("monthlySummary.totalOutOfFive")}
                           </Typography>
                         </Stack>
                       </Paper>
@@ -675,7 +677,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                               color="success.dark"
                               sx={{ mb: 0.5, display: "block" }}
                             >
-                              Positive
+                              {t("monthlySummary.positive")}
                             </Typography>
                             <Typography
                               variant="h4"
@@ -695,7 +697,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                                     summaryData.total_reviews) *
                                     100
                                 )}
-                              % of reviews
+                              {t("monthlySummary.percentOfReviews")}
                             </Typography>
                           </Paper>
                         </Grid>
@@ -719,7 +721,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                               color="text.secondary"
                               sx={{ mb: 0.5, display: "block" }}
                             >
-                              Neutral
+                              {t("monthlySummary.neutral")}
                             </Typography>
                             <Typography variant="h4" fontWeight={700}>
                               {summaryData.sentiment_breakdown.neutral}
@@ -735,7 +737,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                                     summaryData.total_reviews) *
                                     100
                                 )}
-                              % of reviews
+                              {t("monthlySummary.percentOfReviews")}
                             </Typography>
                           </Paper>
                         </Grid>
@@ -760,7 +762,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                               color="error.dark"
                               sx={{ mb: 0.5, display: "block" }}
                             >
-                              Negative
+                              {t("monthlySummary.negative")}
                             </Typography>
                             <Typography
                               variant="h4"
@@ -780,7 +782,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                                     summaryData.total_reviews) *
                                     100
                                 )}
-                              % of reviews
+                              {t("monthlySummary.percentOfReviews")}
                             </Typography>
                           </Paper>
                         </Grid>
@@ -800,7 +802,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                   color="text.secondary"
                   align="center"
                 >
-                  No monthly summary currently available
+                  {t("monthlySummary.noMonthlySummary")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -814,9 +816,9 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                       currentMonth === now.getMonth() + 1;
 
                     if (isCurrentMonth) {
-                      return "Summaries are automatically generated for the current month after the 15th or on/after the 28th.";
+                      return t("monthlySummary.currentMonthMessage");
                     }
-                    return "Summaries can be generated manually for past months.";
+                    return t("monthlySummary.pastMonthMessage");
                   })()}
                 </Typography>
                 {(() => {
@@ -838,12 +840,12 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                       sx={{ borderRadius: 980, minWidth: 200 }}
                     >
                       {generating
-                        ? "Generating..."
+                        ? t("monthlySummary.generating")
                         : !hasReviews
-                        ? "No reviews for this month"
+                        ? t("monthlySummary.noReviews")
                         : summaryExists
-                        ? "Summary already generated"
-                        : "Generate Summary"}
+                        ? t("monthlySummary.summaryAlreadyGenerated")
+                        : t("monthlySummary.generateSummary")}
                     </Button>
                   );
                 })()}

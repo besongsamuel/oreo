@@ -19,6 +19,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface CompanyDetails {
@@ -61,6 +62,7 @@ export const CompanyHeader = ({
   onCompanyUpdate,
   subscriptionTier,
 }: CompanyHeaderProps) => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -116,7 +118,7 @@ export const CompanyHeader = ({
       setEditDialogOpen(false);
     } catch (error) {
       console.error("Error updating company:", error);
-      alert("Failed to update company details. Please try again.");
+      alert(t("companies.failedUpdateCompany"));
     } finally {
       setEditing(false);
     }
@@ -128,13 +130,13 @@ export const CompanyHeader = ({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      alert(t("companies.uploadImage"));
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be less than 5MB");
+      alert(t("companies.imageTooLarge"));
       return;
     }
 
@@ -176,7 +178,7 @@ export const CompanyHeader = ({
       }
     } catch (error) {
       console.error("Error uploading logo:", error);
-      alert("Failed to upload logo. Please try again.");
+      alert(t("companies.failedUploadLogo"));
     } finally {
       setUploading(false);
       // Reset file input
@@ -291,11 +293,14 @@ export const CompanyHeader = ({
               <Chip label={company.industry} variant="outlined" />
             )}
             <Typography variant="body2" color="text.secondary">
-              {company.total_locations} location
-              {company.total_locations !== 1 ? "s" : ""}
+              {company.total_locations}{" "}
+              {company.total_locations !== 1
+                ? t("dashboard.locations")
+                : t("dashboard.location")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Member since {new Date(company.created_at).toLocaleDateString()}
+              {t("companies.memberSince")}{" "}
+              {new Date(company.created_at).toLocaleDateString()}
             </Typography>
           </Stack>
         </Box>
@@ -308,11 +313,11 @@ export const CompanyHeader = ({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Edit Company Details</DialogTitle>
+        <DialogTitle>{t("companies.editCompanyDetails")}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
-              label="Company Name"
+              label={t("companies.companyName")}
               fullWidth
               required
               value={formData.name}
@@ -321,7 +326,7 @@ export const CompanyHeader = ({
               }
             />
             <TextField
-              label="Industry"
+              label={t("companies.industry")}
               fullWidth
               value={formData.industry}
               onChange={(e) =>
@@ -329,7 +334,7 @@ export const CompanyHeader = ({
               }
             />
             <TextField
-              label="Description"
+              label={t("companies.description")}
               fullWidth
               multiline
               rows={4}
@@ -339,7 +344,7 @@ export const CompanyHeader = ({
               }
             />
             <TextField
-              label="Website"
+              label={t("companies.website")}
               fullWidth
               type="url"
               placeholder="https://example.com"
@@ -352,14 +357,14 @@ export const CompanyHeader = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={handleEditClose} disabled={editing}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleFormSubmit}
             variant="contained"
             disabled={editing || !formData.name}
           >
-            {editing ? "Saving..." : "Save Changes"}
+            {editing ? t("companies.saving") : t("companies.saveChanges")}
           </Button>
         </DialogActions>
       </Dialog>
