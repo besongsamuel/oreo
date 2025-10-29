@@ -10,10 +10,12 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link as RouterLink } from "react-router-dom";
 import { useSupabase } from "../../hooks/useSupabase";
 
 export const ForgotPassword = () => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export const ForgotPassword = () => {
 
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || "An error occurred while sending reset email");
+      setError(err.message || t("auth.resetPasswordError"));
     } finally {
       setLoading(false);
     }
@@ -55,25 +57,22 @@ export const ForgotPassword = () => {
           <Stack spacing={3}>
             <Box>
               <Typography variant="h4" component="h1" gutterBottom>
-                Reset Password
+                {t("auth.resetPasswordTitle")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Enter your email address and we'll send you a link to reset your
-                password
+                {t("auth.resetPasswordMessage")}
               </Typography>
             </Box>
 
             {error && <Alert severity="error">{error}</Alert>}
             {success && (
-              <Alert severity="success">
-                Password reset email sent! Please check your inbox.
-              </Alert>
+              <Alert severity="success">{t("auth.passwordResetMessage")}</Alert>
             )}
 
             <form onSubmit={handleResetPassword}>
               <Stack spacing={2}>
                 <TextField
-                  label="Email"
+                  label={t("auth.email")}
                   type="email"
                   fullWidth
                   required
@@ -90,14 +89,14 @@ export const ForgotPassword = () => {
                   fullWidth
                   disabled={loading || success}
                 >
-                  {loading ? "Sending..." : "Send Reset Link"}
+                  {loading ? t("common.loading") : t("auth.resetPassword")}
                 </Button>
               </Stack>
             </form>
 
             <Box sx={{ textAlign: "center" }}>
               <Link component={RouterLink} to="/auth/login" variant="body2">
-                Back to Sign In
+                {t("auth.signIn")}
               </Link>
             </Box>
           </Stack>

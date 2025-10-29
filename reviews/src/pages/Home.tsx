@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
@@ -24,6 +25,7 @@ import {
 import { UserContext } from "../context/UserContext";
 
 export const Home = () => {
+  const { t } = useTranslation();
   const context = useContext(UserContext);
   const profile = context?.profile;
   const user = context?.user;
@@ -40,27 +42,23 @@ export const Home = () => {
   const features = [
     {
       icon: <ReviewsIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
-      title: "Pull Reviews from Social Media",
-      description:
-        "Aggregate reviews from Google, Facebook, Yelp, OpenTable, and TripAdvisor all in one place.",
+      title: t("home.feature1Title"),
+      description: t("home.feature1Desc"),
     },
     {
       icon: <AggregateIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
-      title: "Aggregate Across Locations",
-      description:
-        "Track reviews from multiple locations and get a unified view of your customer feedback.",
+      title: t("home.feature2Title"),
+      description: t("home.feature2Desc"),
     },
     {
       icon: <KeywordsIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
-      title: "Extract Keywords & Topics",
-      description:
-        "Automatically extract key insights from reviews to understand what customers are talking about.",
+      title: t("home.feature3Title"),
+      description: t("home.feature3Desc"),
     },
     {
       icon: <SummaryIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
-      title: "Monthly Customer Sentiment",
-      description:
-        "Get comprehensive monthly summaries of how your customers feel about your business (paid plan).",
+      title: t("home.feature4Title"),
+      description: t("home.feature4Desc"),
     },
   ];
 
@@ -77,17 +75,14 @@ export const Home = () => {
                 fontWeight={700}
                 sx={{ fontSize: { xs: "3rem", md: "4.5rem" } }}
               >
-                Take Control of Your
-                <br />
-                Online Reputation
+                {t("home.heroTitle")}
               </Typography>
               <Typography
                 variant="h5"
                 color="text.secondary"
                 sx={{ maxWidth: "600px" }}
               >
-                Monitor, analyze, and respond to customer reviews from all major
-                platforms in one unified dashboard.
+                {t("home.heroSubtitle")}
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <Button
@@ -103,7 +98,7 @@ export const Home = () => {
                     textTransform: "none",
                   }}
                 >
-                  Get Started Free
+                  {t("home.getStartedFree")}
                 </Button>
                 <Button
                   variant="outlined"
@@ -117,7 +112,7 @@ export const Home = () => {
                     textTransform: "none",
                   }}
                 >
-                  View Pricing
+                  {t("home.viewPricing")}
                 </Button>
               </Stack>
             </Stack>
@@ -134,7 +129,7 @@ export const Home = () => {
               gutterBottom
               sx={{ mb: 8 }}
             >
-              Everything You Need
+              {t("home.featuresTitle")}
             </Typography>
             <Box
               sx={{
@@ -187,7 +182,7 @@ export const Home = () => {
               textAlign="center"
               gutterBottom
             >
-              Simple, Transparent Pricing
+              {t("home.pricingTitle")}
             </Typography>
             <Typography
               variant="body1"
@@ -195,7 +190,7 @@ export const Home = () => {
               textAlign="center"
               sx={{ mb: 6 }}
             >
-              Choose the plan that fits your needs
+              {t("home.pricingSubtitle")}
             </Typography>
 
             <Box
@@ -219,14 +214,14 @@ export const Home = () => {
                   <Stack spacing={3}>
                     <Box>
                       <Typography variant="h5" fontWeight={600} gutterBottom>
-                        Free
+                        {t("home.planFree")}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="baseline">
                         <Typography variant="h3" fontWeight={700}>
                           $0
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          /month
+                          {t("home.monthly")}
                         </Typography>
                       </Stack>
                     </Box>
@@ -237,21 +232,7 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2">
-                          Up to 10 reviews/month
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <CheckIcon color="success" />
-                        <Typography variant="body2">Basic analytics</Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <CheckIcon color="success" />
-                        <Typography variant="body2">
-                          Multi-platform support
+                          {t("home.featureReviews")}
                         </Typography>
                       </Box>
                       <Box
@@ -259,7 +240,23 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2">
-                          Keyword extraction
+                          {t("home.featureAnalytics")}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <CheckIcon color="success" />
+                        <Typography variant="body2">
+                          {t("home.featureMultiPlatform")}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <CheckIcon color="success" />
+                        <Typography variant="body2">
+                          {t("home.featureKeywords")}
                         </Typography>
                       </Box>
                     </Stack>
@@ -275,7 +272,7 @@ export const Home = () => {
                         fontSize: "1rem",
                       }}
                     >
-                      Get Started
+                      {t("home.getStarted")}
                     </Button>
                   </Stack>
                 </CardContent>
@@ -308,20 +305,20 @@ export const Home = () => {
                     zIndex: 1,
                   }}
                 >
-                  MOST POPULAR
+                  {t("home.mostPopular")}
                 </Box>
                 <CardContent sx={{ p: 4, pt: 5 }}>
                   <Stack spacing={3}>
                     <Box>
                       <Typography variant="h5" fontWeight={600} gutterBottom>
-                        Professional
+                        {t("home.planPro")}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="baseline">
                         <Typography variant="h3" fontWeight={700}>
                           $49
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          /month
+                          {t("home.monthly")}
                         </Typography>
                       </Stack>
                     </Box>
@@ -332,7 +329,7 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2">
-                          Unlimited reviews/month
+                          {t("home.featureUnlimited")}
                         </Typography>
                       </Box>
                       <Box
@@ -340,7 +337,7 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2" fontWeight={600}>
-                          Monthly summary reports
+                          {t("home.featureMonthlySummary")}
                         </Typography>
                       </Box>
                       <Box
@@ -348,7 +345,7 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2">
-                          Advanced sentiment analysis
+                          {t("home.featureSentiment")}
                         </Typography>
                       </Box>
                       <Box
@@ -356,7 +353,7 @@ export const Home = () => {
                       >
                         <CheckIcon color="success" />
                         <Typography variant="body2">
-                          Priority support
+                          {t("home.featureSupport")}
                         </Typography>
                       </Box>
                     </Stack>
@@ -372,7 +369,7 @@ export const Home = () => {
                         fontSize: "1rem",
                       }}
                     >
-                      Start Free Trial
+                      {t("home.startFreeTrial")}
                     </Button>
                   </Stack>
                 </CardContent>

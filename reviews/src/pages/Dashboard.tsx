@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CompanyCard } from "../components/CompanyCard";
 import { SEO } from "../components/SEO";
 import {
@@ -58,6 +59,7 @@ interface KeywordAnalysis {
 }
 
 export const Dashboard = () => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
@@ -154,17 +156,17 @@ export const Dashboard = () => {
           {/* Header Skeleton */}
           <Box>
             <Typography variant="h4" component="h1" gutterBottom>
-              Dashboard
+              {t("dashboard.title")}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Loading your data...
+              {t("dashboard.loading")}
             </Typography>
           </Box>
 
           {/* Companies Overview Skeleton */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Companies Overview
+              {t("dashboard.companiesOverview")}
             </Typography>
             <Box
               sx={{
@@ -187,7 +189,7 @@ export const Dashboard = () => {
           {/* Keyword Analysis Skeleton */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Keyword Analysis by Category
+              {t("dashboard.keywordAnalysisByCategory")}
             </Typography>
             <Stack spacing={3} sx={{ mt: 3 }}>
               {[1, 2, 3, 4, 5].map((i) => (
@@ -205,7 +207,7 @@ export const Dashboard = () => {
           {/* Recent Reviews Skeleton */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Recent Reviews
+              {t("dashboard.recentReviews")}
             </Typography>
             <Stack spacing={2} sx={{ mt: 2 }}>
               {[1, 2, 3].map((i) => (
@@ -217,10 +219,10 @@ export const Dashboard = () => {
           {/* Top Keywords Skeleton */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Trending Keywords
+              {t("dashboard.trendingKeywords")}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Loading keyword data...
+              {t("dashboard.loadingKeywordData")}
             </Typography>
             <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
@@ -323,11 +325,11 @@ export const Dashboard = () => {
           {/* Keyword Analysis */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Keyword Analysis by Category
+              {t("dashboard.keywordAnalysisByCategory")}
             </Typography>
             {keywordAnalysis.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No keyword data available yet.
+                {t("dashboard.noKeywordData")}
               </Typography>
             ) : (
               <Stack spacing={3} sx={{ mt: 3 }}>
@@ -347,7 +349,7 @@ export const Dashboard = () => {
                         {analysis.category}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {analysis.count} mentions (
+                        {analysis.count} {t("dashboard.mentions")} (
                         {analysis.percentage.toFixed(1)}%)
                       </Typography>
                     </Stack>
@@ -373,12 +375,11 @@ export const Dashboard = () => {
           {/* Recent Reviews */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Recent Reviews
+              {t("dashboard.recentReviews")}
             </Typography>
             {recentReviews.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No reviews yet. Connect your platforms to start collecting
-                reviews.
+                {t("dashboard.noReviews")}
               </Typography>
             ) : (
               <Stack spacing={2} sx={{ mt: 2 }}>
@@ -399,7 +400,7 @@ export const Dashboard = () => {
                               flexWrap="wrap"
                             >
                               <Typography variant="subtitle1" fontWeight="bold">
-                                {review.author_name || "Anonymous"}
+                                {review.author_name || t("dashboard.anonymous")}
                               </Typography>
                               <Chip
                                 label={review.platform_name}
@@ -469,11 +470,11 @@ export const Dashboard = () => {
               Trending Keywords
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Most frequently mentioned terms across all reviews
+              {t("dashboard.mostFrequentlyMentioned")}
             </Typography>
             {topKeywords.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No keywords analyzed yet.
+                {t("dashboard.noKeywordsAnalyzed")}
               </Typography>
             ) : (
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>

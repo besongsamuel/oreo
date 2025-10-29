@@ -29,3 +29,38 @@
 - Always reference theme values instead of hardcoding styles
 - Ensure all components use the theme for consistent look and feel
 - Make the app easily customizable through theme configuration
+
+## String Localization Requirements
+
+**CRITICAL**: Never hardcode user-facing strings in JSX/TSX components.
+
+### Requirements:
+
+1. **All user-facing text MUST use translation keys** via `t()` function
+2. Import `useTranslation` from `react-i18next` in every component/page
+3. Use translation keys from appropriate namespaces (common, auth, dashboard, etc.)
+4. Add missing translation keys to both `en.json` and `fr.json`
+5. Translation key format: `namespace.key` (e.g., `t("dashboard.title")`)
+
+### Pattern:
+
+```tsx
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
+
+<Button>{t("common.save")}</Button>
+<Typography>{t("dashboard.welcome")}</Typography>
+```
+
+### Exceptions (allowed):
+
+- Technical IDs, URLs, route paths
+- Variable names in code logic
+- Error messages that are system/internal only
+
+### For Reviewers:
+
+- Check all components have `useTranslation` import
+- Verify all display strings use `t()` function
+- Ensure keys exist in both language files
