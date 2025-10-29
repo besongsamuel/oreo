@@ -267,31 +267,32 @@ export const Dashboard = () => {
   return (
     <>
       <SEO
-        title="Dashboard - Boresha"
-        description="View your review analytics dashboard. Monitor reviews, track sentiment, and analyze customer feedback from all your business locations."
-        keywords="review dashboard, review analytics, sentiment analysis, customer feedback dashboard"
+        title={t("dashboard.seoTitle")}
+        description={t("dashboard.seoDescription")}
+        keywords={t("dashboard.seoKeywords")}
       />
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Stack spacing={4}>
           {/* Header */}
           <Box>
             <Typography variant="h4" component="h1" gutterBottom>
-              Dashboard
+              {t("dashboard.title")}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Welcome back, {profile?.full_name || profile?.email}!
+              {t("dashboard.welcomeBack", {
+                name: profile?.full_name || profile?.email,
+              })}
             </Typography>
           </Box>
 
           {/* Companies Performance */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Companies Overview
+              {t("dashboard.companiesOverview")}
             </Typography>
             {companyStats.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No companies yet. Visit the Companies page to add your first
-                business.
+                {t("dashboard.noCompanies")}
               </Typography>
             ) : (
               <Box
@@ -467,7 +468,7 @@ export const Dashboard = () => {
           {/* Top Keywords */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Trending Keywords
+              {t("dashboard.trendingKeywords")}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {t("dashboard.mostFrequentlyMentioned")}

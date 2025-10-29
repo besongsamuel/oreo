@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 interface CompanyCardProps {
@@ -35,6 +36,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
   positiveReviews,
   negativeReviews,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -56,8 +58,10 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 {companyName}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {totalLocations} location
-                {totalLocations !== 1 ? "s" : ""}
+                {totalLocations}{" "}
+                {totalLocations !== 1
+                  ? t("dashboard.locations")
+                  : t("dashboard.location")}
               </Typography>
             </Box>
           </Stack>
@@ -71,7 +75,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 {totalReviews}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Reviews
+                {t("companies.reviews")}
               </Typography>
             </Box>
             <Box>
@@ -82,7 +86,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 <StarIcon sx={{ color: "warning.main", fontSize: "1.2rem" }} />
               </Stack>
               <Typography variant="caption" color="text.secondary">
-                Avg Rating
+                {t("companies.avgRating")}
               </Typography>
             </Box>
           </Stack>
@@ -90,13 +94,13 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           {/* Sentiment chips */}
           <Stack direction="row" spacing={1}>
             <Chip
-              label={`${positiveReviews} positive`}
+              label={`${positiveReviews} ${t("companies.positive")}`}
               size="small"
               color="success"
               variant="outlined"
             />
             <Chip
-              label={`${negativeReviews} negative`}
+              label={`${negativeReviews} ${t("companies.negative")}`}
               size="small"
               color="error"
               variant="outlined"
@@ -116,7 +120,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
               fontWeight: 500,
             }}
           >
-            View Details
+            {t("companies.viewDetails")}
           </Button>
         </Stack>
       </CardContent>

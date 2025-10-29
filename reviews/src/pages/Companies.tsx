@@ -34,6 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
@@ -79,6 +80,7 @@ const INDUSTRY_OPTIONS = [
 ];
 
 export const Companies = () => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
