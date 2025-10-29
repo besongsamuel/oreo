@@ -15,6 +15,8 @@ interface Profile {
   monthly_reviews_count: number;
   monthly_reviews_reset_at: string;
   preferred_language: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   created_at: string;
   updated_at: string;
 }

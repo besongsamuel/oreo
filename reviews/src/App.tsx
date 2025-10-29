@@ -15,6 +15,8 @@ import {
 import { CompanyPage } from "./pages/CompanyPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
+import { SubscriptionCancelled } from "./pages/SubscriptionCancelled";
+import { SubscriptionSuccess } from "./pages/SubscriptionSuccess";
 import { SuccessLocation } from "./pages/SuccessLocation";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 import { GoogleCallback } from "./pages/auth/GoogleCallback";
@@ -104,6 +106,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subscription/success"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SubscriptionSuccess />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subscription/cancelled"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SubscriptionCancelled />
               </Layout>
             </ProtectedRoute>
           }

@@ -512,5 +512,29 @@
     "termsOfUse": "Terms of Use",
     "copyright": "© {{year}} {{company}}. All rights reserved.",
     "designedBy": "Designed by {{company}}"
+  },
+  "subscription": {
+    "currentPlan": "Subscription",
+    "plan": "Plan",
+    "free": "Free",
+    "paid": "Professional",
+    "upgrade": "Upgrade to Professional",
+    "cancel": "Cancel Subscription",
+    "confirmCancel": "Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.",
+    "expiresAt": "Expires On",
+    "active": "Active",
+    "success": {
+      "title": "Subscription Activated!",
+      "message": "Thank you for subscribing! Your Professional plan is now active. You can access all premium features immediately."
+    },
+    "cancelled": {
+      "title": "Subscription Cancelled",
+      "message": "Your subscription has been cancelled successfully. You will continue to have access to premium features until the end of your current billing period, after which you will be moved to the Free plan."
+    },
+    "goToProfile": "Go to Profile",
+    "invalidSession": "Invalid session. Please try subscribing again.",
+    "verificationPending": "Subscription is being processed. Please refresh this page in a moment.",
+    "verificationError": "Unable to verify subscription status. Please check your profile.",
+    "verifying": "Verifying your subscription..."
   }
 }

@@ -519,5 +519,29 @@
     "termsOfUse": "Conditions d'utilisation",
     "copyright": "© {{year}} {{company}}. Tous droits réservés.",
     "designedBy": "Conçu par {{company}}"
+  },
+  "subscription": {
+    "currentPlan": "Abonnement",
+    "plan": "Forfait",
+    "free": "Gratuit",
+    "paid": "Professionnel",
+    "upgrade": "Passer au Professionnel",
+    "cancel": "Annuler l'abonnement",
+    "confirmCancel": "Êtes-vous sûr de vouloir annuler votre abonnement ? Vous perdrez l'accès aux fonctionnalités premium à la fin de votre période de facturation.",
+    "expiresAt": "Expire le",
+    "active": "Actif",
+    "success": {
+      "title": "Abonnement activé !",
+      "message": "Merci de vous être abonné ! Votre forfait Professionnel est maintenant actif. Vous pouvez accéder à toutes les fonctionnalités premium immédiatement."
+    },
+    "cancelled": {
+      "title": "Abonnement annulé",
+      "message": "Votre abonnement a été annulé avec succès. Vous continuerez d'avoir accès aux fonctionnalités premium jusqu'à la fin de votre période de facturation en cours, après quoi vous serez transféré au forfait Gratuit."
+    },
+    "goToProfile": "Aller au profil",
+    "invalidSession": "Session invalide. Veuillez réessayer de vous abonner.",
+    "verificationPending": "L'abonnement est en cours de traitement. Veuillez actualiser cette page dans un instant.",
+    "verificationError": "Impossible de vérifier le statut de l'abonnement. Veuillez vérifier votre profil.",
+    "verifying": "Vérification de votre abonnement..."
   }
 }
