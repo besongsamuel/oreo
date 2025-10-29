@@ -10,10 +10,12 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useSupabase } from "../../hooks/useSupabase";
 
 export const Signup = () => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -30,13 +32,13 @@ export const Signup = () => {
     setSuccess(false);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("auth.passwordsDoNotMatch"));
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError(t("auth.passwordTooShort"));
       setLoading(false);
       return;
     }
@@ -55,7 +57,7 @@ export const Signup = () => {
         navigate("/auth/login");
       }, 2000);
     } catch (err: any) {
-      setError(err.message || "An error occurred during signup");
+      setError(err.message || t("auth.createAccountError"));
     } finally {
       setLoading(false);
     }
@@ -75,24 +77,22 @@ export const Signup = () => {
           <Stack spacing={3}>
             <Box>
               <Typography variant="h4" component="h1" gutterBottom>
-                Create Account
+                {t("auth.createAccount")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Sign up to start using Boresha
+                {t("auth.signupTitle")}
               </Typography>
             </Box>
 
             {error && <Alert severity="error">{error}</Alert>}
             {success && (
-              <Alert severity="success">
-                Account created successfully! Redirecting to login...
-              </Alert>
+              <Alert severity="success">{t("auth.createAccount")}</Alert>
             )}
 
             <form onSubmit={handleSignup}>
               <Stack spacing={2}>
                 <TextField
-                  label="Email"
+                  label={t("auth.email")}
                   type="email"
                   fullWidth
                   required
@@ -103,7 +103,7 @@ export const Signup = () => {
                 />
 
                 <TextField
-                  label="Password"
+                  label={t("auth.password")}
                   type="password"
                   fullWidth
                   required
@@ -111,11 +111,11 @@ export const Signup = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading || success}
                   autoComplete="new-password"
-                  helperText="Must be at least 6 characters"
+                  helperText={t("auth.passwordTooShort")}
                 />
 
                 <TextField
-                  label="Confirm Password"
+                  label={t("auth.confirmPassword")}
                   type="password"
                   fullWidth
                   required
@@ -132,17 +132,17 @@ export const Signup = () => {
                   fullWidth
                   disabled={loading || success}
                 >
-                  {loading ? "Creating account..." : "Sign Up"}
+                  {loading ? t("common.loading") : t("auth.signUp")}
                 </Button>
               </Stack>
             </form>
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" component="span">
-                Already have an account?{" "}
+                {t("auth.alreadyHaveAccount")}{" "}
               </Typography>
               <Link component={RouterLink} to="/auth/login" variant="body2">
-                Sign in
+                {t("auth.signIn")}
               </Link>
             </Box>
           </Stack>

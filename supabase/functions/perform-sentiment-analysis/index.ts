@@ -65,6 +65,42 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Processing review ${review.id} from webhook...`);
 
+    // Get company owner's preferred language
+    let preferredLanguage = "fr"; // default to French
+    const { data: locationData } = await supabaseClient
+      .from("platform_connections")
+      .select("location_id")
+      .eq("id", review.platform_connection_id)
+      .single();
+
+    if (locationData?.location_id) {
+      const { data: location } = await supabaseClient
+        .from("locations")
+        .select("company_id")
+        .eq("id", locationData.location_id)
+        .single();
+
+      if (location?.company_id) {
+        const { data: company } = await supabaseClient
+          .from("companies")
+          .select("owner_id")
+          .eq("id", location.company_id)
+          .single();
+
+        if (company?.owner_id) {
+          const { data: ownerProfile } = await supabaseClient
+            .from("profiles")
+            .select("preferred_language")
+            .eq("id", company.owner_id)
+            .single();
+
+          if (ownerProfile?.preferred_language) {
+            preferredLanguage = ownerProfile.preferred_language;
+          }
+        }
+      }
+    }
+
     // Check if review already has sentiment analysis
     const { data: existingAnalysis, error: checkError } = await supabaseClient
       .from("sentiment_analysis")
@@ -96,6 +132,7 @@ Deno.serve(async (req: Request) => {
     const analysisResult = await callOpenAIForAnalysis(
       review.content,
       openaiApiKey,
+      preferredLanguage,
     );
 
     // Insert sentiment analysis
@@ -169,7 +206,14 @@ Deno.serve(async (req: Request) => {
 async function callOpenAIForAnalysis(
   content: string,
   apiKey: string,
+  language: string = "fr",
 ): Promise<EnhancedAnalysisResult> {
+  const languageNames: Record<string, string> = {
+    "en": "English",
+    "fr": "French",
+  };
+  const languageName = languageNames[language] || "French";
+
   const openaiResponse = await fetch(
     "https://api.openai.com/v1/chat/completions",
     {
@@ -189,20 +233,19 @@ async function callOpenAIForAnalysis(
 2. score: number from 1-100 (1=very negative, 50=neutral, 100=very positive)
 3. emotions: array of emoticons representing emotions (optional)
 4. keywords: array of objects with:
-   - text: the keyword/phrase (MUST be 1-2 words maximum, MUST be in English)
+   - text: the keyword/phrase (MUST be 1-2 words maximum, generate in ${languageName})
    - category: one of "service", "food", "ambiance", "price", "quality", "cleanliness", "staff", "other"
    - relevance: number from 0-1 indicating importance
 5. topics: array of objects with:
-   - name: brief topic name (MUST be 1-2 words maximum, MUST be in English, e.g., "Coffee Quality", "Wait Times")
+   - name: brief topic name (MUST be 1-2 words maximum, generate in ${languageName}, e.g., "Coffee Quality", "Wait Times")
    - category: one of "satisfaction", "dissatisfaction", "neutral"
-   - description: brief description of what customers are saying (MUST be in English)
+   - description: brief description of what customers are saying (generate in ${languageName})
    - relevance: number from 0-1
 
 IMPORTANT RULES:
 - All keywords and topic names MUST be at most 2 words
-- All keywords and topics MUST be translated to English, regardless of the review language
-- All text output (keywords, topic names, descriptions) MUST be in English only
-- If the review is in another language, translate all keywords and topics to English for proper aggregation
+- All keywords, topics, and descriptions MUST be generated in ${languageName}
+- The language used for keywords and topics should match the user's preferred language: ${languageName}
 
 Example response:
 {

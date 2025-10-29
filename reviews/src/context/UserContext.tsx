@@ -14,6 +14,7 @@ interface Profile {
   subscription_expires_at: string | null;
   monthly_reviews_count: number;
   monthly_reviews_reset_at: string;
+  preferred_language: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +25,7 @@ interface UserContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  updateLanguage: (language: string) => Promise<void>;
 }
 
 export const UserContext = createContext<UserContextType | undefined>(
@@ -92,12 +94,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateLanguage = async (language: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferred_language: language })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      // Update local profile state
+      if (profile) {
+        setProfile({ ...profile, preferred_language: language });
+      }
+    } catch (error) {
+      console.error("Error updating language:", error);
+    }
+  };
+
   const value = {
     user,
     session,
     profile,
     loading,
     signOut,
+    updateLanguage,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

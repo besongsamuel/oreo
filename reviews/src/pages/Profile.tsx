@@ -6,17 +6,21 @@ import {
   Chip,
   Container,
   Divider,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { useContext, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
 export const Profile = () => {
+  const { t, i18n } = useTranslation();
   const context = useContext(UserContext);
   const user = context?.user;
   const profile = context?.profile;
@@ -25,6 +29,9 @@ export const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [companyName, setCompanyName] = useState(profile?.company_name || "");
+  const [preferredLanguage, setPreferredLanguage] = useState(
+    profile?.preferred_language || "fr"
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -52,6 +59,7 @@ export const Profile = () => {
   const handleEdit = () => {
     setFullName(profile?.full_name || "");
     setCompanyName(profile?.company_name || "");
+    setPreferredLanguage(profile?.preferred_language || "fr");
     setIsEditing(true);
     setError(null);
     setSuccess(false);
@@ -76,10 +84,17 @@ export const Profile = () => {
         .update({
           full_name: fullName,
           company_name: companyName,
+          preferred_language: preferredLanguage,
         })
         .eq("id", user.id);
 
       if (updateError) throw updateError;
+
+      // Update i18next language if language changed
+      if (preferredLanguage !== profile?.preferred_language) {
+        i18n.changeLanguage(preferredLanguage);
+        localStorage.setItem("i18nextLng", preferredLanguage);
+      }
 
       setSuccess(true);
       setIsEditing(false);
@@ -209,6 +224,35 @@ export const Profile = () => {
                     size="small"
                     color="primary"
                   />
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    gutterBottom
+                    display="block"
+                  >
+                    {t("profile.preferredLanguage")}
+                  </Typography>
+                  {isEditing ? (
+                    <Select
+                      fullWidth
+                      value={preferredLanguage}
+                      onChange={(e) => setPreferredLanguage(e.target.value)}
+                      disabled={loading}
+                      size="small"
+                    >
+                      <MenuItem value="en">{t("common.english")}</MenuItem>
+                      <MenuItem value="fr">{t("common.french")}</MenuItem>
+                    </Select>
+                  ) : (
+                    <Typography variant="body1">
+                      {preferredLanguage === "en"
+                        ? t("common.english")
+                        : t("common.french")}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
 

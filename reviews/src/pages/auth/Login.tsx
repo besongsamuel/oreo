@@ -10,10 +10,12 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useSupabase } from "../../hooks/useSupabase";
 
 export const Login = () => {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -41,7 +43,7 @@ export const Login = () => {
         navigate("/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during login");
+      setError(err.message || t("auth.invalidCredentials"));
       setLoading(false);
     }
   };
@@ -60,10 +62,10 @@ export const Login = () => {
           <Stack spacing={3}>
             <Box>
               <Typography variant="h4" component="h1" gutterBottom>
-                Welcome to Boresha
+                {t("auth.welcome")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Sign in to your account to continue
+                {t("auth.loginTitle")}
               </Typography>
             </Box>
 
@@ -72,7 +74,7 @@ export const Login = () => {
             <form onSubmit={handleLogin}>
               <Stack spacing={2}>
                 <TextField
-                  label="Email"
+                  label={t("auth.email")}
                   type="email"
                   fullWidth
                   required
@@ -83,7 +85,7 @@ export const Login = () => {
                 />
 
                 <TextField
-                  label="Password"
+                  label={t("auth.password")}
                   type="password"
                   fullWidth
                   required
@@ -100,7 +102,7 @@ export const Login = () => {
                   fullWidth
                   disabled={loading}
                 >
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? t("common.loading") : t("auth.signIn")}
                 </Button>
               </Stack>
             </form>
@@ -112,15 +114,15 @@ export const Login = () => {
                 variant="body2"
                 sx={{ textAlign: "center" }}
               >
-                Forgot your password?
+                {t("auth.forgotPassword")}
               </Link>
 
               <Box sx={{ textAlign: "center" }}>
                 <Typography variant="body2" component="span">
-                  Don't have an account?{" "}
+                  {t("auth.dontHaveAccount")}{" "}
                 </Typography>
                 <Link component={RouterLink} to="/auth/signup" variant="body2">
-                  Sign up
+                  {t("auth.signUp")}
                 </Link>
               </Box>
             </Stack>

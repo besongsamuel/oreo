@@ -1,4 +1,5 @@
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LanguageIcon from "@mui/icons-material/Language";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import {
@@ -20,18 +21,24 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
 
 export const Header = () => {
+  const { t, i18n } = useTranslation();
   const context = useContext(UserContext);
   const user = context?.user;
   const profile = context?.profile;
   const signOut = context?.signOut;
+  const updateLanguage = context?.updateLanguage;
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [languageAnchor, setLanguageAnchor] = useState<null | HTMLElement>(
+    null
+  );
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -54,6 +61,27 @@ export const Header = () => {
       await signOut();
     }
     navigate("/");
+  };
+
+  const handleLanguageClick = (event: React.MouseEvent<HTMLElement>) => {
+    setLanguageAnchor(event.currentTarget);
+  };
+
+  const handleLanguageClose = () => {
+    setLanguageAnchor(null);
+  };
+
+  const handleLanguageChange = async (language: string) => {
+    handleLanguageClose();
+
+    // Update i18next language
+    i18n.changeLanguage(language);
+    localStorage.setItem("i18nextLng", language);
+
+    // Update profile if user is logged in
+    if (updateLanguage && user) {
+      await updateLanguage(language);
+    }
   };
 
   return (
@@ -126,7 +154,7 @@ export const Header = () => {
                   },
                 }}
               >
-                Dashboard
+                {t("common.dashboard")}
               </Button>
               <Button
                 onClick={() => navigate("/companies")}
@@ -144,20 +172,63 @@ export const Header = () => {
                   },
                 }}
               >
-                Companies
+                {t("common.companies")}
               </Button>
             </Box>
           )}
 
           {/* User Avatar or Login Button */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {/* Language Switcher */}
+            <IconButton
+              size="small"
+              onClick={handleLanguageClick}
+              color="inherit"
+              sx={{
+                p: 1,
+              }}
+              title={t("common.language")}
+            >
+              <LanguageIcon fontSize="small" />
+            </IconButton>
+
+            {/* Language Menu */}
+            <Menu
+              anchorEl={languageAnchor}
+              open={Boolean(languageAnchor)}
+              onClose={handleLanguageClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+            >
+              <MenuItem
+                onClick={() => handleLanguageChange("en")}
+                selected={i18n.language === "en"}
+              >
+                <Typography variant="body2">{t("common.english")}</Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleLanguageChange("fr")}
+                selected={i18n.language === "fr"}
+              >
+                <Typography variant="body2">{t("common.french")}</Typography>
+              </MenuItem>
+            </Menu>
+
             {user ? (
               <>
                 {/* Subscription Tier Badge */}
                 {profile?.subscription_tier && (
                   <Chip
                     label={
-                      profile.subscription_tier === "paid" ? "Pro" : "Free"
+                      profile.subscription_tier === "paid"
+                        ? t("header.pro")
+                        : t("header.free")
                     }
                     size="small"
                     color={
@@ -177,7 +248,7 @@ export const Header = () => {
                 {/* Admin Role Badge */}
                 {profile?.role === "admin" && (
                   <Chip
-                    label="Admin"
+                    label={t("header.admin")}
                     size="small"
                     color="primary"
                     variant="filled"
@@ -223,7 +294,7 @@ export const Header = () => {
                   fontSize: "0.875rem",
                 }}
               >
-                Login
+                {t("common.login")}
               </Button>
             )}
 
@@ -250,7 +321,7 @@ export const Header = () => {
             >
               <Box sx={{ px: 2.5, py: 2 }}>
                 <Typography variant="body2" fontWeight={600}>
-                  {profile?.full_name || "User"}
+                  {profile?.full_name || t("common.name")}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -277,7 +348,7 @@ export const Header = () => {
                   sx={{ mr: 2, fontSize: "1.25rem" }}
                   color="action"
                 />
-                <Typography variant="body2">Profile</Typography>
+                <Typography variant="body2">{t("common.profile")}</Typography>
               </MenuItem>
 
               <MenuItem
@@ -294,7 +365,7 @@ export const Header = () => {
                   sx={{ mr: 2, fontSize: "1.25rem" }}
                   color="action"
                 />
-                <Typography variant="body2">Sign Out</Typography>
+                <Typography variant="body2">{t("common.signOut")}</Typography>
               </MenuItem>
             </Menu>
           </Box>
@@ -315,7 +386,7 @@ export const Header = () => {
       >
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Menu
+            {t("header.menu")}
           </Typography>
           <List>
             <ListItemButton
@@ -329,7 +400,7 @@ export const Header = () => {
                 mb: 0.5,
               }}
             >
-              <ListItemText primary="Dashboard" />
+              <ListItemText primary={t("common.dashboard")} />
             </ListItemButton>
             <ListItemButton
               selected={isActive("/companies")}
@@ -342,7 +413,7 @@ export const Header = () => {
                 mb: 0.5,
               }}
             >
-              <ListItemText primary="Companies" />
+              <ListItemText primary={t("common.companies")} />
             </ListItemButton>
             <Divider sx={{ my: 2 }} />
             <ListItemButton
@@ -356,7 +427,7 @@ export const Header = () => {
               }}
             >
               <AccountCircleIcon sx={{ mr: 2 }} fontSize="small" />
-              <ListItemText primary="Profile" />
+              <ListItemText primary={t("common.profile")} />
             </ListItemButton>
             <ListItemButton
               onClick={async () => {
@@ -371,7 +442,7 @@ export const Header = () => {
               }}
             >
               <LogoutIcon sx={{ mr: 2 }} fontSize="small" />
-              <ListItemText primary="Sign Out" />
+              <ListItemText primary={t("common.signOut")} />
             </ListItemButton>
           </List>
         </Box>

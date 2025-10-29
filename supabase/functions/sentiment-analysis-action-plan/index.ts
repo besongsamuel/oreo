@@ -238,6 +238,26 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        // Get company owner's preferred language
+        let preferredLanguage = "fr"; // default to French
+        const { data: company } = await supabaseClient
+            .from("companies")
+            .select("owner_id")
+            .eq("id", companyId)
+            .single();
+
+        if (company?.owner_id) {
+            const { data: ownerProfile } = await supabaseClient
+                .from("profiles")
+                .select("preferred_language")
+                .eq("id", company.owner_id)
+                .single();
+
+            if (ownerProfile?.preferred_language) {
+                preferredLanguage = ownerProfile.preferred_language;
+            }
+        }
+
         // Generate action plan using OpenAI
         const reviewsText = filteredReviews
             .map((r) => `${r.title || ""}: ${r.content}`)
@@ -247,6 +267,7 @@ Deno.serve(async (req: Request) => {
             reviewsText,
             openaiApiKey,
             filteredReviews.length,
+            preferredLanguage,
         );
 
         return new Response(
@@ -293,7 +314,13 @@ async function generateActionPlan(
     reviewsText: string,
     apiKey: string,
     reviewCount: number,
+    language: string = "fr",
 ): Promise<string> {
+    const languageNames: Record<string, string> = {
+        "en": "English",
+        "fr": "French",
+    };
+    const languageName = languageNames[language] || "French";
     const openaiResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",
         {
@@ -329,7 +356,8 @@ Ranked list of the most important issues to address, with specific recommendatio
 Easy, low-cost improvements that can be implemented immediately.
 
 Keep the tone professional and actionable. Be specific with recommendations.
-Format the response using clear markdown headings and bullet points.`,
+Format the response using clear markdown headings and bullet points.
+IMPORTANT: Generate the entire action plan in ${languageName}.`,
                     },
                     {
                         role: "user",

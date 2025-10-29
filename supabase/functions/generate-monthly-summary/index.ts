@@ -216,6 +216,26 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Found ${reviews.length} reviews for ${year}-${month}`);
 
+        // Get company owner's preferred language
+        let preferredLanguage = "fr"; // default to French
+        const { data: company } = await supabaseClient
+            .from("companies")
+            .select("owner_id")
+            .eq("id", company_id)
+            .single();
+
+        if (company?.owner_id) {
+            const { data: ownerProfile } = await supabaseClient
+                .from("profiles")
+                .select("preferred_language")
+                .eq("id", company.owner_id)
+                .single();
+
+            if (ownerProfile?.preferred_language) {
+                preferredLanguage = ownerProfile.preferred_language;
+            }
+        }
+
         // Check if summary already exists and when it was last generated
         const monthYear = `${year}-${String(month).padStart(2, "0")}`;
         const { data: existingSummary } = await supabaseClient
@@ -292,6 +312,7 @@ Deno.serve(async (req: Request) => {
             reviewTexts,
             openaiApiKey,
             previousMonthSummary,
+            preferredLanguage,
         );
 
         // Calculate statistics
@@ -400,9 +421,16 @@ async function callOpenAIForSummary(
     reviewTexts: string,
     apiKey: string,
     previousMonthSummary?: PreviousMonthSummary | null,
+    language: string = "fr",
 ): Promise<string> {
+    const languageNames: Record<string, string> = {
+        "en": "English",
+        "fr": "French",
+    };
+    const languageName = languageNames[language] || "French";
+
     let prompt =
-        `Based on the following customer reviews, generate a concise 4-6 line summary of customer sentiment for this month. Focus on key themes, common feedback, and overall customer experience. Be objective and professional.`;
+        `Generate a concise 4-6 line summary of customer sentiment for this month based on the following customer reviews. Focus on key themes, common feedback, and overall customer experience. Be objective and professional. IMPORTANT: Generate the summary in ${languageName}.`;
 
     if (previousMonthSummary) {
         prompt +=
@@ -436,7 +464,9 @@ Summary:`;
                     {
                         role: "system",
                         content:
-                            "You are a helpful assistant that analyzes customer reviews and provides concise, professional summaries.",
+                            `You are a helpful assistant that analyzes customer reviews and provides concise, professional summaries in ${
+                                languageNames[language] || "French"
+                            }.`,
                     },
                     {
                         role: "user",

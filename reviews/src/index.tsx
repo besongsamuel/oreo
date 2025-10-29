@@ -5,6 +5,7 @@ import ReactDOM from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App";
 import { UserProvider } from "./context/UserContext";
+import "./i18n/config";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import { theme } from "./theme/theme";
