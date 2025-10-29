@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import { useSupabase } from "../hooks/useSupabase";
@@ -37,6 +38,7 @@ interface LocationFormData {
 }
 
 export const AddLocation = () => {
+  const { t } = useTranslation();
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const supabase = useSupabase();
@@ -140,7 +142,7 @@ export const AddLocation = () => {
     e.preventDefault();
 
     if (!companyId) {
-      setError("Company ID not found");
+      setError(t("location.companyIdNotFound"));
       return;
     }
 
@@ -151,7 +153,7 @@ export const AddLocation = () => {
       !formData.city ||
       !formData.country
     ) {
-      setError("Please fill in all required fields");
+      setError(t("location.pleaseFillRequired"));
       return;
     }
 
@@ -180,7 +182,7 @@ export const AddLocation = () => {
       navigate(`/companies/${companyId}/locations/success`);
     } catch (err: any) {
       console.error("Error creating location:", err);
-      setError(err.message || "Failed to create location");
+      setError(err.message || t("location.failedCreate"));
     } finally {
       setLoading(false);
     }
@@ -193,9 +195,9 @@ export const AddLocation = () => {
   return (
     <>
       <SEO
-        title="Add Location - Boresha"
-        description="Add a new location to your company for review tracking and analysis."
-        keywords="add location, business location, company location, review tracking"
+        title={t("location.addLocationSeoTitle")}
+        description={t("location.addLocationSeoDescription")}
+        keywords={t("location.addLocationSeoKeywords")}
       />
       <Container maxWidth="md" sx={{ py: 6 }}>
         <Card>
@@ -208,14 +210,14 @@ export const AddLocation = () => {
                   onClick={handleBack}
                   sx={{ textTransform: "none" }}
                 >
-                  Back
+                  {t("companyPage.back")}
                 </Button>
                 <Box>
                   <Typography variant="h4" component="h1" gutterBottom>
-                    Add Location
+                    {t("location.addLocationTitle")}
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
-                    Add a new location to track reviews and customer feedback
+                    {t("location.addLocationDescription")}
                   </Typography>
                 </Box>
               </Stack>
@@ -227,44 +229,44 @@ export const AddLocation = () => {
                 <Stack spacing={3}>
                   {/* Location Name */}
                   <TextField
-                    label="Location Name"
+                    label={t("location.locationName")}
                     required
                     fullWidth
                     value={formData.name}
                     onChange={handleInputChange("name")}
-                    placeholder="e.g., Downtown Store, Main Office"
+                    placeholder={t("location.locationNamePlaceholder")}
                     disabled={loading}
                   />
 
                   {/* Address with Autocomplete */}
                   <TextField
                     inputRef={autocompleteRef}
-                    label="Street Address"
+                    label={t("location.streetAddress")}
                     required
                     fullWidth
                     value={formData.address}
                     onChange={handleInputChange("address")}
-                    placeholder="Start typing an address..."
+                    placeholder={t("location.addressPlaceholder")}
                     disabled={loading}
                   />
 
                   {/* City and State */}
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <TextField
-                      label="City"
+                      label={t("location.city")}
                       required
                       fullWidth
                       value={formData.city}
                       onChange={handleInputChange("city")}
-                      placeholder="New York"
+                      placeholder={t("location.cityPlaceholder")}
                       disabled={loading}
                     />
                     <TextField
-                      label="State/Province"
+                      label={t("location.stateProvince")}
                       fullWidth
                       value={formData.state}
                       onChange={handleInputChange("state")}
-                      placeholder="NY"
+                      placeholder={t("location.statePlaceholder")}
                       disabled={loading}
                     />
                   </Stack>
@@ -272,20 +274,20 @@ export const AddLocation = () => {
                   {/* Country and Postal Code */}
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <TextField
-                      label="Country"
+                      label={t("location.country")}
                       required
                       fullWidth
                       value={formData.country}
                       onChange={handleInputChange("country")}
-                      placeholder="United States"
+                      placeholder={t("location.countryPlaceholder")}
                       disabled={loading}
                     />
                     <TextField
-                      label="Postal Code"
+                      label={t("location.postalCode")}
                       fullWidth
                       value={formData.postal_code}
                       onChange={handleInputChange("postal_code")}
-                      placeholder="10001"
+                      placeholder={t("location.postalCodePlaceholder")}
                       disabled={loading}
                     />
                   </Stack>
@@ -293,20 +295,20 @@ export const AddLocation = () => {
                   {/* Contact Information */}
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <TextField
-                      label="Phone Number"
+                      label={t("location.phoneNumber")}
                       fullWidth
                       value={formData.phone}
                       onChange={handleInputChange("phone")}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={t("location.phonePlaceholder")}
                       disabled={loading}
                     />
                     <TextField
-                      label="Email"
+                      label={t("profile.email")}
                       fullWidth
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange("email")}
-                      placeholder="location@company.com"
+                      placeholder={t("location.emailPlaceholder")}
                       disabled={loading}
                     />
                   </Stack>
@@ -319,7 +321,7 @@ export const AddLocation = () => {
                       disabled={loading}
                       sx={{ textTransform: "none" }}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       type="submit"
@@ -338,7 +340,9 @@ export const AddLocation = () => {
                         px: 4,
                       }}
                     >
-                      {loading ? "Creating..." : "Create Location"}
+                      {loading
+                        ? t("location.creating")
+                        : t("location.createLocation")}
                     </Button>
                   </Stack>
                 </Stack>

@@ -54,10 +54,10 @@ export const Profile = () => {
         <Stack spacing={3}>
           <Box>
             <Typography variant="h4" gutterBottom>
-              Profile Settings
+              {t("profile.title")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Loading your profile...
+              {t("profile.loading")}
             </Typography>
           </Box>
           <ProfileSectionSkeleton />
@@ -115,7 +115,7 @@ export const Profile = () => {
       // Profile will automatically refresh via UserContext
     } catch (err: any) {
       console.error("Error updating profile:", err);
-      setError(err.message || "Failed to update profile");
+      setError(err.message || t("profile.failedUpdate"));
     } finally {
       setLoading(false);
     }
@@ -225,10 +225,10 @@ export const Profile = () => {
       <Stack spacing={3}>
         <Box>
           <Typography variant="h4" gutterBottom>
-            Profile Settings
+            {t("profile.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage your account information and preferences
+            {t("profile.subtitle")}
           </Typography>
         </Box>
 
@@ -241,7 +241,7 @@ export const Profile = () => {
         {success && (
           <Paper sx={{ p: 2, bgcolor: "success.light", color: "success.dark" }}>
             <Typography variant="body2">
-              Profile updated successfully!
+              {t("profile.profileUpdated")}
             </Typography>
           </Paper>
         )}
@@ -251,7 +251,7 @@ export const Profile = () => {
             <Stack spacing={3}>
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Personal Information
+                  {t("profile.personalInfo")}
                 </Typography>
                 <Divider />
               </Box>
@@ -264,7 +264,7 @@ export const Profile = () => {
                     gutterBottom
                     display="block"
                   >
-                    Full Name
+                    {t("profile.fullName")}
                   </Typography>
                   {isEditing ? (
                     <TextField
@@ -276,7 +276,7 @@ export const Profile = () => {
                     />
                   ) : (
                     <Typography variant="body1">
-                      {profile?.full_name || "Not set"}
+                      {profile?.full_name || t("profile.notSet")}
                     </Typography>
                   )}
                 </Box>
@@ -288,11 +288,11 @@ export const Profile = () => {
                     gutterBottom
                     display="block"
                   >
-                    Email
+                    {t("profile.email")}
                   </Typography>
                   <Typography variant="body1">{user?.email}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Email cannot be changed
+                    {t("profile.emailCannotChange")}
                   </Typography>
                 </Box>
 
@@ -303,7 +303,7 @@ export const Profile = () => {
                     gutterBottom
                     display="block"
                   >
-                    Company Name
+                    {t("profile.companyName")}
                   </Typography>
                   {isEditing ? (
                     <TextField
@@ -315,7 +315,7 @@ export const Profile = () => {
                     />
                   ) : (
                     <Typography variant="body1">
-                      {profile?.company_name || "Not set"}
+                      {profile?.company_name || t("profile.notSet")}
                     </Typography>
                   )}
                 </Box>
@@ -327,7 +327,7 @@ export const Profile = () => {
                     gutterBottom
                     display="block"
                   >
-                    Role
+                    {t("profile.role")}
                   </Typography>
                   <Chip
                     label={profile?.role || "user"}
@@ -374,19 +374,19 @@ export const Profile = () => {
                       onClick={handleCancel}
                       disabled={loading}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       variant="contained"
                       onClick={handleSave}
                       disabled={loading}
                     >
-                      {loading ? "Saving..." : "Save Changes"}
+                      {loading ? t("profile.saving") : t("profile.saveChanges")}
                     </Button>
                   </>
                 ) : (
                   <Button variant="contained" onClick={handleEdit}>
-                    Edit Profile
+                    {t("profile.editProfile")}
                   </Button>
                 )}
               </Box>
@@ -584,7 +584,7 @@ export const Profile = () => {
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Account Details
+                  {t("profile.accountDetails")}
                 </Typography>
                 <Divider />
               </Box>
@@ -595,7 +595,7 @@ export const Profile = () => {
                   color="text.secondary"
                   display="block"
                 >
-                  User ID
+                  {t("profile.userId")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -612,16 +612,19 @@ export const Profile = () => {
                   color="text.secondary"
                   display="block"
                 >
-                  Account Created
+                  {t("profile.accountCreated")}
                 </Typography>
                 <Typography variant="body2">
                   {user?.created_at
-                    ? new Date(user.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
-                    : "Unknown"}
+                    ? new Date(user.created_at).toLocaleDateString(
+                        i18n.language,
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )
+                    : t("profile.unknown")}
                 </Typography>
               </Box>
             </Stack>
