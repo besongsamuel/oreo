@@ -1,3 +1,4 @@
+import { Check as CheckIcon, Star as StarIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -393,43 +394,129 @@ export const Profile = () => {
           </CardContent>
         </Card>
 
-        <Card elevation={2}>
-          <CardContent>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  {t("subscription.currentPlan")}
-                </Typography>
-                <Divider />
-              </Box>
-
-              <Stack spacing={2}>
+        {profile?.subscription_tier === "free" ? (
+          <Card
+            elevation={4}
+            sx={{
+              background:
+                "linear-gradient(135deg, rgba(0, 113, 227, 0.05) 0%, rgba(0, 113, 227, 0.02) 100%)",
+              border: "2px solid",
+              borderColor: "primary.main",
+              borderRadius: 3,
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+              <Stack spacing={3}>
                 <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    gutterBottom
-                    display="block"
-                  >
-                    {t("subscription.plan")}
+                  <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                    <StarIcon sx={{ color: "primary.main", fontSize: 28 }} />
+                    <Typography variant="h5" fontWeight={700}>
+                      {t("subscription.upgradeToPro")}
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("subscription.unlockFeatures")}
                   </Typography>
-                  <Chip
-                    label={
-                      profile?.subscription_tier === "paid"
-                        ? t("subscription.paid")
-                        : t("subscription.free")
-                    }
-                    size="small"
-                    color={
-                      profile?.subscription_tier === "paid"
-                        ? "success"
-                        : "default"
-                    }
-                  />
                 </Box>
 
-                {profile?.subscription_tier === "paid" &&
-                  profile?.subscription_expires_at && (
+                <Stack direction="row" alignItems="baseline" spacing={1}>
+                  <Typography
+                    variant="h3"
+                    fontWeight={700}
+                    color="primary.main"
+                  >
+                    $49
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    {t("subscription.perMonth")}
+                  </Typography>
+                </Stack>
+
+                <Stack spacing={1.5} sx={{ mt: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckIcon sx={{ color: "success.main", fontSize: 20 }} />
+                    <Typography variant="body2">
+                      {t("subscription.benefitUnlimited")}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckIcon sx={{ color: "success.main", fontSize: 20 }} />
+                    <Typography variant="body2">
+                      {t("subscription.benefitMonthlySummary")}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckIcon sx={{ color: "success.main", fontSize: 20 }} />
+                    <Typography variant="body2">
+                      {t("subscription.benefitAdvancedSentiment")}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckIcon sx={{ color: "success.main", fontSize: 20 }} />
+                    <Typography variant="body2">
+                      {t("subscription.benefitPrioritySupport")}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Button
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  onClick={handleUpgrade}
+                  disabled={subscriptionLoading}
+                  sx={{
+                    mt: 3,
+                    py: 1.5,
+                    borderRadius: 980,
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    background:
+                      "linear-gradient(135deg, #0071e3 0%, #0051a0 100%)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #0051a0 0%, #003d7a 100%)",
+                    },
+                  }}
+                >
+                  {subscriptionLoading
+                    ? t("common.loading")
+                    : t("subscription.upgradeNow")}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card elevation={2}>
+            <CardContent>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    {t("subscription.currentPlan")}
+                  </Typography>
+                  <Divider />
+                </Box>
+
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      gutterBottom
+                      display="block"
+                    >
+                      {t("subscription.plan")}
+                    </Typography>
+                    <Chip
+                      label={t("subscription.paid")}
+                      size="small"
+                      color="success"
+                      icon={<StarIcon />}
+                    />
+                  </Box>
+
+                  {profile?.subscription_expires_at && (
                     <Box>
                       <Typography
                         variant="caption"
@@ -451,35 +538,22 @@ export const Profile = () => {
                     </Box>
                   )}
 
-                <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-                  {profile?.subscription_tier === "free" ? (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleUpgrade}
-                      disabled={subscriptionLoading}
-                    >
-                      {subscriptionLoading
-                        ? t("common.loading")
-                        : t("subscription.upgrade")}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => setCancelDialogOpen(true)}
-                      disabled={subscriptionLoading}
-                    >
-                      {subscriptionLoading
-                        ? t("common.loading")
-                        : t("subscription.cancel")}
-                    </Button>
-                  )}
-                </Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setCancelDialogOpen(true)}
+                    disabled={subscriptionLoading}
+                    sx={{ mt: 2 }}
+                  >
+                    {subscriptionLoading
+                      ? t("common.loading")
+                      : t("subscription.cancel")}
+                  </Button>
+                </Stack>
               </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Dialog
           open={cancelDialogOpen}
