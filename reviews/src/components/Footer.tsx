@@ -11,9 +11,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { Link as RouterLink } from "react-router-dom";
 
 export const Footer = () => {
+  const { t } = useTranslation();
   return (
     <Box
       component="footer"
@@ -105,7 +107,7 @@ export const Footer = () => {
                 },
               }}
             >
-              Privacy Policy
+              {t("footer.privacyPolicy")}
             </Link>
             <Link
               component={RouterLink}
@@ -120,7 +122,7 @@ export const Footer = () => {
                 },
               }}
             >
-              Terms of Use
+              {t("footer.termsOfUse")}
             </Link>
           </Box>
 
@@ -140,15 +142,14 @@ export const Footer = () => {
               component="div"
               sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}
             >
-              © {new Date().getFullYear()}
-              <Box component="span" sx={{ fontWeight: 500 }}>
-                Boresha
-              </Box>
-              . All rights reserved.
+              {t("footer.copyright", {
+                year: new Date().getFullYear(),
+                company: "Boresha",
+              })}
             </Typography>
 
             <Typography variant="body2" color="text.secondary">
-              Designed by{" "}
+              {t("footer.designedBy", { company: "Aftermath Technologies" })}{" "}
               <Link
                 href="https://www.aftermathtechnologies.com"
                 target="_blank"

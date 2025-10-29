@@ -34,6 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CompanyHeader,
@@ -141,6 +142,7 @@ interface Topic {
 
 export const CompanyPage = () => {
   const { companyId } = useParams<{ companyId: string }>();
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
@@ -1554,13 +1556,13 @@ export const CompanyPage = () => {
               startIcon={<ArrowBackIcon />}
               onClick={() => navigate("/dashboard")}
             >
-              Back to Dashboard
+              {t("companyPage.backToDashboard")}
             </Button>
           </Box>
 
           <Box>
             <Typography variant="h4" component="h1" gutterBottom>
-              Loading company data...
+              {t("companyPage.loadingCompanyData")}
             </Typography>
           </Box>
 
@@ -1582,7 +1584,7 @@ export const CompanyPage = () => {
 
           <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Typography variant="h6" gutterBottom>
-              Recent Reviews
+              {t("companyPage.recentReviews")}
             </Typography>
             <Stack spacing={2} sx={{ mt: 2 }}>
               {[1, 2, 3].map((i) => (
@@ -1606,9 +1608,11 @@ export const CompanyPage = () => {
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/dashboard")}
           >
-            Back to Dashboard
+            {t("companyPage.backToDashboard")}
           </Button>
-          <Typography variant="h5">Company not found</Typography>
+          <Typography variant="h5">
+            {t("companyPage.companyNotFound")}
+          </Typography>
         </Stack>
       </Container>
     );
@@ -1617,13 +1621,12 @@ export const CompanyPage = () => {
   return (
     <>
       <SEO
-        title={`${company.name} - Review Analytics | Boresha`}
-        description={`View detailed review analytics for ${company.name}. Track sentiment, ratings, keywords, and customer feedback across all locations and platforms.`}
-        keywords={`${
-          company.name
-        } reviews, review analytics, customer feedback, sentiment analysis, ${
-          company.industry || "business"
-        } reviews`}
+        title={t("companyPage.seoTitle", { company: company.name })}
+        description={t("companyPage.seoDescription", { company: company.name })}
+        keywords={t("companyPage.seoKeywords", {
+          company: company.name,
+          industry: company.industry || "business",
+        })}
       />
       <Container
         maxWidth="xl"
@@ -1644,13 +1647,13 @@ export const CompanyPage = () => {
                 component="span"
                 sx={{ display: { xs: "none", sm: "inline" } }}
               >
-                Back to Dashboard
+                {t("companyPage.backToDashboard")}
               </Box>
               <Box
                 component="span"
                 sx={{ display: { xs: "inline", sm: "none" } }}
               >
-                Back
+                {t("companyPage.back")}
               </Box>
             </Button>
 
@@ -1660,7 +1663,7 @@ export const CompanyPage = () => {
               disabled={refreshing}
               variant="outlined"
             >
-              Refresh
+              {t("companyPage.refresh")}
             </Button>
           </Stack>
 
@@ -1749,11 +1752,10 @@ export const CompanyPage = () => {
               >
                 <Box>
                   <Typography variant="h6" gutterBottom fontWeight={500}>
-                    Data Filters
+                    {t("companyPage.dataFilters")}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Filter all data on this page by location, date, keyword,
-                    rating, and topic
+                    {t("companyPage.dataFiltersDescription")}
                   </Typography>
                 </Box>
                 {(filterLocation !== "all" ||
@@ -1771,7 +1773,7 @@ export const CompanyPage = () => {
                       fontWeight: 500,
                     }}
                   >
-                    Clear all
+                    {t("companyPage.clearAll")}
                   </Button>
                 )}
               </Stack>
@@ -1790,16 +1792,18 @@ export const CompanyPage = () => {
                 {/* Location Filter */}
                 <FormControl fullWidth size="small">
                   <InputLabel id="page-location-filter-label">
-                    Location
+                    {t("companyPage.allLocations")}
                   </InputLabel>
                   <Select
                     labelId="page-location-filter-label"
                     value={filterLocation}
-                    label="Location"
+                    label={t("companyPage.allLocations")}
                     onChange={(e) => setFilterLocation(e.target.value)}
                     sx={{ bgcolor: "background.paper" }}
                   >
-                    <MenuItem value="all">All Locations</MenuItem>
+                    <MenuItem value="all">
+                      {t("companyPage.allLocations")}
+                    </MenuItem>
                     <Divider />
                     {uniqueLocations.map((location) => (
                       <MenuItem key={location} value={location}>
@@ -1811,7 +1815,7 @@ export const CompanyPage = () => {
 
                 {/* Start Date Filter */}
                 <TextField
-                  label="From Date"
+                  label={t("companyPage.fromDate")}
                   type="date"
                   size="small"
                   value={filterStartDate}
@@ -1824,7 +1828,7 @@ export const CompanyPage = () => {
 
                 {/* End Date Filter */}
                 <TextField
-                  label="To Date"
+                  label={t("companyPage.toDate")}
                   type="date"
                   size="small"
                   value={filterEndDate}
@@ -1837,15 +1841,19 @@ export const CompanyPage = () => {
 
                 {/* Keyword Filter */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="keyword-filter-label">Keyword</InputLabel>
+                  <InputLabel id="keyword-filter-label">
+                    {t("companyPage.keyword")}
+                  </InputLabel>
                   <Select
                     labelId="keyword-filter-label"
                     value={selectedKeyword}
-                    label="Keyword"
+                    label={t("companyPage.keyword")}
                     onChange={(e) => setSelectedKeyword(e.target.value)}
                     sx={{ bgcolor: "background.paper" }}
                   >
-                    <MenuItem value="all">All Keywords</MenuItem>
+                    <MenuItem value="all">
+                      {t("companyPage.allKeywords")}
+                    </MenuItem>
                     {topKeywordsForFilter.map((keyword) => (
                       <MenuItem
                         key={keyword.keyword_text}
@@ -1859,34 +1867,42 @@ export const CompanyPage = () => {
 
                 {/* Rating Filter */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="rating-filter-label">Rating</InputLabel>
+                  <InputLabel id="rating-filter-label">
+                    {t("companyPage.rating")}
+                  </InputLabel>
                   <Select
                     labelId="rating-filter-label"
                     value={selectedRating}
-                    label="Rating"
+                    label={t("companyPage.rating")}
                     onChange={(e) => setSelectedRating(e.target.value)}
                     sx={{ bgcolor: "background.paper" }}
                   >
-                    <MenuItem value="all">All Ratings</MenuItem>
-                    <MenuItem value="5">5 stars</MenuItem>
-                    <MenuItem value="4">4 stars</MenuItem>
-                    <MenuItem value="3">3 stars</MenuItem>
-                    <MenuItem value="2">2 stars</MenuItem>
-                    <MenuItem value="1">1 star</MenuItem>
+                    <MenuItem value="all">
+                      {t("companyPage.allRatings")}
+                    </MenuItem>
+                    <MenuItem value="5">5 {t("companyPage.stars")}</MenuItem>
+                    <MenuItem value="4">4 {t("companyPage.stars")}</MenuItem>
+                    <MenuItem value="3">3 {t("companyPage.stars")}</MenuItem>
+                    <MenuItem value="2">2 {t("companyPage.stars")}</MenuItem>
+                    <MenuItem value="1">1 {t("companyPage.star")}</MenuItem>
                   </Select>
                 </FormControl>
 
                 {/* Topic Filter */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="topic-filter-label">Topic</InputLabel>
+                  <InputLabel id="topic-filter-label">
+                    {t("companyPage.topic")}
+                  </InputLabel>
                   <Select
                     labelId="topic-filter-label"
                     value={selectedTopic}
-                    label="Topic"
+                    label={t("companyPage.topic")}
                     onChange={(e) => setSelectedTopic(e.target.value)}
                     sx={{ bgcolor: "background.paper" }}
                   >
-                    <MenuItem value="all">All Topics</MenuItem>
+                    <MenuItem value="all">
+                      {t("companyPage.allTopics")}
+                    </MenuItem>
                     {topics.map((topic) => (
                       <MenuItem key={topic.id} value={topic.name}>
                         {topic.name} ({topic.occurrence_count})
@@ -1914,7 +1930,7 @@ export const CompanyPage = () => {
                     color="text.secondary"
                     sx={{ mr: 0.5 }}
                   >
-                    Active:
+                    {t("companyPage.active")}
                   </Typography>
                   {filterLocation !== "all" && (
                     <Chip
@@ -1942,7 +1958,9 @@ export const CompanyPage = () => {
                   )}
                   {selectedKeyword !== "all" && (
                     <Chip
-                      label={`Keyword: ${selectedKeyword}`}
+                      label={t("companyPage.keywordLabel", {
+                        keyword: selectedKeyword,
+                      })}
                       size="small"
                       variant="outlined"
                       onDelete={() => setSelectedKeyword("all")}
@@ -1950,7 +1968,10 @@ export const CompanyPage = () => {
                   )}
                   {selectedRating !== "all" && (
                     <Chip
-                      label={`${selectedRating} stars`}
+                      label={t("companyPage.starsLabel", {
+                        rating: selectedRating,
+                        stars: t("companyPage.stars"),
+                      })}
                       size="small"
                       variant="outlined"
                       onDelete={() => setSelectedRating("all")}
@@ -1958,7 +1979,9 @@ export const CompanyPage = () => {
                   )}
                   {selectedTopic !== "all" && (
                     <Chip
-                      label={`Topic: ${selectedTopic}`}
+                      label={t("companyPage.topicLabel", {
+                        topic: selectedTopic,
+                      })}
                       size="small"
                       variant="outlined"
                       onDelete={() => setSelectedTopic("all")}
@@ -1989,23 +2012,23 @@ export const CompanyPage = () => {
             }}
           >
             <StatCardWithTrend
-              title="Total Reviews"
+              title={t("companyPage.totalReviews")}
               value={company.total_reviews}
               color="primary.main"
             />
             <StatCardWithTrend
-              title="Average Rating"
+              title={t("companyPage.averageRating")}
               value={`${company.average_rating.toFixed(1)}`}
               icon={<StarIcon />}
               color="warning.main"
             />
             <StatCardWithTrend
-              title="Positive Reviews"
+              title={t("companyPage.positiveReviews")}
               value={company.positive_reviews}
               color="success.main"
             />
             <StatCardWithTrend
-              title="Negative Reviews"
+              title={t("companyPage.negativeReviews")}
               value={company.negative_reviews}
               color="error.main"
             />
@@ -2062,10 +2085,10 @@ export const CompanyPage = () => {
                 >
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
-                      Topics
+                      {t("companyPage.topics")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Common themes discussed in reviews
+                      {t("companyPage.topicsDescription")}
                     </Typography>
                   </Box>
                   {topics.length > 6 && (
@@ -2082,8 +2105,8 @@ export const CompanyPage = () => {
                       }}
                     >
                       {showAllTopics
-                        ? "Show Less"
-                        : `Show All (${topics.length})`}
+                        ? t("companyPage.showLess")
+                        : t("companyPage.showAll", { count: topics.length })}
                     </Button>
                   )}
                 </Stack>
@@ -2168,13 +2191,13 @@ export const CompanyPage = () => {
                                   variant="body2"
                                   color="text.secondary"
                                 >
-                                  Mentioned in
+                                  {t("companyPage.mentionedIn")}
                                 </Typography>
                                 <Typography variant="body2" fontWeight={600}>
                                   {topic.occurrence_count}{" "}
                                   {topic.occurrence_count === 1
-                                    ? "review"
-                                    : "reviews"}
+                                    ? t("companyPage.review")
+                                    : t("companyPage.reviews")}
                                 </Typography>
                               </Stack>
                             </Stack>
@@ -2192,7 +2215,7 @@ export const CompanyPage = () => {
           {keywordAnalysis.length > 0 && (
             <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
               <Typography variant="h6" gutterBottom>
-                Keyword Analysis by Category
+                {t("companyPage.keywordAnalysisByCategory")}
               </Typography>
               <Stack spacing={3} sx={{ mt: 3 }}>
                 {keywordAnalysis.map((analysis) => (
@@ -2211,7 +2234,7 @@ export const CompanyPage = () => {
                         {analysis.category}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {analysis.count} mentions (
+                        {analysis.count} {t("companyPage.mentions")} (
                         {analysis.percentage.toFixed(1)}%)
                       </Typography>
                     </Stack>
@@ -2245,14 +2268,14 @@ export const CompanyPage = () => {
               >
                 <Box>
                   <Typography variant="h6" gutterBottom>
-                    Trending Keywords
+                    {t("companyPage.trendingKeywords")}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     gutterBottom
                   >
-                    Most frequently mentioned terms in reviews
+                    {t("companyPage.trendingKeywordsDescription")}
                   </Typography>
                 </Box>
                 {keywords.length > 10 && (
@@ -2266,8 +2289,8 @@ export const CompanyPage = () => {
                     }}
                   >
                     {showAllKeywords
-                      ? "Show Less"
-                      : `Show All (${keywords.length})`}
+                      ? t("companyPage.showLess")
+                      : t("companyPage.showAll", { count: keywords.length })}
                   </Button>
                 )}
               </Stack>
@@ -2328,7 +2351,9 @@ export const CompanyPage = () => {
                     fontWeight: 500,
                   }}
                 >
-                  {showRecentOnly ? "Show All" : "Recent Only"}
+                  {showRecentOnly
+                    ? t("companyPage.showAllReviews")
+                    : t("companyPage.recentOnly")}
                 </Button>
                 {(selectedKeyword !== "all" || selectedRating !== "all") && (
                   <Button
@@ -2340,7 +2365,7 @@ export const CompanyPage = () => {
                       fontWeight: 500,
                     }}
                   >
-                    Clear filters
+                    {t("companyPage.clearFilters")}
                   </Button>
                 )}
               </Stack>
@@ -2352,21 +2377,21 @@ export const CompanyPage = () => {
                   sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
                 />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No reviews match your filters
+                  {t("companyPage.noReviewsMatch")}
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"
                   sx={{ mb: 3 }}
                 >
-                  Try adjusting your filters to see more results
+                  {t("companyPage.noReviewsMatchDescription")}
                 </Typography>
                 <Button
                   variant="contained"
                   onClick={handleClearFilters}
                   sx={{ borderRadius: 980 }}
                 >
-                  Clear All Filters
+                  {t("companyPage.clearAllFilters")}
                 </Button>
               </Box>
             ) : (
@@ -2398,10 +2423,13 @@ export const CompanyPage = () => {
                       onClick={() => setCurrentPage(currentPage - 1)}
                       sx={{ borderRadius: 980 }}
                     >
-                      Previous
+                      {t("companyPage.previous")}
                     </Button>
                     <Typography variant="body2" color="text.secondary">
-                      Page {currentPage} of {totalPages}
+                      {t("companyPage.pageOfShort", {
+                        current: currentPage,
+                        total: totalPages,
+                      })}
                     </Typography>
                     <Button
                       variant="outlined"
@@ -2409,7 +2437,7 @@ export const CompanyPage = () => {
                       onClick={() => setCurrentPage(currentPage + 1)}
                       sx={{ borderRadius: 980 }}
                     >
-                      Next
+                      {t("companyPage.next")}
                     </Button>
                   </Box>
                 )}
@@ -2443,7 +2471,7 @@ export const CompanyPage = () => {
                 component="div"
                 sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
               >
-                {selectedPlatform} Integration
+                {selectedPlatform} {t("platform.title")}
               </Typography>
               <IconButton
                 aria-label="close"
@@ -2482,12 +2510,12 @@ export const CompanyPage = () => {
               </Box>
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Coming Soon!
+                  {t("companyPage.comingSoon")}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  {selectedPlatform} integration is currently under development.
-                  We're working hard to bring you seamless review imports from
-                  all major platforms.
+                  {t("companyPage.integrationComingSoon", {
+                    platform: selectedPlatform,
+                  })}
                 </Typography>
               </Box>
               <Box
@@ -2499,8 +2527,7 @@ export const CompanyPage = () => {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  Stay tuned for updates! We'll notify you as soon as this
-                  feature becomes available.
+                  {t("companyPage.stayTuned")}
                 </Typography>
               </Box>
             </Stack>
@@ -2513,7 +2540,7 @@ export const CompanyPage = () => {
               fullWidth
               sx={{ borderRadius: 980, py: { xs: 1.25, sm: 1.5 } }}
             >
-              Got it
+              {t("companyPage.gotIt")}
             </Button>
           </DialogActions>
         </Dialog>
