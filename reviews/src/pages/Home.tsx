@@ -14,8 +14,6 @@ import {
 import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Footer } from "../components/Footer";
-import { Header } from "../components/Header";
 import {
   AggregateIcon,
   KeywordsIcon,
@@ -63,9 +61,8 @@ export const Home = () => {
   ];
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Header />
-      <Box sx={{ flex: 1 }}>
+    <>
+      <Box>
         {/* Hero Section */}
         <Box sx={{ bgcolor: "background.default", py: 12 }}>
           <Container maxWidth="lg">
@@ -378,7 +375,6 @@ export const Home = () => {
           </Container>
         </Box>
       </Box>
-      <Footer />
-    </Box>
+    </>
   );
 };

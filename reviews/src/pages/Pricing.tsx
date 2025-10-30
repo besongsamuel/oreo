@@ -21,8 +21,6 @@ import {
 import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Footer } from "../components/Footer";
-import { Header } from "../components/Header";
 import { UserContext } from "../context/UserContext";
 import { useSubscriptionPlans, SubscriptionPlan } from "../hooks/useSubscriptionPlans";
 import { useSupabase } from "../hooks/useSupabase";
@@ -146,9 +144,8 @@ export const Pricing = () => {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Header />
-      <Box sx={{ flex: 1, py: 8 }}>
+    <>
+      <Box sx={{ py: 8 }}>
         <Container maxWidth="lg">
           <Button
             startIcon={<ArrowBackIcon />}
@@ -457,7 +454,6 @@ export const Pricing = () => {
           </Stack>
         </Container>
       </Box>
-      <Footer />
-    </Box>
+    </>
   );
 };

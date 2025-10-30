@@ -1,11 +1,14 @@
 import { useContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { UserDetailView } from "./components/UserDetail";
 import { UserContext } from "./context/UserContext";
 import {
   AddLocation,
+  AdminDashboard,
   Companies,
   Home,
   Pricing,
@@ -45,9 +48,23 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/pricing" element={<Pricing />} />
+        {/* Public routes - accessible to all, including logged-in users */}
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <Layout>
+              <Pricing />
+            </Layout>
+          }
+        />
 
         {/* Protected routes with layout */}
         <Route
@@ -153,6 +170,28 @@ function AppContent() {
             <Layout>
               <TermsOfUse />
             </Layout>
+          }
+        />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <Layout>
+                <AdminDashboard />
+              </Layout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users/:userId"
+          element={
+            <AdminRoute>
+              <Layout>
+                <UserDetailView />
+              </Layout>
+            </AdminRoute>
           }
         />
 

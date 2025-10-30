@@ -1,4 +1,5 @@
 export { AddLocation } from "./AddLocation";
+export { AdminDashboard } from "./AdminDashboard";
 export { Companies } from "./Companies";
 export { CompanyPage } from "./CompanyPage";
 export { Dashboard } from "./Dashboard";

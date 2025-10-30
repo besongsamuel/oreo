@@ -1,5 +1,5 @@
 import { Session, User } from "@supabase/supabase-js";
-import React, { createContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 interface Profile {
@@ -52,6 +52,7 @@ interface UserContextType {
   getPlanLimit: (limitType: string) => number | null;
   canCreateCompany: () => boolean;
   canCreateLocation: (companyId: string) => Promise<boolean>;
+  isAdmin: () => boolean;
 }
 
 export const UserContext = createContext<UserContextType | undefined>(
@@ -255,6 +256,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return true;
   };
 
+  const isAdmin = useCallback((): boolean => {
+    return profile?.role === "admin";
+  }, [profile]);
+
   // Check if company can have another location
   const canCreateLocation = async (companyId: string): Promise<boolean> => {
     // Admins can always create locations
@@ -297,8 +302,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       getPlanLimit,
       canCreateCompany,
       canCreateLocation,
+      isAdmin,
     }),
-    [user, session, profile, currentPlan, loading]
+    [user, session, profile, currentPlan, loading, isAdmin]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

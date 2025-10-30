@@ -174,6 +174,26 @@ export const Header = () => {
               >
                 {t("common.companies")}
               </Button>
+              {profile?.role === "admin" && (
+                <Button
+                  onClick={() => navigate("/admin/dashboard")}
+                  color="inherit"
+                  sx={{
+                    color: isActive("/admin/dashboard")
+                      ? "text.primary"
+                      : "text.secondary",
+                    fontWeight: isActive("/admin/dashboard") ? 600 : 400,
+                    fontSize: "0.875rem",
+                    px: 2,
+                    minWidth: "auto",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
+                >
+                  Admin
+                </Button>
+              )}
             </Box>
           )}
 
@@ -415,6 +435,21 @@ export const Header = () => {
             >
               <ListItemText primary={t("common.companies")} />
             </ListItemButton>
+            {profile?.role === "admin" && (
+              <ListItemButton
+                selected={isActive("/admin/dashboard")}
+                onClick={() => {
+                  navigate("/admin/dashboard");
+                  setMobileMenuOpen(false);
+                }}
+                sx={{
+                  borderRadius: 1,
+                  mb: 0.5,
+                }}
+              >
+                <ListItemText primary="Admin" />
+              </ListItemButton>
+            )}
             <Divider sx={{ my: 2 }} />
             <ListItemButton
               onClick={() => {
