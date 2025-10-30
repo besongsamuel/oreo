@@ -96,6 +96,21 @@ export const Footer = () => {
           >
             <Link
               component={RouterLink}
+              to="/pricing"
+              sx={{
+                color: "text.secondary",
+                textDecoration: "none",
+                fontSize: "0.875rem",
+                "&:hover": {
+                  textDecoration: "underline",
+                  color: "primary.main",
+                },
+              }}
+            >
+              {t("common.pricing", { defaultValue: "Pricing" })}
+            </Link>
+            <Link
+              component={RouterLink}
               to="/privacy-policy"
               sx={{
                 color: "text.secondary",

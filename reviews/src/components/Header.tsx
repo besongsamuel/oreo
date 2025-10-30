@@ -108,7 +108,7 @@ export const Header = () => {
               mr: { xs: 0, md: 4 },
               flexGrow: { xs: 1, md: 0 },
             }}
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/companies")}
           >
             <Typography
               variant="h6"
@@ -138,24 +138,6 @@ export const Header = () => {
                 gap: 0.5,
               }}
             >
-              <Button
-                onClick={() => navigate("/dashboard")}
-                color="inherit"
-                sx={{
-                  color: isActive("/dashboard")
-                    ? "text.primary"
-                    : "text.secondary",
-                  fontWeight: isActive("/dashboard") ? 600 : 400,
-                  fontSize: "0.875rem",
-                  px: 2,
-                  minWidth: "auto",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.04)",
-                  },
-                }}
-              >
-                {t("common.dashboard")}
-              </Button>
               <Button
                 onClick={() => navigate("/companies")}
                 color="inherit"
@@ -409,19 +391,7 @@ export const Header = () => {
             {t("header.menu")}
           </Typography>
           <List>
-            <ListItemButton
-              selected={isActive("/dashboard")}
-              onClick={() => {
-                navigate("/dashboard");
-                setMobileMenuOpen(false);
-              }}
-              sx={{
-                borderRadius: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemText primary={t("common.dashboard")} />
-            </ListItemButton>
+            {/* Dashboard link removed */}
             <ListItemButton
               selected={isActive("/companies")}
               onClick={() => {

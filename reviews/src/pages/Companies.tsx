@@ -46,6 +46,7 @@ import { getAllPlatforms } from "../services/platforms/platformRegistry";
 
 interface Company {
   id: string;
+  owner_id: string;
   name: string;
   description: string | null;
   industry: string | null;
@@ -511,12 +512,12 @@ export const Companies = () => {
           {/* Admin View - Separate sections */}
           {profile?.role === "admin" ? (
             <>
-              {/* Admin Companies Section */}
+              {/* Owned by You */}
               <Box>
                 <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-                  Admin Companies
+                  Owned by You
                 </Typography>
-                {companies.filter((c) => c.owner_role === "admin").length ===
+                {companies.filter((c) => c.owner_id === profile.id).length ===
                 0 ? (
                   <Card>
                     <CardContent>
@@ -525,7 +526,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          No admin companies
+                          No companies you own
                         </Typography>
                       </Stack>
                     </CardContent>
@@ -540,15 +541,16 @@ export const Companies = () => {
                         lg: "repeat(3, 1fr)",
                       },
                       gap: 3,
+                      alignItems: "stretch",
                     }}
                   >
                     {companies
-                      .filter((c) => c.owner_role === "admin")
+                      .filter((c) => c.owner_id === profile.id)
                       .map((company) => (
-                        <Box key={company.id}>
-                          <Card>
-                            <CardContent>
-                              <Stack spacing={2}>
+                        <Box key={company.id} sx={{ height: "100%" }}>
+                          <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                            <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                              <Stack spacing={2} sx={{ flexGrow: 1 }}>
                                 <Stack
                                   direction="row"
                                   justifyContent="space-between"
@@ -663,6 +665,7 @@ export const Companies = () => {
                                     justifyContent: "space-between",
                                     textTransform: "none",
                                     fontWeight: 500,
+                                    mt: "auto",
                                   }}
                                 >
                                   {t("companies.viewDetails")}
@@ -676,12 +679,12 @@ export const Companies = () => {
                 )}
               </Box>
 
-              {/* Client Companies Section */}
+              {/* Owned by Others */}
               <Box>
                 <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-                  Client Companies
+                  Owned by Others
                 </Typography>
-                {companies.filter((c) => c.owner_role !== "admin").length ===
+                {companies.filter((c) => c.owner_id !== profile.id).length ===
                 0 ? (
                   <Card>
                     <CardContent>
@@ -690,7 +693,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          No client companies
+                          No companies owned by other users
                         </Typography>
                       </Stack>
                     </CardContent>
@@ -705,15 +708,16 @@ export const Companies = () => {
                         lg: "repeat(3, 1fr)",
                       },
                       gap: 3,
+                      alignItems: "stretch",
                     }}
                   >
                     {companies
-                      .filter((c) => c.owner_role !== "admin")
+                      .filter((c) => c.owner_id !== profile.id)
                       .map((company) => (
-                        <Box key={company.id}>
-                          <Card>
-                            <CardContent>
-                              <Stack spacing={2}>
+                        <Box key={company.id} sx={{ height: "100%" }}>
+                          <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                            <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                              <Stack spacing={2} sx={{ flexGrow: 1 }}>
                                 <Stack
                                   direction="row"
                                   justifyContent="space-between"
@@ -838,6 +842,7 @@ export const Companies = () => {
                                     justifyContent: "space-between",
                                     textTransform: "none",
                                     fontWeight: 500,
+                                    mt: "auto",
                                   }}
                                 >
                                   {t("companies.viewDetails")}
@@ -887,13 +892,14 @@ export const Companies = () => {
                       lg: "repeat(3, 1fr)",
                     },
                     gap: 3,
+                    alignItems: "stretch",
                   }}
                 >
                   {companies.map((company) => (
-                    <Box key={company.id}>
-                      <Card>
-                        <CardContent>
-                          <Stack spacing={2}>
+                    <Box key={company.id} sx={{ height: "100%" }}>
+                      <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                          <Stack spacing={2} sx={{ flexGrow: 1 }}>
                             <Stack
                               direction="row"
                               justifyContent="space-between"
@@ -1008,6 +1014,7 @@ export const Companies = () => {
                                 justifyContent: "space-between",
                                 textTransform: "none",
                                 fontWeight: 500,
+                                mt: "auto",
                               }}
                             >
                               {t("companies.viewDetails")}

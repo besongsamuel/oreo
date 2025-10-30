@@ -16,7 +16,7 @@ import {
   TermsOfUse,
 } from "./pages";
 import { CompanyPage } from "./pages/CompanyPage";
-import { Dashboard } from "./pages/Dashboard";
+// import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { SubscriptionCancelled } from "./pages/SubscriptionCancelled";
 import { SubscriptionSuccess } from "./pages/SubscriptionSuccess";
@@ -72,7 +72,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <Dashboard />
+                <Companies />
               </Layout>
             </ProtectedRoute>
           }
