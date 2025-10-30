@@ -375,7 +375,6 @@ export const CompanyPage = () => {
           .from("companies")
           .select("*")
           .eq("id", companyId)
-          .eq("owner_id", profile.id)
           .single();
 
         if (companyError) {

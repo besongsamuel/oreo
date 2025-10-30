@@ -38,10 +38,10 @@ BEGIN
     SET subscription_plan_id = free_plan_id,
         updated_at = NOW()
     WHERE id = trial_record.user_id
-    AND subscription_plan_id = (
-      SELECT trial_plan_id
-      FROM trial_trials
-      WHERE id = trial_record.id
+    AND profiles.subscription_plan_id = (
+      SELECT tt.trial_plan_id
+      FROM trial_trials tt
+      WHERE tt.id = trial_record.id
     );
 
     expired_count := expired_count + 1;
