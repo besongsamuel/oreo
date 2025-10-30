@@ -177,7 +177,11 @@
     "uploadImage": "Please select an image file",
     "imageTooLarge": "Image must be less than 5MB",
     "failedUploadLogo": "Failed to upload logo. Please try again.",
-    "failedUpdateCompany": "Failed to update company details. Please try again."
+    "failedUpdateCompany": "Failed to update company details. Please try again.",
+    "editCompanyDialog": "Edit Company",
+    "companiesSeoTitle": "Companies - Boresha",
+    "companiesSeoDescription": "Manage all your business companies in one place. Add, edit, and monitor multiple businesses and their review performance.",
+    "companiesSeoKeywords": "manage companies, business management, multiple businesses, company dashboard"
   },
   "profile": {
     "title": "Profile Settings",
@@ -320,6 +324,16 @@
     "summaryAlreadyGenerated": "Summary already generated",
     "summaryGeneratedSuccess": "Summary generated successfully!",
     "totalOutOfFive": "/ 5.0"
+  },
+  "successLocation": {
+    "seoTitle": "Location Created - Boresha",
+    "seoDescription": "Location successfully created. You can now track reviews for this location.",
+    "seoKeywords": "location created, success, review tracking",
+    "title": "Location Created!",
+    "message": "Your new location has been successfully added to your company.",
+    "description": "You can now connect review platforms and start tracking customer feedback for this location.",
+    "backToCompany": "Back to Company",
+    "viewCompanyPage": "View Company Page"
   },
   "location": {
     "title": "Locations",

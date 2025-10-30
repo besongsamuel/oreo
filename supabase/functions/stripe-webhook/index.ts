@@ -84,8 +84,8 @@ Deno.serve(async (req: Request) => {
 
         let event: StripeEvent;
         try {
-            // Verify webhook signature
-            event = stripeClient.webhooks.constructEvent(
+            // Verify webhook signature (async version required for Deno)
+            event = await stripeClient.webhooks.constructEventAsync(
                 body,
                 signature,
                 webhookSecret,
@@ -135,6 +135,45 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Processing Stripe event: ${event.type} (${event.id})`);
 
+        // Helper function to get plan ID from Stripe subscription
+        const getPlanIdFromSubscription = async (
+            subscription: any,
+        ): Promise<string | null> => {
+            // First try to get plan from subscription metadata
+            if (subscription.metadata?.plan_id) {
+                return subscription.metadata.plan_id;
+            }
+            if (subscription.metadata?.plan_name) {
+                const { data: plan } = await supabaseClient
+                    .from("subscription_plans")
+                    .select("id")
+                    .eq("name", subscription.metadata.plan_name)
+                    .single();
+                if (plan) return plan.id;
+            }
+
+            // Try to get plan from price ID/recurring price
+            const priceId = subscription.items?.data?.[0]?.price?.id;
+            if (priceId) {
+                const { data: plan } = await supabaseClient
+                    .from("subscription_plans")
+                    .select("id")
+                    .eq("stripe_price_id", priceId)
+                    .single();
+                if (plan) return plan.id;
+            }
+
+            return null;
+        };
+
+        // Get free plan ID for cancellations
+        const { data: freePlan } = await supabaseClient
+            .from("subscription_plans")
+            .select("id")
+            .eq("name", "free")
+            .single();
+        const freePlanId = freePlan?.id || null;
+
         // Handle different event types
         switch (event.type) {
             case "checkout.session.completed": {
@@ -163,16 +202,25 @@ Deno.serve(async (req: Request) => {
                     subscription.current_period_end * 1000,
                 );
 
+                // Get plan ID from subscription
+                const planId = await getPlanIdFromSubscription(subscription);
+
                 // Update profile with subscription details
+                const updateData: any = {
+                    subscription_tier: "paid",
+                    subscription_started_at: new Date().toISOString(),
+                    subscription_expires_at: currentPeriodEnd.toISOString(),
+                    stripe_customer_id: session.customer as string,
+                    stripe_subscription_id: subscriptionId,
+                };
+
+                if (planId) {
+                    updateData.subscription_plan_id = planId;
+                }
+
                 await supabaseClient
                     .from("profiles")
-                    .update({
-                        subscription_tier: "paid",
-                        subscription_started_at: new Date().toISOString(),
-                        subscription_expires_at: currentPeriodEnd.toISOString(),
-                        stripe_customer_id: session.customer as string,
-                        stripe_subscription_id: subscriptionId,
-                    })
+                    .update(updateData)
                     .eq("id", userId);
 
                 // Record payment event
@@ -228,12 +276,21 @@ Deno.serve(async (req: Request) => {
                     break;
                 }
 
+                // Get plan ID from subscription (might have changed if upgraded)
+                const planId = await getPlanIdFromSubscription(subscription);
+
                 // Extend subscription expiry by 1 month (or use Stripe's current_period_end)
+                const renewUpdateData: any = {
+                    subscription_expires_at: currentPeriodEnd.toISOString(),
+                };
+
+                if (planId) {
+                    renewUpdateData.subscription_plan_id = planId;
+                }
+
                 await supabaseClient
                     .from("profiles")
-                    .update({
-                        subscription_expires_at: currentPeriodEnd.toISOString(),
-                    })
+                    .update(renewUpdateData)
                     .eq("id", profile.id);
 
                 // Record payment
@@ -276,14 +333,20 @@ Deno.serve(async (req: Request) => {
                 }
 
                 // Update profile to free tier
+                const cancelUpdateData: any = {
+                    subscription_tier: "free",
+                    subscription_started_at: null,
+                    subscription_expires_at: null,
+                    stripe_subscription_id: null,
+                };
+
+                if (freePlanId) {
+                    cancelUpdateData.subscription_plan_id = freePlanId;
+                }
+
                 await supabaseClient
                     .from("profiles")
-                    .update({
-                        subscription_tier: "free",
-                        subscription_started_at: null,
-                        subscription_expires_at: null,
-                        stripe_subscription_id: null,
-                    })
+                    .update(cancelUpdateData)
                     .eq("id", profile.id);
 
                 // Record cancellation event

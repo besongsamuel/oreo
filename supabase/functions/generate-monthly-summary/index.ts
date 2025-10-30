@@ -122,6 +122,57 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        // Get company owner to check plan features
+        const { data: company, error: companyError } = await supabaseClient
+            .from("companies")
+            .select("owner_id")
+            .eq("id", company_id)
+            .single();
+
+        if (companyError || !company) {
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Company not found",
+                    message: "Could not find the specified company",
+                }),
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                    status: 404,
+                },
+            );
+        }
+
+        // Check if user has monthly_summary feature
+        const { data: hasFeature, error: featureError } = await supabaseClient.rpc(
+            "has_feature",
+            { user_id: company.owner_id, feature_code: "monthly_summary" }
+        );
+
+        if (featureError) {
+            console.error("Error checking feature:", featureError);
+        }
+
+        if (!hasFeature) {
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Feature not available",
+                    message: "Monthly summary generation is only available for paid plans. Please upgrade your subscription to access this feature.",
+                }),
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                    status: 403,
+                },
+            );
+        }
+
         // Get all reviews for this company in the specified month/year
         const startDate = new Date(year, targetMonth, 1).toISOString();
         const endDate = new Date(year, targetMonth + 1, 0, 23, 59, 59, 999)

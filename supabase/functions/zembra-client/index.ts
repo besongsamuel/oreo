@@ -53,21 +53,32 @@ serve(async (req) => {
 
         const { mode, network, slug, postedAfter, userId } = body;
 
-        // Get user's subscription tier if userId is provided
-        let isPaid = false;
+        // Get user's plan features if userId is provided
+        let hasUnlimitedReviews = false;
+        let maxReviewsLimit: number | null = null;
         if (userId) {
             const supabaseUrl = Deno.env.get("SUPABASE_URL");
             const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
             if (supabaseUrl && supabaseKey) {
                 const supabaseClient = createClient(supabaseUrl, supabaseKey);
-                const { data: profile } = await supabaseClient
-                    .from("profiles")
-                    .select("subscription_tier")
-                    .eq("id", userId)
-                    .single();
-
-                isPaid = profile?.subscription_tier === "paid";
+                
+                // Check if user has unlimited_reviews feature
+                const { data: hasFeature } = await supabaseClient.rpc(
+                    "has_feature",
+                    { user_id: userId, feature_code: "unlimited_reviews" }
+                );
+                
+                hasUnlimitedReviews = hasFeature === true;
+                
+                // Get max reviews limit if not unlimited
+                if (!hasUnlimitedReviews) {
+                    const { data: limit } = await supabaseClient.rpc(
+                        "get_plan_limit",
+                        { user_id: userId, limit_type: "max_reviews_per_sync" }
+                    );
+                    maxReviewsLimit = limit;
+                }
             }
         }
 
@@ -75,7 +86,7 @@ serve(async (req) => {
         const baseUrl = new URL(ZEMBRA_API_BASE);
         baseUrl.searchParams.set("network", network);
         baseUrl.searchParams.set("slug", slug);
-        baseUrl.searchParams.set("monitoring", isPaid ? "basic" : "none");
+        baseUrl.searchParams.set("monitoring", hasUnlimitedReviews ? "basic" : "none");
         baseUrl.searchParams.set("sortBy", "timestamp");
         baseUrl.searchParams.set("sortDirection", "DESC");
 
@@ -85,8 +96,10 @@ serve(async (req) => {
         });
 
         // Add sizeLimit for free users (create-review-job mode only)
-        if (mode === "create-review-job" && !isPaid) {
-            baseUrl.searchParams.set("sizeLimit", "10");
+        // Default to 15 for free users, or use the plan limit if set
+        if (mode === "create-review-job" && !hasUnlimitedReviews) {
+            const limit = maxReviewsLimit || 15; // Default to 15 for free plan
+            baseUrl.searchParams.set("sizeLimit", limit.toString());
         }
 
         // Add postedAfter parameter if provided (for incremental fetches)

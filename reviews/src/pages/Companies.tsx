@@ -292,16 +292,14 @@ export const Companies = () => {
       if (error) throw error;
 
       if (!locations || locations.length === 0) {
-        setError(
-          "Please add at least one location to this company before connecting platforms."
-        );
+        setError(t("companies.addLocationFirst"));
         return;
       }
 
       setCompanyLocations(locations);
       setPlatformDialogOpen(true);
     } catch (err: any) {
-      setError(err.message || "Failed to load company locations");
+      setError(err.message || t("companies.failedLoadLocations"));
     }
   };
 
@@ -321,7 +319,7 @@ export const Companies = () => {
       );
       await fetchCompanies(); // Refresh company data
     } catch (err: any) {
-      setError(err.message || "Failed to connect platform");
+      setError(err.message || t("companies.failedConnectPlatform"));
     }
   };
 
@@ -347,10 +345,10 @@ export const Companies = () => {
           >
             <Box>
               <Typography variant="h4" component="h1" gutterBottom>
-                Companies
+                {t("companies.title")}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Loading your companies...
+                {t("companies.loading")}
               </Typography>
             </Box>
           </Stack>
@@ -379,9 +377,9 @@ export const Companies = () => {
   return (
     <>
       <SEO
-        title="Companies - Boresha"
-        description="Manage all your business companies in one place. Add, edit, and monitor multiple businesses and their review performance."
-        keywords="manage companies, business management, multiple businesses, company dashboard"
+        title={t("companies.companiesSeoTitle")}
+        description={t("companies.companiesSeoDescription")}
+        keywords={t("companies.companiesSeoKeywords")}
       />
       <Container
         maxWidth="xl"
@@ -403,14 +401,14 @@ export const Companies = () => {
                 gutterBottom
                 sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
               >
-                Companies
+                {t("companies.title")}
               </Typography>
               <Typography
                 variant="body1"
                 color="text.secondary"
                 sx={{ display: { xs: "none", sm: "block" } }}
               >
-                Manage the businesses you're analyzing
+                {t("companies.manage")}
               </Typography>
             </Box>
             <Button
@@ -428,13 +426,13 @@ export const Companies = () => {
                 component="span"
                 sx={{ display: { xs: "none", sm: "inline" } }}
               >
-                Add Company
+                {t("companies.addCompany")}
               </Box>
               <Box
                 component="span"
                 sx={{ display: { xs: "inline", sm: "none" } }}
               >
-                Add
+                {t("companies.add")}
               </Box>
             </Button>
           </Stack>
@@ -450,17 +448,17 @@ export const Companies = () => {
                     sx={{ fontSize: 64, color: "text.secondary" }}
                   />
                   <Typography variant="h6" color="text.secondary">
-                    No companies yet
+                    {t("companies.noCompaniesYet")}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Add your first company to start analyzing reviews
+                    {t("companies.addFirstCompany")}
                   </Typography>
                   <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
                   >
-                    Add Company
+                    {t("companies.addCompany")}
                   </Button>
                 </Stack>
               </CardContent>
@@ -533,8 +531,10 @@ export const Companies = () => {
                             >
                               <LocationIcon fontSize="small" color="action" />
                               <Typography variant="body2">
-                                {company.total_locations} location
-                                {company.total_locations !== 1 ? "s" : ""}
+                                {company.total_locations}{" "}
+                                {company.total_locations !== 1
+                                  ? t("companies.multipleLocations")
+                                  : t("companies.singleLocation")}
                               </Typography>
                             </Stack>
                             <Stack
@@ -552,8 +552,10 @@ export const Companies = () => {
                             </Stack>
                           </Stack>
                           <Typography variant="caption" color="text.secondary">
-                            {company.total_reviews} review
-                            {company.total_reviews !== 1 ? "s" : ""}
+                            {company.total_reviews}{" "}
+                            {company.total_reviews !== 1
+                              ? t("companies.multipleReviews")
+                              : t("companies.singleReview")}
                           </Typography>
                         </Stack>
 
@@ -582,7 +584,7 @@ export const Companies = () => {
                             fontWeight: 500,
                           }}
                         >
-                          View Details
+                          {t("companies.viewDetails")}
                         </Button>
                       </Stack>
                     </CardContent>
@@ -601,13 +603,15 @@ export const Companies = () => {
           >
             <form onSubmit={handleSubmit}>
               <DialogTitle>
-                {editingCompany ? "Edit Company" : "Add Company"}
+                {editingCompany
+                  ? t("companies.editCompanyDialog")
+                  : t("companies.addCompanyDialog")}
               </DialogTitle>
               <DialogContent>
                 <Stack spacing={2} sx={{ mt: 1 }}>
                   {error && <Alert severity="error">{error}</Alert>}
                   <TextField
-                    label="Company Name"
+                    label={t("companies.companyName")}
                     required
                     fullWidth
                     value={formData.name}
@@ -631,20 +635,20 @@ export const Companies = () => {
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Industry"
-                        placeholder="Select or type an industry"
+                        label={t("companies.industry")}
+                        placeholder={t("companies.industryPlaceholder")}
                       />
                     )}
                   />
                   <TextField
-                    label="Website"
+                    label={t("companies.website")}
                     fullWidth
                     value={formData.website}
                     onChange={(e) =>
                       setFormData({ ...formData, website: e.target.value })
                     }
                     disabled={submitting}
-                    placeholder="example.com"
+                    placeholder={t("companies.websitePlaceholder")}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -660,7 +664,7 @@ export const Companies = () => {
                     }}
                   />
                   <TextField
-                    label="Description"
+                    label={t("companies.description")}
                     fullWidth
                     multiline
                     rows={3}
@@ -674,7 +678,7 @@ export const Companies = () => {
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseDialog} disabled={submitting}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -682,10 +686,10 @@ export const Companies = () => {
                   disabled={submitting || !formData.name}
                 >
                   {submitting
-                    ? "Saving..."
+                    ? t("companies.saving")
                     : editingCompany
-                    ? "Update"
-                    : "Create"}
+                    ? t("companies.update")
+                    : t("companies.create")}
                 </Button>
               </DialogActions>
             </form>
@@ -721,7 +725,7 @@ export const Companies = () => {
                   primary={platform.displayName}
                   secondary={
                     platform.status === "coming_soon"
-                      ? "Coming Soon"
+                      ? t("companies.comingSoon")
                       : undefined
                   }
                 />

@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface CreateCheckoutSessionRequest {
     returnUrl?: string;
+    planName?: string; // 'pro' or 'enterprise'
 }
 
 Deno.serve(async (req: Request) => {
@@ -57,9 +58,16 @@ Deno.serve(async (req: Request) => {
         // Initialize Supabase client
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const supabaseServiceKey = Deno.env.get(
+            "SUPABASE_SERVICE_ROLE_KEY",
+        )!;
         const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
             global: { headers: { Authorization: authHeader } },
         });
+        const supabaseAdminClient = createClient(
+            supabaseUrl,
+            supabaseServiceKey,
+        );
 
         // Get authenticated user
         const {
@@ -84,10 +92,20 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Get user profile
+        // Parse request body for return URL and plan name
+        const body: CreateCheckoutSessionRequest = await req.json().catch(
+            () => ({}),
+        );
+        const baseUrl = Deno.env.get("BASE_URL") || "http://localhost:3000";
+        const returnUrl = body.returnUrl || baseUrl;
+        const planName = body.planName || "pro"; // Default to pro if not specified
+
+        // Get user profile with subscription plan
         const { data: profile, error: profileError } = await supabaseClient
             .from("profiles")
-            .select("subscription_tier, email, stripe_customer_id")
+            .select(
+                "subscription_tier, subscription_plan_id, email, stripe_customer_id",
+            )
             .eq("id", user.id)
             .single();
 
@@ -108,13 +126,20 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Check if already subscribed
-        if (profile.subscription_tier === "paid") {
+        // Lookup plan by name
+        const { data: plan, error: planError } = await supabaseAdminClient
+            .from("subscription_plans")
+            .select("id, name, display_name, stripe_price_id, price_monthly")
+            .eq("name", planName)
+            .eq("is_active", true)
+            .single();
+
+        if (planError || !plan) {
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: "Already subscribed",
-                    message: "User already has an active subscription",
+                    error: "Invalid plan",
+                    message: `Plan "${planName}" not found or not active`,
                 }),
                 {
                     headers: {
@@ -126,12 +151,81 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        // Check if already subscribed (check both subscription_tier and subscription_plan_id)
+        if (profile.subscription_plan_id) {
+            const { data: currentPlan } = await supabaseAdminClient
+                .from("subscription_plans")
+                .select("name")
+                .eq("id", profile.subscription_plan_id)
+                .single();
+
+            // Allow if they're upgrading or changing plans
+            if (currentPlan && currentPlan.name === planName) {
+                return new Response(
+                    JSON.stringify({
+                        success: false,
+                        error: "Already subscribed",
+                        message:
+                            `You are already on the ${plan.display_name} plan`,
+                    }),
+                    {
+                        headers: {
+                            ...corsHeaders,
+                            "Content-Type": "application/json",
+                        },
+                        status: 400,
+                    },
+                );
+            }
+        }
+
+        // If free plan, directly assign to user (no Stripe needed)
+        if (plan.price_monthly === 0) {
+            await supabaseAdminClient
+                .from("profiles")
+                .update({ subscription_plan_id: plan.id })
+                .eq("id", user.id);
+
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    planId: plan.id,
+                    planName: plan.name,
+                    message: "Free plan activated",
+                }),
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                    status: 200,
+                },
+            );
+        }
+
+        // Check if plan requires Stripe (paid plan)
+        if (!plan.stripe_price_id) {
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "Configuration error",
+                    message:
+                        `Stripe price ID not configured for ${plan.display_name} plan`,
+                }),
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                    status: 500,
+                },
+            );
+        }
+
         // Get Stripe environment variables
         const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-        const stripePriceId = Deno.env.get("STRIPE_PRICE_ID");
-        const baseUrl = Deno.env.get("BASE_URL") || "http://localhost:3000";
 
-        if (!stripeSecretKey || !stripePriceId) {
+        if (!stripeSecretKey) {
             console.error("Missing Stripe configuration");
             return new Response(
                 JSON.stringify({
@@ -170,25 +264,11 @@ Deno.serve(async (req: Request) => {
             customerId = customer.id;
 
             // Save customer ID to profile
-            const supabaseServiceKey = Deno.env.get(
-                "SUPABASE_SERVICE_ROLE_KEY",
-            )!;
-            const supabaseAdminClient = createClient(
-                supabaseUrl,
-                supabaseServiceKey,
-            );
-
             await supabaseAdminClient
                 .from("profiles")
                 .update({ stripe_customer_id: customerId })
                 .eq("id", user.id);
         }
-
-        // Parse request body for return URL
-        const body: CreateCheckoutSessionRequest = await req.json().catch(
-            () => ({})
-        );
-        const returnUrl = body.returnUrl || baseUrl;
 
         // Create Stripe Checkout session
         const session = await stripeClient.checkout.sessions.create({
@@ -196,20 +276,24 @@ Deno.serve(async (req: Request) => {
             mode: "subscription",
             line_items: [
                 {
-                    price: stripePriceId,
+                    price: plan.stripe_price_id,
                     quantity: 1,
                 },
             ],
             success_url:
                 `${returnUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${returnUrl}/profile`,
-            metadata: {
-                user_id: user.id,
-            },
             subscription_data: {
                 metadata: {
                     user_id: user.id,
+                    plan_name: plan.name,
+                    plan_id: plan.id,
                 },
+            },
+            metadata: {
+                user_id: user.id,
+                plan_name: plan.name,
+                plan_id: plan.id,
             },
         });
 

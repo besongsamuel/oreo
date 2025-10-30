@@ -184,7 +184,11 @@
     "saveCompany": "Enregistrer l'entreprise",
     "companyCreated": "Entreprise créée avec succès",
     "companyUpdated": "Entreprise mise à jour avec succès",
-    "companyDeleted": "Entreprise supprimée avec succès"
+    "companyDeleted": "Entreprise supprimée avec succès",
+    "editCompanyDialog": "Modifier l'entreprise",
+    "companiesSeoTitle": "Entreprises - Boresha",
+    "companiesSeoDescription": "Gérez toutes vos entreprises commerciales en un seul endroit. Ajoutez, modifiez et surveillez plusieurs entreprises et leurs performances d'avis.",
+    "companiesSeoKeywords": "gérer entreprises, gestion d'entreprise, plusieurs entreprises, tableau de bord entreprise"
   },
   "platform": {
     "title": "Connexion à la plateforme",
@@ -384,6 +388,16 @@
     "summaryAlreadyGenerated": "Résumé déjà généré",
     "summaryGeneratedSuccess": "Résumé généré avec succès !",
     "totalOutOfFive": "/ 5.0"
+  },
+  "successLocation": {
+    "seoTitle": "Emplacement créé - Boresha",
+    "seoDescription": "Emplacement créé avec succès. Vous pouvez maintenant suivre les avis pour cet emplacement.",
+    "seoKeywords": "emplacement créé, succès, suivi avis",
+    "title": "Emplacement créé !",
+    "message": "Votre nouvel emplacement a été ajouté avec succès à votre entreprise.",
+    "description": "Vous pouvez maintenant connecter des plateformes d'avis et commencer à suivre les commentaires des clients pour cet emplacement.",
+    "backToCompany": "Retour à l'entreprise",
+    "viewCompanyPage": "Voir la page de l'entreprise"
   },
   "location": {
     "title": "Emplacements",

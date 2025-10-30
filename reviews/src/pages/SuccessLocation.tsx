@@ -11,10 +11,12 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
 
 export const SuccessLocation = () => {
+  const { t } = useTranslation();
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
 
@@ -25,9 +27,9 @@ export const SuccessLocation = () => {
   return (
     <>
       <SEO
-        title="Location Created - Boresha"
-        description="Location successfully created. You can now track reviews for this location."
-        keywords="location created, success, review tracking"
+        title={t("successLocation.seoTitle")}
+        description={t("successLocation.seoDescription")}
+        keywords={t("successLocation.seoKeywords")}
       />
       <Container maxWidth="sm" sx={{ py: 6 }}>
         <Card>
@@ -51,18 +53,17 @@ export const SuccessLocation = () => {
               {/* Success Message */}
               <Box>
                 <Typography variant="h4" component="h1" gutterBottom>
-                  Location Created!
+                  {t("successLocation.title")}
                 </Typography>
                 <Typography
                   variant="body1"
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  Your new location has been successfully added to your company.
+                  {t("successLocation.message")}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  You can now connect review platforms and start tracking
-                  customer feedback for this location.
+                  {t("successLocation.description")}
                 </Typography>
               </Box>
 
@@ -79,7 +80,7 @@ export const SuccessLocation = () => {
                     px: 4,
                   }}
                 >
-                  Back to Company
+                  {t("successLocation.backToCompany")}
                 </Button>
                 <Button
                   variant="contained"
@@ -91,7 +92,7 @@ export const SuccessLocation = () => {
                     px: 4,
                   }}
                 >
-                  View Company Page
+                  {t("successLocation.viewCompanyPage")}
                 </Button>
               </Stack>
             </Stack>
