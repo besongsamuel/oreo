@@ -16,6 +16,7 @@ export interface SubscriptionPlan {
   price_monthly: number;
   stripe_price_id: string | null;
   is_active: boolean;
+  pricing_page_title: string | null;
   plan_created_at: string;
   plan_updated_at: string;
   features: PlanFeature[];

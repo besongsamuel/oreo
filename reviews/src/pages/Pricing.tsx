@@ -164,7 +164,9 @@ export const Pricing = () => {
                 gutterBottom
                 sx={{ fontSize: { xs: "2.5rem", md: "3.5rem" } }}
               >
-                {t("pricing.pricingTitle", { defaultValue: "Simple Pricing" })}
+                {plans.length > 0 && plans[0].pricing_page_title 
+                  ? plans[0].pricing_page_title 
+                  : t("pricing.pricingTitle", { defaultValue: "Simple Pricing" })}
               </Typography>
               <Typography
                 variant="h6"
