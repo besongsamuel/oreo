@@ -32,6 +32,7 @@ export const Profile = () => {
   const context = useContext(UserContext);
   const user = context?.user;
   const profile = context?.profile;
+  const currentPlan = context?.currentPlan;
   const supabase = useSupabase();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -152,7 +153,7 @@ export const Profile = () => {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ returnUrl: baseUrl }),
+          body: JSON.stringify({ planName: "pro", returnUrl: baseUrl }),
         }
       );
 
@@ -394,7 +395,7 @@ export const Profile = () => {
           </CardContent>
         </Card>
 
-        {profile?.subscription_tier === "free" ? (
+        {!currentPlan || currentPlan.plan_name === "free" ? (
           <Card
             elevation={4}
             sx={{
@@ -509,46 +510,114 @@ export const Profile = () => {
                       {t("subscription.plan")}
                     </Typography>
                     <Chip
-                      label={t("subscription.paid")}
+                      label={
+                        currentPlan?.plan_display_name || t("subscription.paid")
+                      }
                       size="small"
-                      color="success"
+                      color={
+                        currentPlan?.plan_name === "free"
+                          ? "default"
+                          : "success"
+                      }
                       icon={<StarIcon />}
                     />
                   </Box>
 
-                  {profile?.subscription_expires_at && (
+                  {/* Plan Features */}
+                  {currentPlan?.features && currentPlan.features.length > 0 && (
                     <Box>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         gutterBottom
                         display="block"
+                        sx={{ mb: 1 }}
                       >
-                        {t("subscription.expiresAt")}
+                        Features
                       </Typography>
-                      <Typography variant="body1">
-                        {new Date(
-                          profile.subscription_expires_at
-                        ).toLocaleDateString(i18n.language, {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
+                      <Stack spacing={1}>
+                        {currentPlan.features.map((feature) => {
+                          let displayText = feature.feature_display_name;
+
+                          // Add limit information if available
+                          if (
+                            feature.limit_value &&
+                            typeof feature.limit_value === "object"
+                          ) {
+                            const limits = feature.limit_value;
+                            if (limits.max_companies) {
+                              displayText = `${displayText} (${
+                                limits.max_companies
+                              } ${
+                                limits.max_companies === 1
+                                  ? "company"
+                                  : "companies"
+                              })`;
+                            } else if (limits.max_locations_per_company) {
+                              displayText = `${displayText} (${limits.max_locations_per_company} per company)`;
+                            } else if (limits.max_reviews_per_sync) {
+                              displayText = `${displayText} (${limits.max_reviews_per_sync} reviews)`;
+                            }
+                          }
+
+                          return (
+                            <Box
+                              key={feature.feature_id}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.5,
+                              }}
+                            >
+                              <CheckIcon
+                                sx={{ color: "success.main", fontSize: 18 }}
+                              />
+                              <Typography variant="body2">
+                                {displayText}
+                              </Typography>
+                            </Box>
+                          );
                         })}
-                      </Typography>
+                      </Stack>
                     </Box>
                   )}
 
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => setCancelDialogOpen(true)}
-                    disabled={subscriptionLoading}
-                    sx={{ mt: 2 }}
-                  >
-                    {subscriptionLoading
-                      ? t("common.loading")
-                      : t("subscription.cancel")}
-                  </Button>
+                  {profile?.subscription_expires_at &&
+                    currentPlan?.plan_name !== "free" && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          gutterBottom
+                          display="block"
+                        >
+                          {t("subscription.expiresAt")}
+                        </Typography>
+                        <Typography variant="body1">
+                          {new Date(
+                            profile.subscription_expires_at
+                          ).toLocaleDateString(i18n.language, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </Typography>
+                      </Box>
+                    )}
+
+                  {currentPlan?.plan_name !== "free" && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => setCancelDialogOpen(true)}
+                      disabled={subscriptionLoading}
+                      sx={{ mt: 2 }}
+                    >
+                      {subscriptionLoading
+                        ? t("common.loading")
+                        : t("subscription.cancel")}
+                    </Button>
+                  )}
                 </Stack>
               </Stack>
             </CardContent>

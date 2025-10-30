@@ -6,14 +6,19 @@ import {
   Card,
   CardContent,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
 // Google Maps types
@@ -42,6 +47,10 @@ export const AddLocation = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const supabase = useSupabase();
+  const context = useContext(UserContext);
+  const canCreateLocation = context?.canCreateLocation;
+  const getPlanLimit = context?.getPlanLimit;
+  const profile = context?.profile;
 
   const [formData, setFormData] = useState<LocationFormData>({
     name: "",
@@ -56,6 +65,7 @@ export const AddLocation = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const autocompleteRef = useRef<HTMLInputElement>(null);
   const autocomplete = useRef<GoogleAutocomplete | null>(null);
 
@@ -161,6 +171,23 @@ export const AddLocation = () => {
     setError(null);
 
     try {
+      // Check location limit before creating (backend will also enforce)
+      if (companyId && canCreateLocation) {
+        const canCreate = await canCreateLocation(companyId);
+        if (!canCreate && profile?.role !== "admin") {
+          const maxLocations = getPlanLimit?.("max_locations_per_company") ?? 3;
+          setUpgradeDialogOpen(true);
+          setError(
+            t("location.locationLimitReached", {
+              max: maxLocations,
+              defaultValue: `Location limit reached. Maximum ${maxLocations} locations per company allowed on your current plan.`,
+            })
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const { error: insertError } = await supabase.from("locations").insert({
         company_id: companyId,
         name: formData.name,
@@ -175,6 +202,10 @@ export const AddLocation = () => {
       });
 
       if (insertError) {
+        // Check if error is about location limit
+        if (insertError.message?.includes("Location limit reached")) {
+          setUpgradeDialogOpen(true);
+        }
         throw insertError;
       }
 
@@ -350,6 +381,50 @@ export const AddLocation = () => {
             </Stack>
           </CardContent>
         </Card>
+
+        {/* Upgrade Dialog */}
+        <Dialog
+          open={upgradeDialogOpen}
+          onClose={() => setUpgradeDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {t("location.upgradeRequired", {
+              defaultValue: "Upgrade Required",
+            })}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="body1">
+                {t("location.locationLimitMessage", {
+                  defaultValue: "You've reached the maximum number of locations allowed per company on your current plan.",
+                })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t("location.upgradeToAddMore", {
+                  defaultValue: "Upgrade to a higher plan to add more locations and unlock additional features.",
+                })}
+              </Typography>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUpgradeDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setUpgradeDialogOpen(false);
+                navigate("/pricing");
+              }}
+            >
+              {t("location.viewPricing", {
+                defaultValue: "View Pricing",
+              })}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );

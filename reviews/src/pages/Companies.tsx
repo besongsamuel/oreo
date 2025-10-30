@@ -84,6 +84,10 @@ export const Companies = () => {
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
+  const hasFeature = context?.hasFeature;
+  const canCreateCompany = context?.canCreateCompany;
+  const getPlanLimit = context?.getPlanLimit;
+  const currentPlan = context?.currentPlan;
   const navigate = useNavigate();
   const {
     connectPlatformUnified,
@@ -114,6 +118,7 @@ export const Companies = () => {
   const [platformMenuAnchor, setPlatformMenuAnchor] =
     useState<null | HTMLElement>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
   const platforms = getAllPlatforms();
 
@@ -165,6 +170,22 @@ export const Companies = () => {
   };
 
   const handleOpenDialog = (company?: Company) => {
+    // If creating new company, check limits first
+    if (!company && !editingCompany) {
+      // Check if user can create another company
+      if (!canCreateCompany?.() && profile?.role !== "admin") {
+        const maxCompanies = getPlanLimit?.("max_companies") ?? 1;
+        setError(
+          t("companies.companyLimitReached", {
+            max: maxCompanies,
+            defaultValue: `You have reached the limit of ${maxCompanies} company. Please upgrade your plan to add more companies.`,
+          })
+        );
+        setUpgradeDialogOpen(true);
+        return;
+      }
+    }
+
     if (company) {
       setEditingCompany(company);
       // Strip https:// or http:// from website for display
@@ -238,6 +259,17 @@ export const Companies = () => {
 
         if (updateError) throw updateError;
       } else {
+        // Check company limit before creating (backend will also enforce)
+        if (!canCreateCompany?.() && profile?.role !== "admin") {
+          const maxCompanies = getPlanLimit?.("max_companies") ?? 1;
+          throw new Error(
+            t("companies.companyLimitReached", {
+              max: maxCompanies,
+              defaultValue: `Company limit reached. Maximum ${maxCompanies} company allowed on your current plan.`,
+            })
+          );
+        }
+
         // Create new company
         const { error: insertError } = await supabase.from("companies").insert({
           owner_id: profile.id,
@@ -247,7 +279,13 @@ export const Companies = () => {
           website: websiteUrl,
         });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          // Check if error is about company limit
+          if (insertError.message?.includes("Company limit reached")) {
+            setUpgradeDialogOpen(true);
+          }
+          throw insertError;
+        }
       }
 
       await fetchCompanies();
@@ -756,6 +794,52 @@ export const Companies = () => {
               {platformSuccess}
             </Alert>
           )}
+
+          {/* Upgrade Dialog */}
+          <Dialog
+            open={upgradeDialogOpen}
+            onClose={() => setUpgradeDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {t("companies.upgradeRequired", {
+                defaultValue: "Upgrade Required",
+              })}
+            </DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <Typography variant="body1">
+                  {t("companies.companyLimitMessage", {
+                    defaultValue:
+                      "You've reached the maximum number of companies allowed on your current plan.",
+                  })}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t("companies.upgradeToAddMore", {
+                    defaultValue:
+                      "Upgrade to a higher plan to add more companies and unlock additional features.",
+                  })}
+                </Typography>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setUpgradeDialogOpen(false)}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setUpgradeDialogOpen(false);
+                  navigate("/pricing");
+                }}
+              >
+                {t("companies.viewPricing", {
+                  defaultValue: "View Pricing",
+                })}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Stack>
       </Container>
     </>

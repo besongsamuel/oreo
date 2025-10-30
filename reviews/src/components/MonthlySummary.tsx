@@ -20,8 +20,9 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 import { MonthlySummarySkeleton } from "./SkeletonLoaders";
 
@@ -51,6 +52,8 @@ interface SummaryData {
 export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
+  const userContext = useContext(UserContext);
+  const hasMonthlySummaryFeature = userContext?.hasFeature("monthly_summary") ?? false;
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
@@ -366,6 +369,29 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
     return (
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <MonthlySummarySkeleton />
+      </Paper>
+    );
+  }
+
+  if (!hasMonthlySummaryFeature) {
+    return (
+      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+        <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
+          <InsightsIcon sx={{ fontSize: 64, color: "text.secondary" }} />
+          <Typography variant="h6" color="text.secondary" align="center">
+            {t("monthlySummary.requiresPaidPlan")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" align="center">
+            {t("monthlySummary.upgradeToAccess")}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => window.location.href = "/pricing"}
+            sx={{ mt: 2 }}
+          >
+            {t("monthlySummary.viewPricing")}
+          </Button>
+        </Stack>
       </Paper>
     );
   }
