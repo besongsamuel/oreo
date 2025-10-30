@@ -22,7 +22,10 @@ import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
-import { useSubscriptionPlans, SubscriptionPlan } from "../hooks/useSubscriptionPlans";
+import {
+  SubscriptionPlan,
+  useSubscriptionPlans,
+} from "../hooks/useSubscriptionPlans";
 import { useSupabase } from "../hooks/useSupabase";
 
 export const Pricing = () => {
@@ -61,7 +64,9 @@ export const Pricing = () => {
         throw new Error("Missing Supabase URL configuration");
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth/signup");
         return;
@@ -112,9 +117,12 @@ export const Pricing = () => {
   };
 
   // Get feature display value for a plan
-  const getFeatureValue = (plan: SubscriptionPlan | null, featureCode: string): string => {
+  const getFeatureValue = (
+    plan: SubscriptionPlan | null,
+    featureCode: string
+  ): string => {
     if (!plan) return "—";
-    
+
     const feature = plan.features?.find((f) => f.feature_code === featureCode);
     if (!feature) return "—";
 
@@ -164,9 +172,11 @@ export const Pricing = () => {
                 gutterBottom
                 sx={{ fontSize: { xs: "2.5rem", md: "3.5rem" } }}
               >
-                {plans.length > 0 && plans[0].pricing_page_title 
-                  ? plans[0].pricing_page_title 
-                  : t("pricing.pricingTitle", { defaultValue: "Simple Pricing" })}
+                {plans.length > 0 && plans[0].pricing_page_title
+                  ? plans[0].pricing_page_title
+                  : t("pricing.pricingTitle", {
+                      defaultValue: "Simple Pricing",
+                    })}
               </Typography>
               <Typography
                 variant="h6"
@@ -174,7 +184,8 @@ export const Pricing = () => {
                 sx={{ maxWidth: "600px", mx: "auto" }}
               >
                 {t("pricing.pricingSubtitle", {
-                  defaultValue: "Choose the plan that fits your business needs. Upgrade or downgrade at any time.",
+                  defaultValue:
+                    "Choose the plan that fits your business needs. Upgrade or downgrade at any time.",
                 })}
               </Typography>
             </Box>
@@ -192,7 +203,8 @@ export const Pricing = () => {
                   display: "grid",
                   gridTemplateColumns: {
                     xs: "1fr",
-                    md: plans.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+                    md:
+                      plans.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
                   },
                   gap: 4,
                 }}
@@ -256,17 +268,30 @@ export const Pricing = () => {
                           CURRENT
                         </Box>
                       )}
-                      <CardContent sx={{ p: 4, pt: isPopular || isCurrentPlan ? 5 : 4 }}>
+                      <CardContent
+                        sx={{ p: 4, pt: isPopular || isCurrentPlan ? 5 : 4 }}
+                      >
                         <Stack spacing={3}>
                           <Box>
-                            <Typography variant="h4" fontWeight={700} gutterBottom>
+                            <Typography
+                              variant="h4"
+                              fontWeight={700}
+                              gutterBottom
+                            >
                               {plan.plan_display_name}
                             </Typography>
-                            <Stack direction="row" spacing={1} alignItems="baseline">
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="baseline"
+                            >
                               <Typography variant="h2" fontWeight={700}>
                                 ${plan.price_monthly.toFixed(0)}
                               </Typography>
-                              <Typography variant="body1" color="text.secondary">
+                              <Typography
+                                variant="body1"
+                                color="text.secondary"
+                              >
                                 /month
                               </Typography>
                             </Stack>
@@ -301,73 +326,82 @@ export const Pricing = () => {
             )}
 
             {/* Feature Comparison Table */}
-            {!plansLoading && plans.length > 0 && getAllFeatures().length > 0 && (
-              <Card
-                variant="outlined"
-                sx={{ borderRadius: 3, overflow: "hidden" }}
-              >
-                <CardContent sx={{ p: 0 }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "background.default" }}>
-                        <TableCell>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            Feature
-                          </Typography>
-                        </TableCell>
-                        {plans.map((plan) => (
-                          <TableCell key={plan.plan_id} align="center">
+            {!plansLoading &&
+              plans.length > 0 &&
+              getAllFeatures().length > 0 && (
+                <Card
+                  variant="outlined"
+                  sx={{ borderRadius: 3, overflow: "hidden" }}
+                >
+                  <CardContent sx={{ p: 0 }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: "background.default" }}>
+                          <TableCell>
                             <Typography variant="subtitle2" fontWeight={600}>
-                              {plan.plan_display_name}
+                              Feature
                             </Typography>
                           </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {getAllFeatures().map((featureCode, index) => {
-                        const feature = plans[0]?.features?.find(
-                          (f) => f.feature_code === featureCode
-                        );
-                        const featureName =
-                          feature?.feature_display_name || featureCode;
-
-                        return (
-                          <TableRow
-                            key={featureCode}
-                            sx={
-                              index % 2 === 0
-                                ? { bgcolor: "background.default" }
-                                : {}
-                            }
-                          >
-                            <TableCell>
-                              <Typography variant="body2">
-                                {featureName}
+                          {plans.map((plan) => (
+                            <TableCell key={plan.plan_id} align="center">
+                              <Typography variant="subtitle2" fontWeight={600}>
+                                {plan.plan_display_name}
                               </Typography>
                             </TableCell>
-                            {plans.map((plan) => {
-                              const value = getFeatureValue(plan, featureCode);
-                              return (
-                                <TableCell key={plan.plan_id} align="center">
-                                  {value === "✓" ? (
-                                    <CheckIcon color="success" />
-                                  ) : value === "—" || value === null ? (
-                                    <CloseIcon sx={{ color: "text.disabled" }} />
-                                  ) : (
-                                    <Typography variant="body2">{value}</Typography>
-                                  )}
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {getAllFeatures().map((featureCode, index) => {
+                          const feature = plans[0]?.features?.find(
+                            (f) => f.feature_code === featureCode
+                          );
+                          const featureName =
+                            feature?.feature_display_name || featureCode;
+
+                          return (
+                            <TableRow
+                              key={featureCode}
+                              sx={
+                                index % 2 === 0
+                                  ? { bgcolor: "background.default" }
+                                  : {}
+                              }
+                            >
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {featureName}
+                                </Typography>
+                              </TableCell>
+                              {plans.map((plan) => {
+                                const value = getFeatureValue(
+                                  plan,
+                                  featureCode
+                                );
+                                return (
+                                  <TableCell key={plan.plan_id} align="center">
+                                    {value === "✓" ? (
+                                      <CheckIcon color="success" />
+                                    ) : value === "—" || value === null ? (
+                                      <CloseIcon
+                                        sx={{ color: "text.disabled" }}
+                                      />
+                                    ) : (
+                                      <Typography variant="body2">
+                                        {value}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                );
+                              })}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
 
             {/* FAQ Section */}
             <Box>
@@ -399,8 +433,8 @@ export const Pricing = () => {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       When you reach 15 reviews on the free plan, you can either
-                      upgrade to a paid plan for unlimited reviews, or wait until
-                      the next sync when you can fetch more reviews.
+                      upgrade to a paid plan for unlimited reviews, or wait
+                      until the next sync when you can fetch more reviews.
                     </Typography>
                   </Paper>
 
@@ -410,9 +444,9 @@ export const Pricing = () => {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Monthly summaries are automatically generated at the end
-                      of each month for paid plan users. They include
-                      aggregated sentiment data, top keywords, topics, and
-                      trends to help you understand customer feedback patterns.
+                      of each month for paid plan users. They include aggregated
+                      sentiment data, top keywords, topics, and trends to help
+                      you understand customer feedback patterns.
                     </Typography>
                   </Paper>
 

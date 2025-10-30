@@ -206,13 +206,13 @@ export const Home = () => {
                   display: "grid",
                   gridTemplateColumns: { 
                     xs: "1fr", 
-                    md: plans.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)" 
+                    md: plans.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)"
                   },
                   gap: 4,
                   mt: 6,
                 }}
               >
-                {plans.slice(0, 2).map((plan) => {
+                {plans.map((plan) => {
                   const isPopular = plan.plan_name === "pro";
                   const isFree = plan.price_monthly === 0;
                   
