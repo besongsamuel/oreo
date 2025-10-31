@@ -147,10 +147,11 @@ Deno.serve(async (req: Request) => {
         }
 
         // Check if user has monthly_summary feature
-        const { data: hasFeature, error: featureError } = await supabaseClient.rpc(
-            "has_feature",
-            { user_id: company.owner_id, feature_code: "monthly_summary" }
-        );
+        const { data: hasFeature, error: featureError } = await supabaseClient
+            .rpc(
+                "has_feature",
+                { user_id: company.owner_id, feature_code: "monthly_summary" },
+            );
 
         if (featureError) {
             console.error("Error checking feature:", featureError);
@@ -161,7 +162,8 @@ Deno.serve(async (req: Request) => {
                 JSON.stringify({
                     success: false,
                     error: "Feature not available",
-                    message: "Monthly summary generation is only available for paid plans. Please upgrade your subscription to access this feature.",
+                    message:
+                        "Monthly summary generation is only available for paid plans. Please upgrade your subscription to access this feature.",
                 }),
                 {
                     headers: {
