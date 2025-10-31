@@ -2261,7 +2261,7 @@ export const CompanyPage = () => {
                         backgroundColor: "rgba(0, 0, 0, 0.08)",
                         "& .MuiLinearProgress-bar": {
                           borderRadius: 4,
-                          backgroundColor: "secondary.main",
+                          backgroundColor: "primary.main",
                         },
                       }}
                     />

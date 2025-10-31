@@ -267,13 +267,8 @@ Deno.serve(async (req: Request) => {
 
         console.log(`Found ${reviews.length} reviews for ${year}-${month}`);
 
-        // Get company owner's preferred language
+        // Get company owner's preferred language (reusing company from earlier query)
         let preferredLanguage = "fr"; // default to French
-        const { data: company } = await supabaseClient
-            .from("companies")
-            .select("owner_id")
-            .eq("id", company_id)
-            .single();
 
         if (company?.owner_id) {
             const { data: ownerProfile } = await supabaseClient
