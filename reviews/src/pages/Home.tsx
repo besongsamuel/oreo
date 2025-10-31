@@ -41,22 +41,22 @@ export const Home = () => {
 
   const features = [
     {
-      icon: <ReviewsIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
+      icon: <ReviewsIcon sx={{ fontSize: 48, color: "#DF4333" }} />,
       title: t("home.feature1Title"),
       description: t("home.feature1Desc"),
     },
     {
-      icon: <AggregateIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
+      icon: <AggregateIcon sx={{ fontSize: 48, color: "#DF4333" }} />,
       title: t("home.feature2Title"),
       description: t("home.feature2Desc"),
     },
     {
-      icon: <KeywordsIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
+      icon: <KeywordsIcon sx={{ fontSize: 48, color: "#DF4333" }} />,
       title: t("home.feature3Title"),
       description: t("home.feature3Desc"),
     },
     {
-      icon: <SummaryIcon sx={{ fontSize: 48, color: "#0071e3" }} />,
+      icon: <SummaryIcon sx={{ fontSize: 48, color: "#DF4333" }} />,
       title: t("home.feature4Title"),
       description: t("home.feature4Desc"),
     },

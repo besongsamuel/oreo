@@ -46,7 +46,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           {/* Header with company name and location count */}
           <Stack direction="row" spacing={2} alignItems="flex-start">
             <Avatar sx={{ bgcolor: "secondary.main" }}>
-              <BusinessIcon />
+              <BusinessIcon sx={{ color: "white" }} />
             </Avatar>
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography

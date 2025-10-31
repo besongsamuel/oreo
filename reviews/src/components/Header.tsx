@@ -115,10 +115,12 @@ export const Header = () => {
               component="img"
               src="/Logo_B.png"
               alt="Boresha"
+              onClick={() => navigate("/")}
               sx={{
                 height: { xs: 32, sm: 40 },
                 width: "auto",
                 objectFit: "contain",
+                cursor: "pointer",
               }}
             />
             <Typography

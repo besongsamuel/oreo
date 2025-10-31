@@ -5,15 +5,15 @@ export const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#000000",
-      light: "#2c2c2c",
-      dark: "#000000",
+      main: "#0D2D53",
+      light: "#1a4a7a",
+      dark: "#0a1f3d",
       contrastText: "#ffffff",
     },
     secondary: {
-      main: "#0071e3",
-      light: "#4da6ff",
-      dark: "#0051a3",
+      main: "#DF4333",
+      light: "#e8665a",
+      dark: "#b83528",
       contrastText: "#ffffff",
     },
     error: {
@@ -23,7 +23,7 @@ export const theme = createTheme({
       main: "#ff9500",
     },
     info: {
-      main: "#0071e3",
+      main: "#0D2D53",
     },
     success: {
       main: "#34c759",
@@ -119,23 +119,23 @@ export const theme = createTheme({
           },
         },
         contained: {
-          backgroundColor: "#0071e3",
+          backgroundColor: "#0D2D53",
           "&:hover": {
-            backgroundColor: "#0051a3",
+            backgroundColor: "#0a1f3d",
           },
         },
         outlined: {
           borderColor: "#d2d2d7",
-          color: "#0071e3",
+          color: "#0D2D53",
           "&:hover": {
-            borderColor: "#0071e3",
-            backgroundColor: "rgba(0, 113, 227, 0.04)",
+            borderColor: "#0D2D53",
+            backgroundColor: "rgba(13, 45, 83, 0.04)",
           },
         },
         text: {
-          color: "#0071e3",
+          color: "#0D2D53",
           "&:hover": {
-            backgroundColor: "rgba(0, 113, 227, 0.04)",
+            backgroundColor: "rgba(13, 45, 83, 0.04)",
           },
         },
       },
@@ -192,7 +192,7 @@ export const theme = createTheme({
             borderRadius: "10px",
             backgroundColor: "#ffffff",
             "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#0071e3",
+              borderColor: "#0D2D53",
             },
           },
         },
@@ -201,7 +201,7 @@ export const theme = createTheme({
     MuiAvatar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#0071e3",
+          backgroundColor: "#0D2D53",
         },
       },
     },

@@ -228,7 +228,7 @@ export const CompanyHeader = ({
               }}
             />
           ) : (
-            <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 } }} />
+            <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 }, color: "white" }} />
           )}
           
           {/* Upload button - visible on hover */}
