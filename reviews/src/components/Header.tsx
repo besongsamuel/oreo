@@ -107,13 +107,12 @@ export const Header = () => {
               cursor: "pointer",
               mr: { xs: 0, md: 4 },
               flexGrow: { xs: 1, md: 0 },
-              gap: 0.5,
             }}
             onClick={() => navigate("/")}
           >
             <Box
               component="img"
-              src="/Logo_B.png"
+              src="/Logo - Boresha-2.png"
               alt="Boresha"
               onClick={() => navigate("/")}
               sx={{
@@ -123,22 +122,6 @@ export const Header = () => {
                 cursor: "pointer",
               }}
             />
-            <Typography
-              variant="h5"
-              component="span"
-              sx={{
-                fontFamily: "serif",
-                fontWeight: 700,
-                color: "#003d82",
-                fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
-                lineHeight: 1,
-                "&::first-letter": {
-                  fontSize: "1.15em",
-                },
-              }}
-            >
-              oresha
-            </Typography>
           </Box>
 
           {/* Desktop Navigation */}
