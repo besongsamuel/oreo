@@ -440,74 +440,68 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
         <Stack
           direction="row"
           spacing={2}
-          justifyContent="space-between"
+          justifyContent="center"
           alignItems="center"
+          flexWrap="wrap"
         >
           <IconButton
             onClick={handlePreviousMonth}
             disabled={!canNavigatePrevious()}
-            size="large"
+            size="medium"
           >
             <ArrowBackIcon />
           </IconButton>
 
-          <Stack
-            direction="row"
-            spacing={2}
-            alignItems="center"
-            sx={{ flex: 1, justifyContent: "center" }}
-          >
-            {/* Month Selector */}
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <Select
-                value={currentMonth}
-                onChange={(e) => setCurrentMonth(Number(e.target.value))}
-                sx={{ borderRadius: 2 }}
-              >
-                {[
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ].map((month, index) => (
-                  <MenuItem key={index + 1} value={index + 1}>
-                    {t(`monthlySummary.${month.toLowerCase()}` as any)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          {/* Month Selector */}
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <Select
+              value={currentMonth}
+              onChange={(e) => setCurrentMonth(Number(e.target.value))}
+              sx={{ borderRadius: 2 }}
+            >
+              {[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].map((month, index) => (
+                <MenuItem key={index + 1} value={index + 1}>
+                  {t(`monthlySummary.${month.toLowerCase()}` as any)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-            {/* Year Selector */}
-            <FormControl size="small" sx={{ minWidth: 100 }}>
-              <Select
-                value={currentYear}
-                onChange={(e) => setCurrentYear(Number(e.target.value))}
-                sx={{ borderRadius: 2 }}
-              >
-                {Array.from(
-                  { length: 5 },
-                  (_, i) => new Date().getFullYear() - i
-                ).map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
+          {/* Year Selector */}
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <Select
+              value={currentYear}
+              onChange={(e) => setCurrentYear(Number(e.target.value))}
+              sx={{ borderRadius: 2 }}
+            >
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <IconButton
             onClick={handleNextMonth}
             disabled={!canNavigateNext()}
-            size="large"
+            size="medium"
           >
             <ArrowForwardIcon />
           </IconButton>
@@ -602,7 +596,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                     {t("monthlySummary.keyMetrics")}
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 6 }}>
                       <Paper
                         sx={{
                           p: 2.5,
@@ -633,7 +627,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                       </Paper>
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 6 }}>
                       <Paper
                         sx={{
                           p: 2.5,
@@ -683,7 +677,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
 
                     {summaryData.sentiment_breakdown && (
                       <>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 4, md: 4, lg: 4 }}>
                           <Paper
                             sx={{
                               p: 2.5,
@@ -728,7 +722,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                           </Paper>
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 4, md: 4, lg: 4 }}>
                           <Paper
                             sx={{
                               p: 2.5,
@@ -768,7 +762,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                           </Paper>
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 4, md: 4, lg: 4 }}>
                           <Paper
                             sx={{
                               p: 2.5,

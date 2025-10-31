@@ -2038,22 +2038,6 @@ export const CompanyPage = () => {
             />
           </Box>
 
-          {/* Rating Distribution Chart */}
-          {company.total_reviews > 0 && (
-            <RatingDistributionChart
-              ratings={ratingDistribution}
-              totalReviews={company.total_reviews}
-              onRatingClick={(rating) => setSelectedRating(rating.toString())}
-            />
-          )}
-
-          {/* Timeline Chart */}
-          {timelineData.length > 0 && (
-            <Box sx={{ mb: { xs: 2, sm: 0 } }}>
-              <ReviewsTimelineChart data={timelineData} />
-            </Box>
-          )}
-
           {/* Sentiment Analysis */}
           {sentimentData && companyId && (
             <Box sx={{ mt: { xs: 2, sm: 0 } }}>
@@ -2069,6 +2053,32 @@ export const CompanyPage = () => {
               />
             </Box>
           )}
+
+          {/* Rating Distribution and Timeline Charts */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(2, 1fr)",
+              },
+              gap: { xs: 2, sm: 3 },
+            }}
+          >
+            {/* Rating Distribution Chart */}
+            {company.total_reviews > 0 && (
+              <RatingDistributionChart
+                ratings={ratingDistribution}
+                totalReviews={company.total_reviews}
+                onRatingClick={(rating) => setSelectedRating(rating.toString())}
+              />
+            )}
+
+            {/* Timeline Chart */}
+            {timelineData.length > 0 && (
+              <ReviewsTimelineChart data={timelineData} />
+            )}
+          </Box>
 
           {/* Topics Section */}
           {topics.length > 0 && (

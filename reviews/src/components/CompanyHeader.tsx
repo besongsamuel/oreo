@@ -191,73 +191,85 @@ export const CompanyHeader = ({
   return (
     <Paper sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="flex-start">
-        <Stack direction="row" spacing={1} alignItems="center">
-          {/* Upload button outside the square */}
+        {/* Square logo container */}
+        <Box
+          sx={{
+            width: { xs: 80, sm: 100, md: 120 },
+            height: { xs: 80, sm: 100, md: 120 },
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: company.logo_url ? "transparent" : "secondary.main",
+            cursor: "pointer",
+            position: "relative",
+            "&:hover": {
+              opacity: 0.9,
+              "& .logo-upload-button": {
+                opacity: 1,
+              },
+            },
+          }}
+          onClick={handleLogoClick}
+        >
+          {company.logo_url ? (
+            <Box
+              component="img"
+              src={company.logo_url}
+              alt={`${company.name} logo`}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                p: 1,
+              }}
+            />
+          ) : (
+            <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 } }} />
+          )}
+          
+          {/* Upload button - visible on hover */}
           <IconButton
             size="small"
+            className="logo-upload-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLogoClick();
+            }}
             sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
               bgcolor: "primary.main",
               color: "white",
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
+              opacity: 0,
+              transition: "opacity 0.2s ease-in-out",
               "&:hover": {
                 bgcolor: "primary.dark",
               },
             }}
-            onClick={handleLogoClick}
           >
             <CameraIcon />
           </IconButton>
-
-          {/* Square logo container */}
-          <Box
-            sx={{
-              width: { xs: 80, sm: 100, md: 120 },
-              height: { xs: 80, sm: 100, md: 120 },
-              border: 1,
-              borderColor: "divider",
-              borderRadius: 2,
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: company.logo_url ? "transparent" : "secondary.main",
-              cursor: "pointer",
-              position: "relative",
-              "&:hover": {
-                opacity: 0.9,
-              },
-            }}
-            onClick={handleLogoClick}
-          >
-            {company.logo_url ? (
-              <Box
-                component="img"
-                src={company.logo_url}
-                alt={`${company.name} logo`}
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain",
-                  p: 1,
-                }}
-              />
-            ) : (
-              <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 } }} />
-            )}
-            {uploading && (
-              <LinearProgress
-                sx={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                }}
-              />
-            )}
-          </Box>
-        </Stack>
+          
+          {uploading && (
+            <LinearProgress
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 2,
+              }}
+            />
+          )}
+        </Box>
 
         <input
           ref={fileInputRef}
@@ -267,7 +279,12 @@ export const CompanyHeader = ({
           style={{ display: "none" }}
         />
         <Box sx={{ flexGrow: 1 }}>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            sx={{ mb: 1 }}
+          >
             <Typography
               variant="h3"
               component="h1"
@@ -276,9 +293,9 @@ export const CompanyHeader = ({
               {company.name}
             </Typography>
             <IconButton
-              size="small"
+              size="medium"
               onClick={handleEditClick}
-              sx={{ color: "primary.main" }}
+              sx={{ color: "primary.main", ml: 2 }}
             >
               <EditIcon />
             </IconButton>

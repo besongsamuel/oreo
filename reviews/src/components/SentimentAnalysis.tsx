@@ -288,7 +288,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
               flexWrap="wrap"
             >
               {/* Gauge Chart */}
-              <Box sx={{ position: "relative" }}>
+              <Box sx={{ position: "relative", pb: 4 }}>
                 <Gauge
                   width={200}
                   height={200}
@@ -315,10 +315,12 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                   variant="caption"
                   sx={{
                     position: "absolute",
-                    bottom: 30,
+                    bottom: 0,
                     left: "50%",
                     transform: "translateX(-50%)",
                     color: "text.secondary",
+                    mt: 1,
+                    textAlign: "center",
                   }}
                 >
                   {t("sentimentAnalysis.sentimentScore")}
@@ -347,21 +349,6 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                     />
                   </Stack>
                 </Box>
-
-                {/* Action Plan Button */}
-                {companyId && (
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<LightbulbIcon />}
-                      onClick={handleGenerateActionPlan}
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    >
-                      {t("sentimentAnalysis.proposeActionPlan")}
-                    </Button>
-                  </Box>
-                )}
 
                 <Divider />
 
@@ -463,45 +450,17 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
           </CardContent>
         </Card>
 
-        {/* Emotions Analysis */}
-        {sentimentData.emotions && sentimentData.emotions.length > 0 && (
+        {/* Action Plan Button */}
+        {companyId && (
           <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {t("sentimentAnalysis.mostCommonEmotions")}
-            </Typography>
-            <Stack spacing={1} sx={{ mt: 2 }}>
-              {sentimentData.emotions.slice(0, 5).map((item) => (
-                <Stack
-                  key={item.emoji}
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    bgcolor: "background.default",
-                    borderRadius: 1,
-                  }}
-                >
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography variant="h4">{item.emoji}</Typography>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {item.count} {t("sentimentAnalysis.occurrences")}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {t("sentimentAnalysis.percentOfReviews", {
-                          percent: item.percentage.toFixed(1),
-                        })}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                  <Typography variant="h6" fontWeight={600}>
-                    {item.count}
-                  </Typography>
-                </Stack>
-              ))}
-            </Stack>
+            <Button
+              variant="outlined"
+              startIcon={<LightbulbIcon />}
+              onClick={handleGenerateActionPlan}
+              fullWidth
+            >
+              {t("sentimentAnalysis.proposeActionPlan")}
+            </Button>
           </Box>
         )}
       </Stack>
