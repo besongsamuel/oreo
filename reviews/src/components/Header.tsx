@@ -107,24 +107,35 @@ export const Header = () => {
               cursor: "pointer",
               mr: { xs: 0, md: 4 },
               flexGrow: { xs: 1, md: 0 },
+              gap: 0.5,
             }}
-            onClick={() => navigate("/companies")}
+            onClick={() => navigate("/")}
           >
-            <Typography
-              variant="h6"
-              component="div"
+            <Box
+              component="img"
+              src="/Logo_B.png"
+              alt="Boresha"
               sx={{
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                height: { xs: 32, sm: 40 },
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
+            <Typography
+              variant="h5"
+              component="span"
+              sx={{
+                fontFamily: "serif",
+                fontWeight: 700,
+                color: "#003d82",
+                fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
+                lineHeight: 1,
+                "&::first-letter": {
+                  fontSize: "1.15em",
+                },
               }}
             >
-              <Box component="span" sx={{ color: "#0071e3" }}>
-                B
-              </Box>
-              <Box component="span" sx={{ color: "text.primary" }}>
-                oresha
-              </Box>
+              oresha
             </Typography>
           </Box>
 
