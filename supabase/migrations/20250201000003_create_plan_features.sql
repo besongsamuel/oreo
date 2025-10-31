@@ -44,7 +44,7 @@ BEGIN
   INSERT INTO plan_features (plan_id, feature_id, limit_value)
   VALUES 
     (free_plan_id, max_companies_id, '{"max_companies": 1}'::jsonb),
-    (free_plan_id, max_reviews_sync_id, '{"max_reviews_per_sync": 15}'::jsonb)
+    (free_plan_id, max_reviews_sync_id, '{"max_reviews_per_sync": 25}'::jsonb)
   ON CONFLICT (plan_id, feature_id) DO NOTHING;
   
   -- Pro plan features

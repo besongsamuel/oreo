@@ -38,7 +38,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CompanyHeader,
-  FetchPlatformReviews,
   LocationComponent,
   MonthlySummary,
   RatingDistributionChart,
@@ -56,7 +55,6 @@ import {
 import { UserContext } from "../context/UserContext";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useSupabase } from "../hooks/useSupabase";
-import { getAllPlatforms } from "../services/platforms/platformRegistry";
 import { ReviewsService } from "../services/reviewsService";
 
 interface CompanyDetails {
@@ -149,7 +147,6 @@ export const CompanyPage = () => {
   const navigate = useNavigate();
   const {
     connectPlatformUnified,
-    connecting,
     error: platformError,
     success: platformSuccess,
   } = usePlatformIntegration();
@@ -1414,27 +1411,25 @@ export const CompanyPage = () => {
   const handlePlatformConnect = async (
     platformLocationId: string,
     locationId: string,
+    platformName: string,
     verifiedListing?: any
   ) => {
-    if (!companyId || !selectedPlatform) return;
+    if (!companyId) return;
 
     try {
       await connectPlatformUnified(
-        selectedPlatform.toLowerCase(),
+        platformName.toLowerCase(),
         platformLocationId,
         locationId,
         verifiedListing
       );
 
       // Refresh only the necessary data after successful connection
-      await refreshDataAfterConnection(
-        selectedPlatform.toLowerCase(),
-        locationId
-      );
+      await refreshDataAfterConnection(platformName.toLowerCase(), locationId);
 
       // Show success message
       setSuccessMessage(
-        `Reviews from ${selectedPlatform} will be available shortly. Use the refresh button in the top right to check for new reviews.`
+        `Reviews from ${platformName} will be available shortly. Use the refresh button in the top right to check for new reviews.`
       );
 
       // Close the dialog
@@ -1456,8 +1451,6 @@ export const CompanyPage = () => {
     setComingSoonOpen(false);
     setSelectedPlatform("");
   };
-
-  const platforms = getAllPlatforms();
 
   // Filter reviews based on review-specific filters (keyword, rating, topic)
   // Location and date filters are already applied at the query level
@@ -1683,6 +1676,7 @@ export const CompanyPage = () => {
               locations={locations}
               locationConnections={locationConnections}
               companyId={companyId}
+              companyName={company?.name || ""}
               onReviewsFetched={() => {
                 // Refresh reviews data after fetching
                 const refreshReviews = async () => {
@@ -1729,6 +1723,24 @@ export const CompanyPage = () => {
                   }
                 };
                 refreshReviews();
+              }}
+              onConnectionCreated={async () => {
+                // Refresh location connections after platform connection
+                try {
+                  const reviewsService = new ReviewsService(supabase);
+                  const connectionsMap: Record<string, any[]> = {};
+
+                  for (const location of locations) {
+                    const connections = await reviewsService
+                      .getLocationPlatformConnections(location.id)
+                      .catch(() => []);
+                    connectionsMap[location.id] = connections || [];
+                  }
+
+                  setLocationConnections(connectionsMap);
+                } catch (err) {
+                  console.error("Error refreshing location connections:", err);
+                }
               }}
             />
           )}
@@ -1990,13 +2002,6 @@ export const CompanyPage = () => {
               )}
             </Stack>
           </Paper>
-
-          {/* Fetch Reviews Section */}
-          <FetchPlatformReviews
-            platforms={platforms}
-            connecting={connecting}
-            onPlatformClick={handleFetchReviews}
-          />
 
           {/* Stats Overview */}
           <Box
@@ -2552,12 +2557,24 @@ export const CompanyPage = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Platform Connection Dialog */}
+        {/* Platform Connection Dialog - Legacy support for query parameter flow */}
         {selectedPlatform && company && (
           <PlatformConnectionDialog
             open={platformDialogOpen}
             onClose={handlePlatformDialogClose}
-            onConnect={handlePlatformConnect}
+            onConnect={(
+              platformLocationId,
+              locationId,
+              platformName,
+              verifiedListing
+            ) =>
+              handlePlatformConnect(
+                platformLocationId,
+                locationId,
+                platformName,
+                verifiedListing
+              )
+            }
             platformName={selectedPlatform.toLowerCase()}
             companyName={company.name}
             locations={companyLocations}

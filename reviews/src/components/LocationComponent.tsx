@@ -1,7 +1,7 @@
 import {
   Add as AddIcon,
   Business as BusinessIcon,
-  Refresh as RefreshIcon,
+  Link as LinkIcon,
   Star as StarIcon,
 } from "@mui/icons-material";
 import {
@@ -10,7 +10,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Divider,
   Paper,
   Stack,
@@ -20,7 +19,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
-import { getPlatformConfig } from "../services/platforms/platformRegistry";
+import {
+  getActivePlatforms,
+  getPlatformConfig,
+} from "../services/platforms/platformRegistry";
+import { PlatformConnectionDialog } from "./PlatformConnectionDialog";
 
 interface Location {
   id: string;
@@ -51,38 +54,73 @@ interface LocationComponentProps {
   locations: Location[];
   locationConnections: Record<string, LocationConnection[]>;
   companyId: string;
+  companyName?: string; // Company name for dialog
   onReviewsFetched?: () => void; // Callback to refresh data after fetching reviews
+  onConnectionCreated?: () => void; // Callback to refresh after platform connection
 }
 
 export const LocationComponent = ({
   locations,
   locationConnections,
   companyId,
+  companyName = "",
   onReviewsFetched,
+  onConnectionCreated,
 }: LocationComponentProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { fetchReviews, connecting, error, success } = usePlatformIntegration();
-  const [fetchingForConnection, setFetchingForConnection] = useState<
-    string | null
-  >(null);
+  const { connectPlatformUnified } = usePlatformIntegration();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    null
+  );
+  const [availablePlatforms, setAvailablePlatforms] = useState<
+    typeof getActivePlatforms extends () => infer R ? R : never
+  >([]);
 
-  const handleFetchReviews = async (connection: LocationConnection) => {
-    setFetchingForConnection(connection.id);
+  const handleOpenConnectDialog = (locationId: string) => {
+    setSelectedLocationId(locationId);
+    // Filter out platforms already connected to this location
+    const connectedPlatforms = (locationConnections[locationId] || []).map(
+      (conn) => conn.platform.name.toLowerCase()
+    );
+    const allPlatforms = getActivePlatforms();
+    const filtered = allPlatforms.filter(
+      (platform) => !connectedPlatforms.includes(platform.name.toLowerCase())
+    );
+    setAvailablePlatforms(filtered);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedLocationId(null);
+    setAvailablePlatforms([]);
+  };
+
+  const handlePlatformConnect = async (
+    platformLocationId: string,
+    locationId: string,
+    platformName: string,
+    verifiedListing?: any
+  ) => {
+    if (!selectedLocationId) return;
+
     try {
-      const result = await fetchReviews(
-        connection.platform.name,
-        connection.platform_location_id,
-        connection.id
+      await connectPlatformUnified(
+        platformName.toLowerCase(),
+        platformLocationId,
+        locationId,
+        verifiedListing
       );
 
-      if (result.success && onReviewsFetched) {
-        onReviewsFetched();
+      // Refresh connections after successful connection
+      if (onConnectionCreated) {
+        onConnectionCreated();
       }
     } catch (err) {
-      console.error("Failed to fetch reviews:", err);
-    } finally {
-      setFetchingForConnection(null);
+      console.error("Failed to connect platform:", err);
+      throw err; // Re-throw to let dialog handle error display
     }
   };
 
@@ -150,6 +188,17 @@ export const LocationComponent = ({
         {locations.map((location) => {
           const connections = locationConnections[location.id] || [];
 
+          // Check if all active platforms are connected to this location
+          const allPlatforms = getActivePlatforms();
+          const connectedPlatformNames = connections.map((conn) =>
+            conn.platform.name.toLowerCase()
+          );
+          const allPlatformsConnected =
+            allPlatforms.length > 0 &&
+            allPlatforms.every((platform) =>
+              connectedPlatformNames.includes(platform.name.toLowerCase())
+            );
+
           return (
             <Card key={location.id} variant="outlined">
               <CardContent>
@@ -198,67 +247,25 @@ export const LocationComponent = ({
                     )}
                   </Stack>
 
-                  {/* Fetch Reviews Buttons */}
-                  {connections.length > 0 && (
-                    <Stack spacing={1}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        {t("location.fetchReviews")}
-                      </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {connections.map((connection) => {
-                          const platformConfig = getPlatformConfig(
-                            connection.platform.name
-                          );
-                          const platformColor =
-                            platformConfig?.color || "#666666";
-                          const isFetching =
-                            fetchingForConnection === connection.id;
-
-                          return (
-                            <Button
-                              key={`fetch-${connection.id}`}
-                              variant="outlined"
-                              size="small"
-                              startIcon={
-                                isFetching ? (
-                                  <CircularProgress size={16} />
-                                ) : (
-                                  <RefreshIcon />
-                                )
-                              }
-                              onClick={() => handleFetchReviews(connection)}
-                              disabled={isFetching || connecting}
-                              sx={{
-                                borderRadius: 980,
-                                textTransform: "none",
-                                fontWeight: 500,
-                                fontSize: "0.75rem",
-                                borderColor: platformColor,
-                                color: platformColor,
-                                "&:hover": {
-                                  borderColor: platformColor,
-                                  backgroundColor: `${platformColor}08`,
-                                },
-                                "&:disabled": {
-                                  borderColor: "text.disabled",
-                                  color: "text.disabled",
-                                },
-                              }}
-                            >
-                              {isFetching
-                                ? t("location.fetching")
-                                : t("location.fetch", {
-                                    platform: connection.platform.display_name,
-                                  })}
-                            </Button>
-                          );
-                        })}
-                      </Stack>
-                    </Stack>
+                  {/* Connect Platform Button - Only show if not all platforms are connected */}
+                  {!allPlatformsConnected && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<LinkIcon />}
+                      onClick={() => handleOpenConnectDialog(location.id)}
+                      size="small"
+                      sx={{
+                        borderRadius: 980,
+                        textTransform: "none",
+                        fontWeight: 500,
+                        fontSize: "0.75rem",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      {t("location.connectPlatform", {
+                        defaultValue: "Connect Platform",
+                      })}
+                    </Button>
                   )}
 
                   <Divider />
@@ -295,6 +302,19 @@ export const LocationComponent = ({
           );
         })}
       </Box>
+
+      {/* Platform Connection Dialog */}
+      {selectedLocationId && (
+        <PlatformConnectionDialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          onConnect={handlePlatformConnect}
+          companyName={companyName}
+          locations={locations.filter((loc) => loc.id === selectedLocationId)}
+          preSelectedLocationId={selectedLocationId}
+          availablePlatforms={availablePlatforms}
+        />
+      )}
     </Paper>
   );
 };

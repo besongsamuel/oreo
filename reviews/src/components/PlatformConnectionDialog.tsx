@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -14,9 +15,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import {
+  ArrowBack as ArrowBackIcon,
+  Facebook as FacebookIcon,
+  Google as GoogleIcon,
+  RateReview as ReviewIcon,
+  Star as StarIcon,
+} from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
+import {
+  PlatformRegistryEntry,
+  getPlatformConfig,
+} from "../services/platforms/platformRegistry";
 
 interface ZembraListing {
   name: string;
@@ -45,9 +57,10 @@ interface PlatformConnectionDialogProps {
   onConnect: (
     platformLocationId: string,
     locationId: string,
+    platformName: string,
     verifiedListing?: ZembraListing
   ) => Promise<void>;
-  platformName: string;
+  platformName?: string; // Optional for location-specific mode
   companyName: string;
   locations: Array<{
     id: string;
@@ -55,6 +68,9 @@ interface PlatformConnectionDialogProps {
     address: string;
     city?: string;
   }>;
+  // Location-specific mode props
+  preSelectedLocationId?: string;
+  availablePlatforms?: PlatformRegistryEntry[];
 }
 
 const getPlatformIdLabel = (platformName: string, t: any): string => {
@@ -81,6 +97,23 @@ const getPlatformIdPlaceholder = (platformName: string, t: any): string => {
   });
 };
 
+// Get platform icon based on platform name
+const getPlatformIcon = (platformName: string) => {
+  switch (platformName.toLowerCase()) {
+    case "facebook":
+      return <FacebookIcon />;
+    case "google":
+      return <GoogleIcon />;
+    case "yelp":
+    case "tripadvisor":
+      return <ReviewIcon />;
+    case "trustpilot":
+      return <StarIcon />;
+    default:
+      return <ReviewIcon />;
+  }
+};
+
 export const PlatformConnectionDialog = ({
   open,
   onClose,
@@ -88,10 +121,18 @@ export const PlatformConnectionDialog = ({
   platformName,
   companyName,
   locations,
+  preSelectedLocationId,
+  availablePlatforms,
 }: PlatformConnectionDialogProps) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const isLocationSpecificMode = !!preSelectedLocationId;
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    preSelectedLocationId || null
+  );
+  const [selectedPlatformName, setSelectedPlatformName] = useState<string>(
+    platformName || ""
+  );
   const [platformLocationId, setPlatformLocationId] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [verifiedListing, setVerifiedListing] = useState<ZembraListing | null>(
@@ -102,12 +143,18 @@ export const PlatformConnectionDialog = ({
   );
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [availableLocations, setAvailableLocations] = useState(locations);
 
   // Filter out locations that already have connections for this platform
   useEffect(() => {
     const filterAvailableLocations = async () => {
-      if (!platformName) return;
+      if (!platformName || isLocationSpecificMode) {
+        if (isLocationSpecificMode) {
+          setAvailableLocations(locations);
+        }
+        return;
+      }
 
       // Get platform ID
       const { data: platformData } = await supabase
@@ -146,11 +193,29 @@ export const PlatformConnectionDialog = ({
     if (open) {
       filterAvailableLocations();
     }
-  }, [open, platformName, supabase, locations]);
+  }, [open, platformName, supabase, locations, isLocationSpecificMode]);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setSelectedLocation(preSelectedLocationId || null);
+      setSelectedPlatformName(platformName || "");
+      setPlatformLocationId("");
+      setVerifiedListing(null);
+      setVerificationError(null);
+      setError(null);
+      setSuccess(false);
+    }
+  }, [open, preSelectedLocationId, platformName]);
 
   const handleVerify = async () => {
     if (!platformLocationId.trim()) {
       setVerificationError(t("platform.pleaseEnterPlatformId"));
+      return;
+    }
+
+    if (!selectedPlatformName) {
+      setVerificationError("Please select a platform first");
       return;
     }
 
@@ -162,7 +227,7 @@ export const PlatformConnectionDialog = ({
       const response = await supabase.functions.invoke("zembra-client", {
         body: {
           mode: "listing",
-          network: platformName.toLowerCase(),
+          network: selectedPlatformName.toLowerCase(),
           slug: platformLocationId.trim(),
         },
       });
@@ -180,18 +245,20 @@ export const PlatformConnectionDialog = ({
   };
 
   const handleConnect = async () => {
-    if (!selectedLocation || !verifiedListing) return;
+    if (!selectedLocation || !verifiedListing || !selectedPlatformName) return;
 
     setConnecting(true);
     setError(null);
+    setSuccess(false);
 
     try {
       await onConnect(
         platformLocationId.trim(),
         selectedLocation,
+        selectedPlatformName,
         verifiedListing
       );
-      handleClose();
+      setSuccess(true);
     } catch (err: any) {
       setError(err.message || t("platform.failedConnectPlatform"));
     } finally {
@@ -200,114 +267,251 @@ export const PlatformConnectionDialog = ({
   };
 
   const handleClose = () => {
-    setSelectedLocation(null);
+    setSelectedLocation(preSelectedLocationId || null);
+    setSelectedPlatformName(platformName || "");
     setPlatformLocationId("");
     setVerifiedListing(null);
     setVerificationError(null);
     setError(null);
+    setSuccess(false);
     onClose();
   };
 
+  // Get platforms to display - use availablePlatforms if provided, otherwise use all active
+  const platformsToShow = availablePlatforms || [];
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={success ? handleClose : undefined}
+      maxWidth="md"
+      fullWidth
+    >
       <DialogTitle>
-        {t("platform.connectTo", {
-          platform:
-            platformName.charAt(0).toUpperCase() + platformName.slice(1),
-          company: companyName,
-        })}
+        {isLocationSpecificMode
+          ? t("platform.connectPlatformToLocation", {
+              defaultValue: "Connect Platform to Location",
+            })
+          : t("platform.connectTo", {
+              platform:
+                (platformName || "").charAt(0).toUpperCase() +
+                (platformName || "").slice(1),
+              company: companyName,
+            })}
       </DialogTitle>
 
       <DialogContent>
         <Stack spacing={3}>
           {error && <Alert severity="error">{error}</Alert>}
 
-          {/* Location Selection */}
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              {t("platform.selectLocation")}
-            </Typography>
-            {availableLocations.length === 0 ? (
-              <Alert severity="info">
-                {t("platform.allLocationsConnected", {
-                  platform: platformName,
-                })}
-              </Alert>
-            ) : (
-              <Stack spacing={1}>
-                {availableLocations.map((location) => (
-                  <Card
-                    key={location.id}
-                    sx={{
-                      cursor: "pointer",
-                      border: selectedLocation === location.id ? 2 : 1,
-                      borderColor:
-                        selectedLocation === location.id
-                          ? "primary.main"
-                          : "divider",
-                    }}
-                    onClick={() => setSelectedLocation(location.id)}
-                  >
-                    <CardContent sx={{ py: 2 }}>
-                      <Typography variant="subtitle1">
-                        {location.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {location.address}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </Box>
+          {/* Success Message */}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {t("platform.jobCreatedMessage", {
+                defaultValue:
+                  "A job has been created to get your reviews. Reviews will be available shortly.",
+              })}
+            </Alert>
+          )}
 
-          {/* Platform Location ID Entry */}
-          {selectedLocation && (
+          {/* Location Selection - Only show if not in location-specific mode */}
+          {!isLocationSpecificMode && (
             <Box>
               <Typography variant="h6" gutterBottom>
-                {t("platform.enterPlaceId", {
-                  label: getPlatformIdLabel(platformName, t),
-                })}
+                {t("platform.selectLocation")}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t(
-                  `platform.platformIdInstructions.${platformName.toLowerCase()}` as any,
-                  {
-                    defaultValue:
-                      "Enter the location identifier from your platform account",
-                  }
-                )}
-              </Typography>
-              <Stack spacing={2}>
-                <TextField
-                  fullWidth
-                  label={getPlatformIdLabel(platformName, t)}
-                  placeholder={getPlatformIdPlaceholder(platformName, t)}
-                  value={platformLocationId}
-                  onChange={(e) => {
-                    setPlatformLocationId(e.target.value);
-                    setVerifiedListing(null);
-                    setVerificationError(null);
-                  }}
-                  disabled={verifying || connecting}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleVerify}
-                  disabled={
-                    !platformLocationId.trim() || verifying || connecting
-                  }
-                  startIcon={verifying ? <CircularProgress size={20} /> : null}
-                >
-                  {verifying ? t("platform.finding") : t("platform.find")}
-                </Button>
-                {verificationError && (
-                  <Alert severity="error">{verificationError}</Alert>
-                )}
-              </Stack>
+              {availableLocations.length === 0 ? (
+                <Alert severity="info">
+                  {t("platform.allLocationsConnected", {
+                    platform: platformName || "",
+                  })}
+                </Alert>
+              ) : (
+                <Stack spacing={1}>
+                  {availableLocations.map((location) => (
+                    <Card
+                      key={location.id}
+                      sx={{
+                        cursor: "pointer",
+                        border: selectedLocation === location.id ? 2 : 1,
+                        borderColor:
+                          selectedLocation === location.id
+                            ? "primary.main"
+                            : "divider",
+                      }}
+                      onClick={() => setSelectedLocation(location.id)}
+                    >
+                      <CardContent sx={{ py: 2 }}>
+                        <Typography variant="subtitle1">
+                          {location.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {location.address}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
             </Box>
           )}
+
+          {/* Platform Selection Grid - Show when in location-specific mode and no platform selected */}
+          {isLocationSpecificMode &&
+            !selectedPlatformName &&
+            !success &&
+            platformsToShow.length > 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  {t("platform.selectPlatform", {
+                    defaultValue: "Select a Platform",
+                  })}
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "repeat(2, 1fr)",
+                      sm: "repeat(3, 1fr)",
+                      md: "repeat(4, 1fr)",
+                      lg: "repeat(5, 1fr)",
+                    },
+                    gap: { xs: 1.5, sm: 2 },
+                    mt: 2,
+                  }}
+                >
+                  {platformsToShow.map((platform) => (
+                    <Button
+                      key={platform.name}
+                      variant="outlined"
+                      size="large"
+                      onClick={() => {
+                        setSelectedPlatformName(platform.name);
+                        setPlatformLocationId("");
+                        setVerifiedListing(null);
+                        setVerificationError(null);
+                      }}
+                      disabled={platform.status !== "active"}
+                      sx={{
+                        py: 2,
+                        borderRadius: 3,
+                        borderColor: "divider",
+                        color: "text.primary",
+                        "&:hover": {
+                          borderColor: platform.color,
+                          bgcolor: `${platform.color}08`,
+                        },
+                        opacity: platform.status !== "active" ? 0.6 : 1,
+                      }}
+                    >
+                      {platform.displayName}
+                      {platform.status === "coming_soon" && (
+                        <Chip
+                          label={t("platform.soon")}
+                          size="small"
+                          sx={{
+                            ml: 1,
+                            height: 20,
+                            fontSize: "0.7rem",
+                            bgcolor: "text.secondary",
+                            color: "white",
+                          }}
+                        />
+                      )}
+                    </Button>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+          {/* Platform Location ID Entry - Show when platform is selected and not in success state */}
+          {selectedLocation &&
+            selectedPlatformName &&
+            !success &&
+            (isLocationSpecificMode || platformName) && (
+              <Box>
+                {/* Back button to return to platform selection */}
+                {isLocationSpecificMode && (
+                  <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => {
+                      setSelectedPlatformName("");
+                      setPlatformLocationId("");
+                      setVerifiedListing(null);
+                      setVerificationError(null);
+                    }}
+                    sx={{ mb: 2, textTransform: "none" }}
+                    disabled={verifying || connecting}
+                  >
+                    {t("common.back")}
+                  </Button>
+                )}
+                
+                {/* Platform name display */}
+                {(() => {
+                  const platformConfig = getPlatformConfig(selectedPlatformName);
+                  return (
+                    <Typography
+                      variant="h5"
+                      fontWeight={600}
+                      sx={{ mb: 1 }}
+                      color="primary"
+                    >
+                      {platformConfig?.displayName || selectedPlatformName}
+                    </Typography>
+                  );
+                })()}
+                
+                <Typography variant="h6" gutterBottom>
+                  {t("platform.enterPlaceId", {
+                    label: getPlatformIdLabel(selectedPlatformName, t),
+                  })}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {t(
+                    `platform.platformIdInstructions.${selectedPlatformName.toLowerCase()}` as any,
+                    {
+                      defaultValue:
+                        "Enter the location identifier from your platform account",
+                    }
+                  )}
+                </Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    label={getPlatformIdLabel(selectedPlatformName, t)}
+                    placeholder={getPlatformIdPlaceholder(
+                      selectedPlatformName,
+                      t
+                    )}
+                    value={platformLocationId}
+                    onChange={(e) => {
+                      setPlatformLocationId(e.target.value);
+                      setVerifiedListing(null);
+                      setVerificationError(null);
+                    }}
+                    disabled={verifying || connecting}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleVerify}
+                    disabled={
+                      !platformLocationId.trim() || verifying || connecting
+                    }
+                    startIcon={verifying ? <CircularProgress size={20} /> : null}
+                  >
+                    {verifying ? t("platform.finding") : t("platform.find")}
+                  </Button>
+                  {verificationError && (
+                    <Alert severity="error">{verificationError}</Alert>
+                  )}
+                </Stack>
+              </Box>
+            )}
 
           {/* Verified Listing Preview */}
           {verifiedListing && (
@@ -375,21 +579,30 @@ export const PlatformConnectionDialog = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={connecting}>
-          {t("common.cancel")}
-        </Button>
-        <Button
-          onClick={handleConnect}
-          variant="contained"
-          disabled={
-            !selectedLocation ||
-            !verifiedListing ||
-            connecting ||
-            !availableLocations.length
-          }
-        >
-          {connecting ? t("platform.connecting") : t("platform.connect")}
-        </Button>
+        {success ? (
+          <Button onClick={handleClose} variant="contained">
+            {t("common.close")}
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handleClose} disabled={connecting}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleConnect}
+              variant="contained"
+              disabled={
+                !selectedLocation ||
+                !verifiedListing ||
+                !selectedPlatformName ||
+                connecting ||
+                (!isLocationSpecificMode && !availableLocations.length)
+              }
+            >
+              {connecting ? t("platform.connecting") : t("platform.connect")}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   );

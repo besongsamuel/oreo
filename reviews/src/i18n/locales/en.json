@@ -371,6 +371,7 @@
     "fetchReviews": "Fetch Reviews:",
     "fetching": "Fetching...",
     "fetch": "Fetch {{platform}}",
+    "connectPlatform": "Connect Platform",
     "creating": "Creating...",
     "createLocation": "Create Location",
     "companyIdNotFound": "Company ID not found",
@@ -435,7 +436,10 @@
       "yelp": "Found in your business URL: yelp.com/biz/[business-id]",
       "opentable": "Found in your restaurant URL or OpenTable settings",
       "tripadvisor": "Found in your location URL (e.g., tripadvisor.com/Restaurant_Review...)"
-    }
+    },
+    "connectPlatformToLocation": "Connect Platform to Location",
+    "selectPlatform": "Select a Platform",
+    "jobCreatedMessage": "A job has been created to get your reviews. Reviews will be available shortly."
   },
   "pricing": {
     "title": "Pricing",

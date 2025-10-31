@@ -245,7 +245,10 @@
       "yelp": "Trouvé dans l'URL de votre entreprise : yelp.com/biz/[business-id]",
       "opentable": "Trouvé dans l'URL de votre restaurant ou les paramètres OpenTable",
       "tripadvisor": "Trouvé dans l'URL de votre emplacement (ex. : tripadvisor.com/Restaurant_Review...)"
-    }
+    },
+    "connectPlatformToLocation": "Connecter une plateforme à l'emplacement",
+    "selectPlatform": "Sélectionner une plateforme",
+    "jobCreatedMessage": "Un travail a été créé pour récupérer vos avis. Les avis seront disponibles sous peu."
   },
   "profile": {
     "title": "Paramètres du profil",
@@ -435,6 +438,7 @@
     "fetchReviews": "Récupérer les avis :",
     "fetching": "Récupération...",
     "fetch": "Récupérer {{platform}}",
+    "connectPlatform": "Connecter une plateforme",
     "creating": "Création...",
     "createLocation": "Créer l'emplacement",
     "companyIdNotFound": "ID d'entreprise non trouvé",

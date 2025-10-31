@@ -23,7 +23,7 @@ export const PLATFORM_REGISTRY: Record<string, PlatformRegistryEntry> = {
     },
     google: {
         name: "google",
-        displayName: "Google Business Profile",
+        displayName: "Google",
         color: "#4285F4",
         iconUrl:
             "https://www.gstatic.com/images/branding/product/1x/google_blue_24dp.png",
