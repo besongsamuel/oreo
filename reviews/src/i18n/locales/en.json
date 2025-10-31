@@ -323,7 +323,10 @@
     "generateSummary": "Generate Summary",
     "summaryAlreadyGenerated": "Summary already generated",
     "summaryGeneratedSuccess": "Summary generated successfully!",
-    "totalOutOfFive": "/ 5.0"
+    "totalOutOfFive": "/ 5.0",
+    "requiresPaidPlan": "Monthly summaries require a paid plan",
+    "upgradeToAccess": "Upgrade to Pro or Enterprise to access monthly summary features",
+    "viewPricing": "View Pricing"
   },
   "successLocation": {
     "seoTitle": "Location Created - Boresha",

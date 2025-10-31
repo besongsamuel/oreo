@@ -41,7 +41,7 @@ COMMENT ON FUNCTION is_admin(UUID) IS 'Returns true if the user has admin role';
 CREATE OR REPLACE FUNCTION has_feature(user_id UUID, feature_code TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
-  plan_id UUID;
+  user_plan_id UUID;
   feature_exists BOOLEAN;
 BEGIN
   -- Admins have all features
@@ -49,13 +49,13 @@ BEGIN
     RETURN true;
   END IF;
   
-  plan_id := get_user_plan_id(user_id);
+  user_plan_id := get_user_plan_id(user_id);
   
   SELECT EXISTS(
     SELECT 1
     FROM plan_features pf
     JOIN features f ON pf.feature_id = f.id
-    WHERE pf.plan_id = plan_id AND f.code = feature_code
+    WHERE pf.plan_id = user_plan_id AND f.code = feature_code
   ) INTO feature_exists;
   
   RETURN feature_exists;
@@ -68,7 +68,7 @@ COMMENT ON FUNCTION has_feature(UUID, TEXT) IS 'Returns true if the user plan ha
 CREATE OR REPLACE FUNCTION get_plan_limit(user_id UUID, limit_type TEXT)
 RETURNS INTEGER AS $$
 DECLARE
-  plan_id UUID;
+  user_plan_id UUID;
   limit_val INTEGER;
   limit_json JSONB;
 BEGIN
@@ -77,13 +77,13 @@ BEGIN
     RETURN NULL; -- NULL means unlimited
   END IF;
   
-  plan_id := get_user_plan_id(user_id);
+  user_plan_id := get_user_plan_id(user_id);
   
   -- Get the limit_value JSONB for the limit type
   SELECT pf.limit_value->limit_type INTO limit_json
   FROM plan_features pf
   JOIN features f ON pf.feature_id = f.id
-  WHERE pf.plan_id = plan_id 
+  WHERE pf.plan_id = user_plan_id 
     AND f.code IN ('max_companies', 'max_locations_per_company', 'max_reviews_per_sync');
   
   -- Extract integer value from JSONB

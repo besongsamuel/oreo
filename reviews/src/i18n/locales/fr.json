@@ -387,7 +387,10 @@
     "generateSummary": "Générer le résumé",
     "summaryAlreadyGenerated": "Résumé déjà généré",
     "summaryGeneratedSuccess": "Résumé généré avec succès !",
-    "totalOutOfFive": "/ 5.0"
+    "totalOutOfFive": "/ 5.0",
+    "requiresPaidPlan": "Les résumés mensuels nécessitent un plan payant",
+    "upgradeToAccess": "Passez à Pro ou Enterprise pour accéder aux fonctionnalités de résumé mensuel",
+    "viewPricing": "Voir les tarifs"
   },
   "successLocation": {
     "seoTitle": "Emplacement créé - Boresha",
