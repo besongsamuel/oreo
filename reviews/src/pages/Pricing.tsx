@@ -126,6 +126,14 @@ export const Pricing = () => {
     const feature = plan.features?.find((f) => f.feature_code === featureCode);
     if (!feature) return "—";
 
+    // Handle Review Sync Limit for pro and enterprise plans
+    if (
+      featureCode === "max_reviews_per_sync" &&
+      (plan.plan_name === "pro" || plan.plan_name === "enterprise")
+    ) {
+      return t("pricing.unlimited");
+    }
+
     // Handle limit features
     if (feature.limit_value && typeof feature.limit_value === "object") {
       const limits = feature.limit_value;
@@ -142,7 +150,7 @@ export const Pricing = () => {
 
     // Boolean features
     if (feature.feature_code === "unlimited_reviews") {
-      return "Unlimited";
+      return t("pricing.unlimited");
     }
     if (feature.feature_code === "monthly_summary") {
       return "✓";
@@ -160,7 +168,7 @@ export const Pricing = () => {
             onClick={() => navigate("/")}
             sx={{ mb: 4 }}
           >
-            Back to Home
+            {t("pricing.backToHome")}
           </Button>
 
           <Stack spacing={6}>
@@ -174,19 +182,14 @@ export const Pricing = () => {
               >
                 {plans.length > 0 && plans[0].pricing_page_title
                   ? plans[0].pricing_page_title
-                  : t("pricing.pricingTitle", {
-                      defaultValue: "Simple Pricing",
-                    })}
+                  : t("pricing.pricingTitle")}
               </Typography>
               <Typography
                 variant="h6"
                 color="text.secondary"
                 sx={{ maxWidth: "600px", mx: "auto" }}
               >
-                {t("pricing.pricingSubtitle", {
-                  defaultValue:
-                    "Choose the plan that fits your business needs. Upgrade or downgrade at any time.",
-                })}
+                {t("pricing.pricingSubtitle")}
               </Typography>
             </Box>
 
@@ -194,7 +197,7 @@ export const Pricing = () => {
             {plansLoading ? (
               <Box sx={{ textAlign: "center", py: 8 }}>
                 <Typography variant="body1" color="text.secondary">
-                  Loading plans...
+                  {t("pricing.loadingPlans")}
                 </Typography>
               </Box>
             ) : (
@@ -246,7 +249,7 @@ export const Pricing = () => {
                             zIndex: 1,
                           }}
                         >
-                          MOST POPULAR
+                          {t("pricing.mostPopular")}
                         </Box>
                       )}
                       {isCurrentPlan && (
@@ -265,7 +268,7 @@ export const Pricing = () => {
                             zIndex: 1,
                           }}
                         >
-                          CURRENT
+                          {t("pricing.current")}
                         </Box>
                       )}
                       <CardContent
@@ -292,7 +295,7 @@ export const Pricing = () => {
                                 variant="body1"
                                 color="text.secondary"
                               >
-                                /month
+                                {t("pricing.perMonth")}
                               </Typography>
                             </Stack>
                           </Box>
@@ -310,12 +313,12 @@ export const Pricing = () => {
                             }}
                           >
                             {isCurrentPlan
-                              ? "Current Plan"
+                              ? t("pricing.currentPlan")
                               : isFree
-                              ? "Get Started"
+                              ? t("pricing.getStarted")
                               : loading
-                              ? "Loading..."
-                              : "Choose Plan"}
+                              ? t("pricing.loading")
+                              : t("pricing.choosePlanButton")}
                           </Button>
                         </Stack>
                       </CardContent>
@@ -339,7 +342,7 @@ export const Pricing = () => {
                         <TableRow sx={{ bgcolor: "background.default" }}>
                           <TableCell>
                             <Typography variant="subtitle2" fontWeight={600}>
-                              Feature
+                              {t("pricing.feature")}
                             </Typography>
                           </TableCell>
                           {plans.map((plan) => (
@@ -411,53 +414,43 @@ export const Pricing = () => {
                 gutterBottom
                 textAlign="center"
               >
-                Frequently Asked Questions
+                {t("pricing.faqTitle")}
               </Typography>
               <Box sx={{ maxWidth: "800px", mx: "auto", mt: 4 }}>
                 <Stack spacing={3}>
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>
-                      Can I upgrade or downgrade my plan?
+                      {t("pricing.faq1Question")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Yes, you can change your plan at any time. When you
-                      upgrade, you'll be charged a prorated amount. When you
-                      downgrade, the changes will take effect at the end of your
-                      current billing cycle.
+                      {t("pricing.faq1Answer")}
                     </Typography>
                   </Paper>
 
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>
-                      What happens if I exceed my free plan limit?
+                      {t("pricing.faq2Question")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      When you reach 15 reviews on the free plan, you can either
-                      upgrade to a paid plan for unlimited reviews, or wait
-                      until the next sync when you can fetch more reviews.
+                      {t("pricing.faq2Answer")}
                     </Typography>
                   </Paper>
 
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>
-                      How do monthly summaries work?
+                      {t("pricing.faq3Question")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Monthly summaries are automatically generated at the end
-                      of each month for paid plan users. They include aggregated
-                      sentiment data, top keywords, topics, and trends to help
-                      you understand customer feedback patterns.
+                      {t("pricing.faq3Answer")}
                     </Typography>
                   </Paper>
 
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>
-                      What platforms are supported?
+                      {t("pricing.faq4Question")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      We support Google, Facebook, Yelp, OpenTable, and
-                      TripAdvisor. More platforms are being added regularly
-                      based on user feedback.
+                      {t("pricing.faq4Answer")}
                     </Typography>
                   </Paper>
                 </Stack>
@@ -467,10 +460,10 @@ export const Pricing = () => {
             {/* CTA Section */}
             <Box textAlign="center" sx={{ py: 6 }}>
               <Typography variant="h5" fontWeight={600} gutterBottom>
-                Ready to get started?
+                {t("pricing.ctaTitle")}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Join hundreds of businesses managing their online reputation
+                {t("pricing.ctaSubtitle")}
               </Typography>
               <Button
                 variant="contained"
@@ -484,7 +477,7 @@ export const Pricing = () => {
                   textTransform: "none",
                 }}
               >
-                Start Your Free Trial
+                {t("pricing.startFreeTrial")}
               </Button>
             </Box>
           </Stack>

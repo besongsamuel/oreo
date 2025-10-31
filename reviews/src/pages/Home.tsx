@@ -21,7 +21,6 @@ import {
   SummaryIcon,
 } from "../components/icons/FeatureIcons";
 import { UserContext } from "../context/UserContext";
-import { useSubscriptionPlans, SubscriptionPlan } from "../hooks/useSubscriptionPlans";
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -29,7 +28,6 @@ export const Home = () => {
   const profile = context?.profile;
   const user = context?.user;
   const navigate = useNavigate();
-  const { plans, loading: plansLoading } = useSubscriptionPlans();
 
   const handleGetStarted = () => {
     if (user) {
@@ -169,149 +167,6 @@ export const Home = () => {
                 </Card>
               ))}
             </Box>
-          </Container>
-        </Box>
-
-        {/* Pricing Section */}
-        <Box sx={{ py: 10, bgcolor: "background.default" }}>
-          <Container maxWidth="md">
-            <Typography
-              variant="h3"
-              fontWeight={600}
-              textAlign="center"
-              gutterBottom
-            >
-              {plans.length > 0 && plans[0].pricing_page_title 
-                ? plans[0].pricing_page_title 
-                : t("home.pricingTitle")}
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              textAlign="center"
-              sx={{ mb: 6 }}
-            >
-              {t("home.pricingSubtitle")}
-            </Typography>
-
-            {plansLoading ? (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Loading pricing...
-                </Typography>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { 
-                    xs: "1fr", 
-                    md: plans.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)"
-                  },
-                  gap: 4,
-                  mt: 6,
-                }}
-              >
-                {plans.map((plan) => {
-                  const isPopular = plan.plan_name === "pro";
-                  const isFree = plan.price_monthly === 0;
-                  
-                  // Get key features for display (limit to 4 most important)
-                  const keyFeatures = plan.features?.slice(0, 4) || [];
-
-                  return (
-                    <Card
-                      key={plan.plan_id}
-                      variant="outlined"
-                      sx={{
-                        borderRadius: 3,
-                        border: isPopular ? "2px solid" : "1px solid",
-                        borderColor: isPopular ? "#0071e3" : "divider",
-                        position: "relative",
-                        overflow: "visible",
-                      }}
-                    >
-                      {isPopular && (
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: -12,
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            bgcolor: "#0071e3",
-                            color: "white",
-                            px: 2,
-                            py: 0.5,
-                            borderRadius: 2,
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            zIndex: 1,
-                          }}
-                        >
-                          {t("home.mostPopular")}
-                        </Box>
-                      )}
-                      <CardContent sx={{ p: 4, pt: isPopular ? 5 : 4 }}>
-                        <Stack spacing={3}>
-                          <Box>
-                            <Typography variant="h5" fontWeight={600} gutterBottom>
-                              {plan.plan_display_name}
-                            </Typography>
-                            <Stack direction="row" spacing={1} alignItems="baseline">
-                              <Typography variant="h3" fontWeight={700}>
-                                ${plan.price_monthly.toFixed(0)}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {t("home.monthly")}
-                              </Typography>
-                            </Stack>
-                          </Box>
-
-                          <Stack spacing={2}>
-                            {keyFeatures.map((feature) => (
-                              <Box
-                                key={feature.feature_id}
-                                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                              >
-                                <CheckIcon color="success" />
-                                <Typography variant="body2">
-                                  {feature.feature_display_name}
-                                </Typography>
-                              </Box>
-                            ))}
-                            {keyFeatures.length === 0 && (
-                              <Typography variant="body2" color="text.secondary">
-                                {t("home.featureReviews")}
-                              </Typography>
-                            )}
-                          </Stack>
-
-                          <Button
-                            variant={isPopular ? "contained" : "outlined"}
-                            fullWidth
-                            onClick={() => {
-                              if (isFree) {
-                                navigate("/auth/signup");
-                              } else {
-                                handleGetStarted();
-                              }
-                            }}
-                            sx={{
-                              borderRadius: 980,
-                              py: 1.5,
-                              textTransform: "none",
-                              fontSize: "1rem",
-                            }}
-                          >
-                            {isFree ? t("home.getStarted") : t("home.startFreeTrial")}
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </Box>
-            )}
           </Container>
         </Box>
       </Box>
