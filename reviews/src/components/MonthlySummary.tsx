@@ -683,7 +683,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                               p: 2.5,
                               textAlign: "center",
                               borderRadius: 2,
-                              bgcolor: "rgba(76, 175, 80, 0.08)",
+                              bgcolor: "rgba(244, 67, 54, 0.08)",
                               transition: "all 0.2s",
                               "&:hover": {
                                 transform: "translateY(-2px)",
@@ -694,26 +694,26 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                             <Typography
                               variant="caption"
                               fontWeight={600}
-                              color="success.dark"
+                              color="error.dark"
                               sx={{ mb: 0.5, display: "block" }}
                             >
-                              {t("monthlySummary.positive")}
+                              {t("monthlySummary.negative")}
                             </Typography>
                             <Typography
                               variant="h4"
                               fontWeight={700}
-                              color="success.main"
+                              color="error.main"
                             >
-                              {summaryData.sentiment_breakdown.positive}
+                              {summaryData.sentiment_breakdown.negative}
                             </Typography>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                             >
-                              {summaryData.sentiment_breakdown.positive > 0 &&
+                              {summaryData.sentiment_breakdown.negative > 0 &&
                                 summaryData.total_reviews > 0 &&
                                 Math.round(
-                                  (summaryData.sentiment_breakdown.positive /
+                                  (summaryData.sentiment_breakdown.negative /
                                     summaryData.total_reviews) *
                                     100
                                 )}
@@ -768,7 +768,7 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                               p: 2.5,
                               textAlign: "center",
                               borderRadius: 2,
-                              bgcolor: "rgba(244, 67, 54, 0.08)",
+                              bgcolor: "rgba(76, 175, 80, 0.08)",
                               transition: "all 0.2s",
                               "&:hover": {
                                 transform: "translateY(-2px)",
@@ -779,26 +779,26 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
                             <Typography
                               variant="caption"
                               fontWeight={600}
-                              color="error.dark"
+                              color="success.dark"
                               sx={{ mb: 0.5, display: "block" }}
                             >
-                              {t("monthlySummary.negative")}
+                              {t("monthlySummary.positive")}
                             </Typography>
                             <Typography
                               variant="h4"
                               fontWeight={700}
-                              color="error.main"
+                              color="success.main"
                             >
-                              {summaryData.sentiment_breakdown.negative}
+                              {summaryData.sentiment_breakdown.positive}
                             </Typography>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                             >
-                              {summaryData.sentiment_breakdown.negative > 0 &&
+                              {summaryData.sentiment_breakdown.positive > 0 &&
                                 summaryData.total_reviews > 0 &&
                                 Math.round(
-                                  (summaryData.sentiment_breakdown.negative /
+                                  (summaryData.sentiment_breakdown.positive /
                                     summaryData.total_reviews) *
                                     100
                                 )}
