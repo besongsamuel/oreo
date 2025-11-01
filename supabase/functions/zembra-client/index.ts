@@ -62,20 +62,20 @@ serve(async (req) => {
 
             if (supabaseUrl && supabaseKey) {
                 const supabaseClient = createClient(supabaseUrl, supabaseKey);
-                
+
                 // Check if user has unlimited_reviews feature
                 const { data: hasFeature } = await supabaseClient.rpc(
                     "has_feature",
-                    { user_id: userId, feature_code: "unlimited_reviews" }
+                    { user_id: userId, feature_code: "unlimited_reviews" },
                 );
-                
+
                 hasUnlimitedReviews = hasFeature === true;
-                
+
                 // Get max reviews limit if not unlimited
                 if (!hasUnlimitedReviews) {
                     const { data: limit } = await supabaseClient.rpc(
                         "get_plan_limit",
-                        { user_id: userId, limit_type: "max_reviews_per_sync" }
+                        { user_id: userId, limit_type: "max_reviews_per_sync" },
                     );
                     maxReviewsLimit = limit;
                 }
@@ -86,7 +86,10 @@ serve(async (req) => {
         const baseUrl = new URL(ZEMBRA_API_BASE);
         baseUrl.searchParams.set("network", network);
         baseUrl.searchParams.set("slug", slug);
-        baseUrl.searchParams.set("monitoring", hasUnlimitedReviews ? "basic" : "none");
+        baseUrl.searchParams.set(
+            "monitoring",
+            hasUnlimitedReviews ? "basic" : "none",
+        );
         baseUrl.searchParams.set("sortBy", "timestamp");
         baseUrl.searchParams.set("sortDirection", "DESC");
 
@@ -96,9 +99,10 @@ serve(async (req) => {
         });
 
         // Add sizeLimit for free users (create-review-job mode only)
-        // Default to 15 for free users, or use the plan limit if set
+        // Default to 25 for free users (Zembra API minimum), or use the plan limit if set
         if (mode === "create-review-job" && !hasUnlimitedReviews) {
-            const limit = maxReviewsLimit || 15; // Default to 15 for free plan
+            // Ensure sizeLimit is at least 25 (Zembra API requirement)
+            const limit = maxReviewsLimit ? Math.max(25, maxReviewsLimit) : 25;
             baseUrl.searchParams.set("sizeLimit", limit.toString());
         }
 
