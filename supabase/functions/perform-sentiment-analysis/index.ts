@@ -33,6 +33,76 @@ interface LocationData {
   company_id: string;
 }
 
+/**
+ * Wait for rate limit before making OpenAI API call
+ * Uses database to track requests across function invocations
+ */
+async function waitForRateLimit(
+  supabaseClient: SupabaseClient,
+  maxRequestsPerMinute: number = 200, // 200 requests per minute for gpt-3.5-turbo
+): Promise<void> {
+  const now = new Date();
+  const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+
+  // Check how many requests we've made in the last minute
+  const { data: recentRequests, error } = await supabaseClient
+    .from("openai_rate_limit_log")
+    .select("created_at")
+    .gte("created_at", oneMinuteAgo.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(maxRequestsPerMinute);
+
+  if (error) {
+    console.warn(
+      `Error checking rate limit: ${error.message}, continuing anyway`,
+    );
+    // If table doesn't exist yet, add a small delay and continue
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return;
+  }
+
+  const requestCount = recentRequests?.length || 0;
+
+  if (requestCount >= maxRequestsPerMinute) {
+    // Calculate how long to wait based on oldest request
+    const oldestRequest = recentRequests?.[recentRequests.length - 1];
+    if (oldestRequest) {
+      const oldestTime = new Date(oldestRequest.created_at).getTime();
+      const elapsed = now.getTime() - oldestTime;
+      const waitTime = Math.max(0, 61000 - elapsed); // Wait until a minute has passed
+
+      if (waitTime > 0) {
+        console.log(
+          `Rate limit: ${requestCount}/${maxRequestsPerMinute} requests in last minute. Waiting ${
+            Math.round(waitTime / 1000)
+          }s before next request`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+  } else {
+    // Add a small jitter delay (0-2 seconds) to spread out simultaneous requests
+    const jitter = Math.random() * 2000;
+    await new Promise((resolve) => setTimeout(resolve, jitter));
+  }
+
+  // Log this request
+  await supabaseClient
+    .from("openai_rate_limit_log")
+    .insert({ created_at: now.toISOString() });
+
+  // Cleanup old entries periodically (roughly 1% of the time)
+  if (Math.random() < 0.01) {
+    try {
+      await supabaseClient.rpc("cleanup_openai_rate_limit_log");
+    } catch (err: unknown) {
+      // Ignore cleanup errors
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.warn("Cleanup failed (non-critical):", errorMessage);
+    }
+  }
+}
+
 Deno.serve(async (req: Request) => {
   try {
     // Initialize Supabase client
@@ -133,6 +203,7 @@ Deno.serve(async (req: Request) => {
       review.content,
       openaiApiKey,
       preferredLanguage,
+      supabaseClient, // Pass client for rate limiting
     );
 
     // Insert sentiment analysis
@@ -207,7 +278,13 @@ async function callOpenAIForAnalysis(
   content: string,
   apiKey: string,
   language: string = "fr",
+  supabaseClient?: SupabaseClient,
 ): Promise<EnhancedAnalysisResult> {
+  // Wait for rate limit before making the API call
+  if (supabaseClient) {
+    await waitForRateLimit(supabaseClient, 200); // 200 requests per minute
+  }
+
   const languageNames: Record<string, string> = {
     "en": "English",
     "fr": "French",
