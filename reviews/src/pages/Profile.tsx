@@ -1,5 +1,6 @@
-import { Check as CheckIcon, Star as StarIcon } from "@mui/icons-material";
+import { Check as CheckIcon, Star as StarIcon, Warning as WarningIcon } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -19,9 +20,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { PlatformSelection } from "../components/PlatformSelection";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
@@ -46,7 +48,52 @@ export const Profile = () => {
   const [success, setSuccess] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [showPlatformManagement, setShowPlatformManagement] = useState(false);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Array<{ id: string; name: string; display_name: string }>>([]);
+  const [platformsLoading, setPlatformsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch user's selected platforms
+  useEffect(() => {
+    const fetchSelectedPlatforms = async () => {
+      if (!user?.id) return;
+
+      setPlatformsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("user_platforms")
+          .select(
+            `
+            platform_id,
+            platforms:platform_id (
+              id,
+              name,
+              display_name
+            )
+          `
+          )
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+
+        const platforms = (data || [])
+          .map((item: any) => ({
+            id: item.platforms?.id,
+            name: item.platforms?.name,
+            display_name: item.platforms?.display_name,
+          }))
+          .filter((p: any) => p.id && p.name && p.display_name);
+
+        setSelectedPlatforms(platforms);
+      } catch (err: any) {
+        console.error("Error fetching selected platforms:", err);
+      } finally {
+        setPlatformsLoading(false);
+      }
+    };
+
+    fetchSelectedPlatforms();
+  }, [user?.id, supabase]);
 
   // Show skeleton if profile is not yet loaded
   if (!user || !profile) {
@@ -647,6 +694,146 @@ export const Profile = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Platform Selection */}
+        <Card elevation={2}>
+          <CardContent>
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Platform Selection
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your selected review platforms
+                </Typography>
+                <Divider sx={{ mt: 2 }} />
+              </Box>
+
+              {platformsLoading ? (
+                <Typography variant="body2" color="text.secondary">
+                  Loading platforms...
+                </Typography>
+              ) : (
+                <>
+                  {selectedPlatforms.length > 0 ? (
+                    <>
+                      <Alert
+                        severity="warning"
+                        icon={<WarningIcon />}
+                        sx={{ mb: 2 }}
+                      >
+                        <Typography variant="body2" fontWeight={600}>
+                          Platform selection cannot be changed
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                          Your platform selection is permanent. Please choose carefully.
+                        </Typography>
+                      </Alert>
+
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          gutterBottom
+                          display="block"
+                          sx={{ mb: 1 }}
+                        >
+                          Selected Platforms
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                          {selectedPlatforms.map((platform) => (
+                            <Chip
+                              key={platform.id}
+                              label={platform.display_name}
+                              color="primary"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        You have selected {selectedPlatforms.length} of{" "}
+                        {context?.getPlanLimit?.("max_platforms") || 3} available
+                        platform{selectedPlatforms.length !== 1 ? "s" : ""}.
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Alert severity="info">
+                        <Typography variant="body2">
+                          You haven't selected any platforms yet. Use the platform
+                          selection below to choose your review platforms.
+                        </Typography>
+                      </Alert>
+
+                      {user?.id && (
+                        <Button
+                          variant="contained"
+                          onClick={() => setShowPlatformManagement(true)}
+                        >
+                          Select Platforms
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {showPlatformManagement && user?.id && (
+                    <Box>
+                      <Button
+                        variant="text"
+                        onClick={() => setShowPlatformManagement(false)}
+                        sx={{ mb: 2 }}
+                      >
+                        ← Back to Profile
+                      </Button>
+                      <PlatformSelection
+                        userId={user.id}
+                        onComplete={() => {
+                          setShowPlatformManagement(false);
+                          // Refresh platforms after selection
+                          const fetchSelectedPlatforms = async () => {
+                            try {
+                              const { data, error } = await supabase
+                                .from("user_platforms")
+                                .select(
+                                  `
+                                  platform_id,
+                                  platforms:platform_id (
+                                    id,
+                                    name,
+                                    display_name
+                                  )
+                                `
+                                )
+                                .eq("user_id", user.id);
+
+                              if (error) throw error;
+
+                              const platforms = (data || [])
+                                .map((item: any) => ({
+                                  id: item.platforms?.id,
+                                  name: item.platforms?.name,
+                                  display_name: item.platforms?.display_name,
+                                }))
+                                .filter((p: any) => p.id && p.name && p.display_name);
+
+                              setSelectedPlatforms(platforms);
+                            } catch (err: any) {
+                              console.error("Error fetching selected platforms:", err);
+                            }
+                          };
+                          fetchSelectedPlatforms();
+                        }}
+                        allowSkip={false}
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
 
         <Card elevation={2}>
           <CardContent>

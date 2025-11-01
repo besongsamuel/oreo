@@ -2,6 +2,7 @@ import {
   Add as AddIcon,
   ArrowForward as ArrowForwardIcon,
   Business as BusinessIcon,
+  Clear as ClearIcon,
   Edit as EditIcon,
   Facebook as FacebookIcon,
   LocationOn as LocationIcon,
@@ -29,6 +30,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -37,6 +39,7 @@ import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
+import { PlatformSelection } from "../components/PlatformSelection";
 import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
@@ -121,6 +124,10 @@ export const Companies = () => {
     useState<null | HTMLElement>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [selectedPlatformsCount, setSelectedPlatformsCount] =
+    useState<number>(0);
+  const [platformCheckLoading, setPlatformCheckLoading] = useState(true);
+  const [showPlatformSelection, setShowPlatformSelection] = useState(false);
 
   const platforms = getAllPlatforms();
 
@@ -128,6 +135,33 @@ export const Companies = () => {
     fetchCompanies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, profile]);
+
+  // Check platform selection status
+  useEffect(() => {
+    const checkPlatformSelection = async () => {
+      if (!profile?.id) {
+        setPlatformCheckLoading(false);
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from("user_platforms")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", profile.id);
+
+        if (error) throw error;
+
+        setSelectedPlatformsCount(count || 0);
+      } catch (err: any) {
+        console.error("Error checking platform selection:", err);
+      } finally {
+        setPlatformCheckLoading(false);
+      }
+    };
+
+    checkPlatformSelection();
+  }, [profile?.id, supabase]);
 
   const fetchCompanies = async () => {
     if (!profile) {
@@ -160,10 +194,10 @@ export const Companies = () => {
       } else {
         // Regular users see only their companies
         const result = await supabase
-        .from("companies")
-        .select("*")
-        .eq("owner_id", profile.id)
-        .order("created_at", { ascending: false });
+          .from("companies")
+          .select("*")
+          .eq("owner_id", profile.id)
+          .order("created_at", { ascending: false });
         companiesData = result.data;
         companiesError = result.error;
       }
@@ -412,15 +446,33 @@ export const Companies = () => {
             direction="row"
             justifyContent="space-between"
             alignItems="center"
+            flexWrap="wrap"
+            gap={2}
           >
-            <Box>
-              <Typography variant="h4" component="h1" gutterBottom>
-                {t("companies.title")}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {t("companies.loading")}
-              </Typography>
+            <Box sx={{ flexGrow: 1 }}>
+              <Skeleton
+                variant="text"
+                width="40%"
+                height={48}
+                sx={{
+                  fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
+                  mb: 1,
+                }}
+              />
+              <Skeleton
+                variant="text"
+                width="30%"
+                height={24}
+                sx={{ display: { xs: "none", sm: "block" } }}
+              />
             </Box>
+            <Skeleton
+              variant="rounded"
+              sx={{
+                width: { xs: 80, sm: 180 },
+                height: 40,
+              }}
+            />
           </Stack>
 
           {/* Companies Grid Skeleton */}
@@ -509,6 +561,58 @@ export const Companies = () => {
 
           {error && <Alert severity="error">{error}</Alert>}
 
+          {/* Platform Selection Prompt */}
+          {!platformCheckLoading &&
+            profile &&
+            profile.role !== "admin" &&
+            (() => {
+              const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
+              const remainingPlatforms = maxPlatforms - selectedPlatformsCount;
+
+              if (remainingPlatforms > 0) {
+                return (
+                  <Alert
+                    severity="info"
+                    sx={{
+                      "& .MuiAlert-message": {
+                        width: "100%",
+                      },
+                    }}
+                    action={
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={() => setShowPlatformSelection(true)}
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Select Platforms
+                      </Button>
+                    }
+                  >
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" fontWeight={600}>
+                        Complete Your Platform Selection
+                      </Typography>
+                      <Typography variant="body2">
+                        You can still select {remainingPlatforms} more platform
+                        {remainingPlatforms !== 1 ? "s" : ""}. Complete your
+                        platform selection to get the most out of your
+                        subscription.
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ mt: 0.5, fontStyle: "italic" }}
+                      >
+                        Note: Your platform selection cannot be changed after
+                        completion.
+                      </Typography>
+                    </Stack>
+                  </Alert>
+                );
+              }
+              return null;
+            })()}
+
           {/* Admin View - Separate sections */}
           {profile?.role === "admin" ? (
             <>
@@ -548,8 +652,20 @@ export const Companies = () => {
                       .filter((c) => c.owner_id === profile.id)
                       .map((company) => (
                         <Box key={company.id} sx={{ height: "100%" }}>
-                          <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                            <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                          <Card
+                            sx={{
+                              height: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
+                            <CardContent
+                              sx={{
+                                flexGrow: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                            >
                               <Stack spacing={2} sx={{ flexGrow: 1 }}>
                                 <Stack
                                   direction="row"
@@ -728,8 +844,20 @@ export const Companies = () => {
                       .filter((c) => c.owner_id !== profile.id)
                       .map((company) => (
                         <Box key={company.id} sx={{ height: "100%" }}>
-                          <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                            <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                          <Card
+                            sx={{
+                              height: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
+                            <CardContent
+                              sx={{
+                                flexGrow: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                            >
                               <Stack spacing={2} sx={{ flexGrow: 1 }}>
                                 <Stack
                                   direction="row"
@@ -885,185 +1013,197 @@ export const Companies = () => {
           ) : (
             <>
               {/* Regular User View */}
-          {companies.length === 0 ? (
-            <Card>
-              <CardContent>
-                <Stack spacing={2} alignItems="center" py={4}>
-                  <BusinessIcon
-                    sx={{ fontSize: 64, color: "text.secondary" }}
-                  />
-                  <Typography variant="h6" color="text.secondary">
-                    {t("companies.noCompaniesYet")}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("companies.addFirstCompany")}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                  >
-                    {t("companies.addCompany")}
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          ) : (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
-                },
-                gap: 3,
+              {companies.length === 0 ? (
+                <Card>
+                  <CardContent>
+                    <Stack spacing={2} alignItems="center" py={4}>
+                      <BusinessIcon
+                        sx={{ fontSize: 64, color: "text.secondary" }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
+                        {t("companies.noCompaniesYet")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("companies.addFirstCompany")}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                      >
+                        {t("companies.addCompany")}
+                      </Button>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      md: "repeat(2, 1fr)",
+                      lg: "repeat(3, 1fr)",
+                    },
+                    gap: 3,
                     alignItems: "stretch",
-              }}
-            >
-              {companies.map((company) => (
+                  }}
+                >
+                  {companies.map((company) => (
                     <Box key={company.id} sx={{ height: "100%" }}>
-                      <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                        <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-                          <Stack spacing={2} sx={{ flexGrow: 1 }}>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="flex-start"
+                      <Card
+                        sx={{
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
                         >
-                          <Box sx={{ flexGrow: 1 }}>
-                            <Typography
-                              variant="h6"
-                              gutterBottom
-                              onClick={() =>
-                                navigate(`/companies/${company.id}`)
-                              }
-                              sx={{
-                                cursor: "pointer",
-                                color: "primary.main",
-                                "&:hover": {
-                                  textDecoration: "underline",
-                                },
-                              }}
+                          <Stack spacing={2} sx={{ flexGrow: 1 }}>
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="flex-start"
                             >
-                              {company.name}
-                            </Typography>
-                            {company.industry && (
-                              <Chip
-                                label={company.industry}
-                                size="small"
-                                variant="outlined"
-                              />
-                            )}
-                          </Box>
-                          <Stack direction="row" spacing={0.5}>
-                            <IconButton
-                              size="small"
-                              onClick={(e) =>
-                                handlePlatformMenuOpen(e, company)
-                              }
-                              disabled={connecting}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(company)}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Stack>
-                        </Stack>
+                              <Box sx={{ flexGrow: 1 }}>
+                                <Typography
+                                  variant="h6"
+                                  gutterBottom
+                                  onClick={() =>
+                                    navigate(`/companies/${company.id}`)
+                                  }
+                                  sx={{
+                                    cursor: "pointer",
+                                    color: "primary.main",
+                                    "&:hover": {
+                                      textDecoration: "underline",
+                                    },
+                                  }}
+                                >
+                                  {company.name}
+                                </Typography>
+                                {company.industry && (
+                                  <Chip
+                                    label={company.industry}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                )}
+                              </Box>
+                              <Stack direction="row" spacing={0.5}>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) =>
+                                    handlePlatformMenuOpen(e, company)
+                                  }
+                                  disabled={connecting}
+                                >
+                                  <MoreVertIcon />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenDialog(company)}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Stack>
+                            </Stack>
 
-                        {company.description && (
+                            {company.description && (
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
                               >
-                            {company.description}
-                          </Typography>
-                        )}
+                                {company.description}
+                              </Typography>
+                            )}
 
-                        <Stack spacing={1}>
-                          <Stack direction="row" spacing={2}>
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                            >
+                            <Stack spacing={1}>
+                              <Stack direction="row" spacing={2}>
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  alignItems="center"
+                                >
                                   <LocationIcon
                                     fontSize="small"
                                     color="action"
                                   />
-                              <Typography variant="body2">
-                                {company.total_locations}{" "}
-                                {company.total_locations !== 1
-                                  ? t("companies.multipleLocations")
-                                  : t("companies.singleLocation")}
-                              </Typography>
-                            </Stack>
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                            >
-                              <StarIcon
-                                fontSize="small"
-                                sx={{ color: "warning.main" }}
-                              />
-                              <Typography variant="body2">
+                                  <Typography variant="body2">
+                                    {company.total_locations}{" "}
+                                    {company.total_locations !== 1
+                                      ? t("companies.multipleLocations")
+                                      : t("companies.singleLocation")}
+                                  </Typography>
+                                </Stack>
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  alignItems="center"
+                                >
+                                  <StarIcon
+                                    fontSize="small"
+                                    sx={{ color: "warning.main" }}
+                                  />
+                                  <Typography variant="body2">
                                     {company.average_rating?.toFixed(1) ||
                                       "0.0"}
-                              </Typography>
-                            </Stack>
-                          </Stack>
+                                  </Typography>
+                                </Stack>
+                              </Stack>
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                               >
-                            {company.total_reviews}{" "}
-                            {company.total_reviews !== 1
-                              ? t("companies.multipleReviews")
-                              : t("companies.singleReview")}
-                          </Typography>
-                        </Stack>
+                                {company.total_reviews}{" "}
+                                {company.total_reviews !== 1
+                                  ? t("companies.multipleReviews")
+                                  : t("companies.singleReview")}
+                              </Typography>
+                            </Stack>
 
-                        {company.website && (
-                          <Typography
-                            variant="caption"
-                            component="a"
-                            href={company.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            sx={{ color: "primary.main" }}
-                          >
-                            {company.website}
-                          </Typography>
-                        )}
+                            {company.website && (
+                              <Typography
+                                variant="caption"
+                                component="a"
+                                href={company.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ color: "primary.main" }}
+                              >
+                                {company.website}
+                              </Typography>
+                            )}
 
-                        <Divider />
+                            <Divider />
 
-                        <Button
-                          variant="text"
-                          endIcon={<ArrowForwardIcon />}
+                            <Button
+                              variant="text"
+                              endIcon={<ArrowForwardIcon />}
                               onClick={() =>
                                 navigate(`/companies/${company.id}`)
                               }
-                          sx={{
-                            justifyContent: "space-between",
-                            textTransform: "none",
-                            fontWeight: 500,
+                              sx={{
+                                justifyContent: "space-between",
+                                textTransform: "none",
+                                fontWeight: 500,
                                 mt: "auto",
-                          }}
-                        >
-                          {t("companies.viewDetails")}
-                        </Button>
-                      </Stack>
-                    </CardContent>
-                  </Card>
+                              }}
+                            >
+                              {t("companies.viewDetails")}
+                            </Button>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Box>
               )}
             </>
           )}
@@ -1230,6 +1370,67 @@ export const Companies = () => {
               {platformSuccess}
             </Alert>
           )}
+
+          {/* Platform Selection Dialog */}
+          <Dialog
+            open={showPlatformSelection}
+            onClose={() => setShowPlatformSelection(false)}
+            maxWidth="lg"
+            fullWidth
+            PaperProps={{
+              sx: {
+                maxHeight: "90vh",
+              },
+            }}
+          >
+            <DialogTitle>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography variant="h6">Select Your Platforms</Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowPlatformSelection(false)}
+                >
+                  <ClearIcon />
+                </IconButton>
+              </Stack>
+            </DialogTitle>
+            <DialogContent dividers>
+              {profile?.id && (
+                <Box sx={{ py: 2 }}>
+                  <PlatformSelection
+                    userId={profile.id}
+                    onComplete={() => {
+                      setShowPlatformSelection(false);
+                      // Refresh platform count
+                      const checkPlatformSelection = async () => {
+                        try {
+                          const { count, error } = await supabase
+                            .from("user_platforms")
+                            .select("*", { count: "exact", head: true })
+                            .eq("user_id", profile.id);
+
+                          if (error) throw error;
+
+                          setSelectedPlatformsCount(count || 0);
+                        } catch (err: any) {
+                          console.error(
+                            "Error checking platform selection:",
+                            err
+                          );
+                        }
+                      };
+                      checkPlatformSelection();
+                    }}
+                    allowSkip={false}
+                  />
+                </Box>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Upgrade Dialog */}
           <Dialog

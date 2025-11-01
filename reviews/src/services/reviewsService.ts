@@ -9,13 +9,87 @@ export class ReviewsService {
             .from("platforms")
             .select("id")
             .eq("name", platformName)
-            .single();
+            .eq("is_active", true)
+            .maybeSingle();
 
         if (error) {
             throw new Error(`Failed to get platform: ${error.message}`);
         }
 
+        if (!data) {
+            throw new Error(`Platform not found: ${platformName}`);
+        }
+
         return data;
+    }
+
+    /**
+     * Get user's selected platforms from user_platforms table
+     */
+    async getUserSelectedPlatforms(
+        userId: string
+    ): Promise<Array<{ id: string; name: string; display_name: string }>> {
+        const { data, error } = await this.supabase
+            .from("user_platforms")
+            .select(
+                `
+                platform_id,
+                platforms:platform_id (
+                    id,
+                    name,
+                    display_name
+                )
+            `
+            )
+            .eq("user_id", userId);
+
+        if (error) {
+            throw new Error(
+                `Failed to get user platforms: ${error.message}`
+            );
+        }
+
+        return (
+            data?.map((item: any) => ({
+                id: item.platforms.id,
+                name: item.platforms.name,
+                display_name: item.platforms.display_name,
+            })) || []
+        );
+    }
+
+    /**
+     * Check if user has access to a specific platform
+     */
+    async userHasPlatformAccess(
+        userId: string,
+        platformName: string
+    ): Promise<boolean> {
+        const { data, error } = await this.supabase
+            .from("user_platforms")
+            .select(
+                `
+                id,
+                platforms:platform_id (
+                    name
+                )
+            `
+            )
+            .eq("user_id", userId);
+
+        if (error) {
+            console.error("Error checking platform access:", error);
+            return false;
+        }
+
+        if (!data || data.length === 0) {
+            return false;
+        }
+
+        // Check if any of the user's platforms matches the requested platform
+        return data.some(
+            (item: any) => item.platforms?.name === platformName
+        );
     }
 
     async getOrCreatePlatformConnection(

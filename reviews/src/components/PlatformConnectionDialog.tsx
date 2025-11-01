@@ -1,3 +1,4 @@
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
   Alert,
   Avatar,
@@ -15,13 +16,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-  Facebook as FacebookIcon,
-  Google as GoogleIcon,
-  RateReview as ReviewIcon,
-  Star as StarIcon,
-} from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
@@ -95,23 +89,6 @@ const getPlatformIdPlaceholder = (platformName: string, t: any): string => {
   return t(`platform.platformIdPlaceholders.${key}`, {
     defaultValue: "Enter platform location ID",
   });
-};
-
-// Get platform icon based on platform name
-const getPlatformIcon = (platformName: string) => {
-  switch (platformName.toLowerCase()) {
-    case "facebook":
-      return <FacebookIcon />;
-    case "google":
-      return <GoogleIcon />;
-    case "yelp":
-    case "tripadvisor":
-      return <ReviewIcon />;
-    case "trustpilot":
-      return <StarIcon />;
-    default:
-      return <ReviewIcon />;
-  }
 };
 
 export const PlatformConnectionDialog = ({
@@ -357,16 +334,23 @@ export const PlatformConnectionDialog = ({
           )}
 
           {/* Platform Selection Grid - Show when in location-specific mode and no platform selected */}
-          {isLocationSpecificMode &&
-            !selectedPlatformName &&
-            !success &&
-            platformsToShow.length > 0 && (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  {t("platform.selectPlatform", {
-                    defaultValue: "Select a Platform",
-                  })}
-                </Typography>
+          {isLocationSpecificMode && !selectedPlatformName && !success && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {t("platform.selectPlatform", {
+                  defaultValue: "Select a Platform",
+                })}
+              </Typography>
+              {platformsToShow.length === 0 ? (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    {t("platform.noPlatformsSelected", {
+                      defaultValue:
+                        "You haven't selected any platforms yet. Please go to your Profile to select the platforms you want to use.",
+                    })}
+                  </Typography>
+                </Alert>
+              ) : (
                 <Box
                   sx={{
                     display: "grid",
@@ -421,8 +405,9 @@ export const PlatformConnectionDialog = ({
                     </Button>
                   ))}
                 </Box>
-              </Box>
-            )}
+              )}
+            </Box>
+          )}
 
           {/* Platform Location ID Entry - Show when platform is selected and not in success state */}
           {selectedLocation &&
@@ -446,10 +431,11 @@ export const PlatformConnectionDialog = ({
                     {t("common.back")}
                   </Button>
                 )}
-                
+
                 {/* Platform name display */}
                 {(() => {
-                  const platformConfig = getPlatformConfig(selectedPlatformName);
+                  const platformConfig =
+                    getPlatformConfig(selectedPlatformName);
                   return (
                     <Typography
                       variant="h5"
@@ -461,7 +447,7 @@ export const PlatformConnectionDialog = ({
                     </Typography>
                   );
                 })()}
-                
+
                 <Typography variant="h6" gutterBottom>
                   {t("platform.enterPlaceId", {
                     label: getPlatformIdLabel(selectedPlatformName, t),
@@ -502,7 +488,9 @@ export const PlatformConnectionDialog = ({
                     disabled={
                       !platformLocationId.trim() || verifying || connecting
                     }
-                    startIcon={verifying ? <CircularProgress size={20} /> : null}
+                    startIcon={
+                      verifying ? <CircularProgress size={20} /> : null
+                    }
                   >
                     {verifying ? t("platform.finding") : t("platform.find")}
                   </Button>

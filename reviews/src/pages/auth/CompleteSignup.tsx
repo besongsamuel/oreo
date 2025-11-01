@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
+import { PlatformSelection } from "../../components/PlatformSelection";
 
 export const CompleteSignup = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export const CompleteSignup = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [profileCompleted, setProfileCompleted] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -97,14 +99,19 @@ export const CompleteSignup = () => {
         if (profileError) throw profileError;
       }
 
-      // Navigate to dashboard - ProtectedRoute will pick up the new profile
-      navigate("/dashboard");
+      // Move to platform selection step
+      setProfileCompleted(true);
     } catch (err: any) {
       console.error("Error completing signup:", err);
       setError(err.message || "An error occurred while completing signup");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePlatformSelectionComplete = () => {
+    // Navigate to dashboard after platform selection
+    navigate("/dashboard");
   };
 
   if (loading && !userId) {
@@ -123,6 +130,16 @@ export const CompleteSignup = () => {
           </Typography>
         </Box>
       </Container>
+    );
+  }
+
+  // Show platform selection after profile is completed
+  if (profileCompleted && userId) {
+    return (
+      <PlatformSelection
+        userId={userId}
+        onComplete={handlePlatformSelectionComplete}
+      />
     );
   }
 
@@ -192,7 +209,7 @@ export const CompleteSignup = () => {
                   fullWidth
                   disabled={loading}
                 >
-                  {loading ? "Completing..." : "Complete Profile"}
+                  {loading ? "Completing..." : "Continue"}
                 </Button>
               </Stack>
             </form>

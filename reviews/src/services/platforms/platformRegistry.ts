@@ -104,3 +104,58 @@ export function getPlatformConfig(platformName: string): PlatformConfig | null {
         status: platform.status,
     };
 }
+
+/**
+ * Fetch user's selected platforms from the database
+ * Returns array of platform names (slugs) that the user has access to
+ */
+export async function getUserPlatforms(
+    supabase: any,
+    userId: string,
+): Promise<string[]> {
+    try {
+        const { data, error } = await supabase
+            .from("user_platforms")
+            .select(
+                `
+                platform_id,
+                platforms:platform_id (
+                    name
+                )
+            `,
+            )
+            .eq("user_id", userId);
+
+        if (error) {
+            console.error("Error fetching user platforms:", error);
+            return [];
+        }
+
+        return (data || [])
+            .map((item: any) => item.platforms?.name)
+            .filter((name: string | undefined): name is string => !!name);
+    } catch (error) {
+        console.error("Error in getUserPlatforms:", error);
+        return [];
+    }
+}
+
+/**
+ * Get active platforms filtered by user's selections
+ * Falls back to all active platforms if userPlatforms is not provided
+ */
+export function getActivePlatformsForUser(
+    userPlatforms?: string[],
+): PlatformRegistryEntry[] {
+    const allPlatforms = getActivePlatforms();
+
+    // If no user platforms specified, return all active platforms (backward compatibility)
+    if (!userPlatforms || userPlatforms.length === 0) {
+        return allPlatforms;
+    }
+
+    // Filter to only platforms the user has selected
+    return allPlatforms.filter((platform) =>
+        userPlatforms.includes(platform.name)
+    );
+}

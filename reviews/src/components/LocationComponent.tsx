@@ -19,10 +19,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
-import {
-  getActivePlatforms,
-  getPlatformConfig,
-} from "../services/platforms/platformRegistry";
+import { useSupabase } from "../hooks/useSupabase";
+import { getPlatformConfig } from "../services/platforms/platformRegistry";
 import { PlatformConnectionDialog } from "./PlatformConnectionDialog";
 
 interface Location {
@@ -70,25 +68,86 @@ export const LocationComponent = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { connectPlatformUnified } = usePlatformIntegration();
+  const supabase = useSupabase();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null
   );
   const [availablePlatforms, setAvailablePlatforms] = useState<
-    typeof getActivePlatforms extends () => infer R ? R : never
+    Array<{
+      name: string;
+      displayName: string;
+      color: string;
+      iconUrl?: string;
+      status: "active" | "coming_soon" | "maintenance";
+      provider: null;
+    }>
   >([]);
 
-  const handleOpenConnectDialog = (locationId: string) => {
+  const handleOpenConnectDialog = async (locationId: string) => {
     setSelectedLocationId(locationId);
+
+    // Get user's selected platforms from database
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Fetch user's selected platforms with full platform details
+    const { data: userPlatforms } = await supabase
+      .from("user_platforms")
+      .select(
+        `
+        platform_id,
+        platforms:platform_id (
+          id,
+          name,
+          display_name,
+          icon_url,
+          base_url
+        )
+      `
+      )
+      .eq("user_id", user.id);
+
+    if (!userPlatforms || userPlatforms.length === 0) {
+      setAvailablePlatforms([]);
+      setDialogOpen(true);
+      return;
+    }
+
     // Filter out platforms already connected to this location
     const connectedPlatforms = (locationConnections[locationId] || []).map(
       (conn) => conn.platform.name.toLowerCase()
     );
-    const allPlatforms = getActivePlatforms();
-    const filtered = allPlatforms.filter(
-      (platform) => !connectedPlatforms.includes(platform.name.toLowerCase())
-    );
-    setAvailablePlatforms(filtered);
+
+    // Map database platforms to PlatformRegistryEntry format
+    const mappedPlatforms = userPlatforms
+      .map((item: any) => {
+        const platform = item.platforms;
+        if (!platform) return null;
+
+        // Get platform config from registry for color and status
+        const config = getPlatformConfig(platform.name);
+
+        return {
+          name: platform.name,
+          displayName: platform.display_name,
+          color: config?.color || "#666666",
+          iconUrl: platform.icon_url || config?.iconUrl,
+          status: (config?.status || "active") as
+            | "active"
+            | "coming_soon"
+            | "maintenance",
+          provider: null,
+        };
+      })
+      .filter((p: any): p is NonNullable<typeof p> => p !== null)
+      .filter(
+        (platform) => !connectedPlatforms.includes(platform.name.toLowerCase())
+      );
+
+    setAvailablePlatforms(mappedPlatforms);
     setDialogOpen(true);
   };
 
@@ -188,17 +247,6 @@ export const LocationComponent = ({
         {locations.map((location) => {
           const connections = locationConnections[location.id] || [];
 
-          // Check if all active platforms are connected to this location
-          const allPlatforms = getActivePlatforms();
-          const connectedPlatformNames = connections.map((conn) =>
-            conn.platform.name.toLowerCase()
-          );
-          const allPlatformsConnected =
-            allPlatforms.length > 0 &&
-            allPlatforms.every((platform) =>
-              connectedPlatformNames.includes(platform.name.toLowerCase())
-            );
-
           return (
             <Card key={location.id} variant="outlined">
               <CardContent>
@@ -247,26 +295,24 @@ export const LocationComponent = ({
                     )}
                   </Stack>
 
-                  {/* Connect Platform Button - Only show if not all platforms are connected */}
-                  {!allPlatformsConnected && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<LinkIcon />}
-                      onClick={() => handleOpenConnectDialog(location.id)}
-                      size="small"
-                      sx={{
-                        borderRadius: 980,
-                        textTransform: "none",
-                        fontWeight: 500,
-                        fontSize: "0.75rem",
-                        alignSelf: "flex-start",
-                      }}
-                    >
-                      {t("location.connectPlatform", {
-                        defaultValue: "Connect Platform",
-                      })}
-                    </Button>
-                  )}
+                  {/* Connect Platform Button */}
+                  <Button
+                    variant="outlined"
+                    startIcon={<LinkIcon />}
+                    onClick={() => handleOpenConnectDialog(location.id)}
+                    size="small"
+                    sx={{
+                      borderRadius: 980,
+                      textTransform: "none",
+                      fontWeight: 500,
+                      fontSize: "0.75rem",
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    {t("location.connectPlatform", {
+                      defaultValue: "Connect Platform",
+                    })}
+                  </Button>
 
                   <Divider />
 
