@@ -1,6 +1,7 @@
 import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
+  Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
@@ -198,6 +199,8 @@ export const CompanyPage = () => {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
@@ -1559,6 +1562,33 @@ export const CompanyPage = () => {
     setSelectedTopic("all");
   };
 
+  const handleDeleteCompany = async () => {
+    if (!companyId || !company) return;
+
+    try {
+      setDeleting(true);
+      setError(null);
+
+      const { error: deleteError } = await supabase
+        .from("companies")
+        .delete()
+        .eq("id", companyId);
+
+      if (deleteError) throw deleteError;
+
+      // Navigate to companies page after successful deletion
+      navigate("/companies");
+    } catch (err: any) {
+      console.error("Error deleting company:", err);
+      setError(
+        err.message ||
+          t("companyPage.deleteCompanyError", "Failed to delete company")
+      );
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container
@@ -2507,7 +2537,113 @@ export const CompanyPage = () => {
               </>
             )}
           </Paper>
+
+          {/* Delete Company Section - Admin Only */}
+          {profile?.role === "admin" && (
+            <Box
+              sx={{
+                mt: 4,
+                pt: 4,
+                borderTop: "1px solid",
+                borderColor: "divider",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <Stack
+                spacing={2}
+                sx={{
+                  alignItems: "center",
+                  textAlign: "center",
+                  maxWidth: 600,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  color="error"
+                  fontWeight={600}
+                  sx={{ mb: 1 }}
+                >
+                  {t("companyPage.deleteCompany", "Delete Company")}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t(
+                    "companyPage.deleteCompanyWarning",
+                    "Permanently delete this company and all associated data. This action cannot be undone."
+                  )}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setDeleteDialogOpen(true)}
+                  sx={{
+                    borderRadius: "980px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                  }}
+                >
+                  {t("companyPage.deleteCompany", "Delete Company")}
+                </Button>
+              </Stack>
+            </Box>
+          )}
         </Stack>
+
+        {/* Delete Company Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => !deleting && setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <DeleteIcon color="error" />
+              <Typography variant="h6" fontWeight={600}>
+                {t("companyPage.deleteCompanyConfirmTitle", "Delete Company?")}
+              </Typography>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              {t(
+                "companyPage.deleteCompanyConfirmMessage",
+                "Are you sure you want to delete {{companyName}}? This will permanently delete all company data including locations, reviews, and platform connections. This action cannot be undone.",
+                { companyName: company?.name }
+              )}
+            </Typography>
+            <Alert severity="error" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                {t(
+                  "companyPage.deleteCompanyPermanentWarning",
+                  "This action is permanent and cannot be undone."
+                )}
+              </Typography>
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              {t("common.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={handleDeleteCompany}
+              variant="contained"
+              color="error"
+              disabled={deleting}
+              startIcon={<DeleteIcon />}
+            >
+              {deleting
+                ? t("companyPage.deleteCompanyDeleting", "Deleting...")
+                : t("companyPage.deleteCompanyButton", "Delete")}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Coming Soon Modal */}
         <Dialog

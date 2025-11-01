@@ -641,7 +641,16 @@
     "stayTuned": "Stay tuned for updates! We'll notify you as soon as this feature becomes available.",
     "gotIt": "Got it",
     "pleaseAddLocation": "Please add at least one location to this company before connecting platforms.",
-    "reviewsAvailableShortly": "Reviews from {{platform}} will be available shortly. Use the refresh button in the top right to check for new reviews."
+    "reviewsAvailableShortly": "Reviews from {{platform}} will be available shortly. Use the refresh button in the top right to check for new reviews.",
+    "deleteCompany": "Delete Company",
+    "deleteCompanyWarning": "Permanently delete this company and all associated data. This action cannot be undone.",
+    "deleteCompanyPermanentWarning": "This action is permanent and cannot be undone.",
+    "deleteCompanyConfirmTitle": "Delete Company?",
+    "deleteCompanyConfirmMessage": "Are you sure you want to delete {{companyName}}? This will permanently delete all company data including locations, reviews, and platform connections. This action cannot be undone.",
+    "deleteCompanyButton": "Delete",
+    "deleteCompanyDeleting": "Deleting...",
+    "deleteCompanyError": "Failed to delete company",
+    "deleteCompanySuccess": "Company deleted successfully"
   },
   "footer": {
     "privacyPolicy": "Privacy Policy",

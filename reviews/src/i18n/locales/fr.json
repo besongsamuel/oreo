@@ -650,7 +650,16 @@
     "stayTuned": "Restez à l'écoute pour les mises à jour ! Nous vous informerons dès que cette fonctionnalité sera disponible.",
     "gotIt": "Compris",
     "pleaseAddLocation": "Veuillez ajouter au moins un emplacement à cette entreprise avant de connecter les plateformes.",
-    "reviewsAvailableShortly": "Les avis de {{platform}} seront disponibles sous peu. Utilisez le bouton d'actualisation en haut à droite pour vérifier les nouveaux avis."
+    "reviewsAvailableShortly": "Les avis de {{platform}} seront disponibles sous peu. Utilisez le bouton d'actualisation en haut à droite pour vérifier les nouveaux avis.",
+    "deleteCompany": "Supprimer l'entreprise",
+    "deleteCompanyWarning": "Supprimer définitivement cette entreprise et toutes les données associées. Cette action ne peut pas être annulée.",
+    "deleteCompanyPermanentWarning": "Cette action est permanente et ne peut pas être annulée.",
+    "deleteCompanyConfirmTitle": "Supprimer l'entreprise ?",
+    "deleteCompanyConfirmMessage": "Êtes-vous sûr de vouloir supprimer {{companyName}} ? Cela supprimera définitivement toutes les données de l'entreprise, y compris les emplacements, les avis et les connexions aux plateformes. Cette action ne peut pas être annulée.",
+    "deleteCompanyButton": "Supprimer",
+    "deleteCompanyDeleting": "Suppression...",
+    "deleteCompanyError": "Échec de la suppression de l'entreprise",
+    "deleteCompanySuccess": "Entreprise supprimée avec succès"
   },
   "footer": {
     "privacyPolicy": "Politique de confidentialité",
