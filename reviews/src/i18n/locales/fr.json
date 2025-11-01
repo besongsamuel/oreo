@@ -249,6 +249,10 @@
       "errorMaxReachedSingular": "",
       "errorMinRequired": "Veuillez sélectionner au moins une plateforme",
       "errorSaveFailed": "Échec de l'enregistrement des sélections de plateformes",
+      "errorCannotUnselect": "Vous ne pouvez pas désélectionner une plateforme qui a déjà été enregistrée.",
+      "platformLocked": "Cette plateforme a déjà été enregistrée et ne peut pas être supprimée",
+      "locked": "Verrouillé",
+      "cannotSelect": "Vous avez atteint votre limite de plateformes",
       "successTitle": "Plateformes sélectionnées avec succès",
       "successDescription": "Votre sélection de plateformes a été enregistrée. Vous pouvez maintenant commencer à gérer vos entreprises et vos avis.",
       "backToCompanies": "Retour aux entreprises"

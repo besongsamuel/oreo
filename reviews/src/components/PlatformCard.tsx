@@ -7,7 +7,10 @@ import {
   Typography,
   Box,
   Divider,
+  Tooltip,
+  Chip,
 } from "@mui/material";
+import { Lock as LockIcon } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 
 interface PlatformCardProps {
@@ -22,6 +25,7 @@ interface PlatformCardProps {
   selected: boolean;
   onToggle: (platformId: string) => void;
   disabled?: boolean;
+  locked?: boolean;
 }
 
 export const PlatformCard = ({
@@ -29,6 +33,7 @@ export const PlatformCard = ({
   selected,
   onToggle,
   disabled = false,
+  locked = false,
 }: PlatformCardProps) => {
   const { t, i18n } = useTranslation();
   const isFrench = i18n.language === "fr";
@@ -90,8 +95,36 @@ export const PlatformCard = ({
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
+          opacity: locked ? 0.7 : 1,
         }}
       >
+        {/* Lock indicator for persisted platforms */}
+        {locked && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              zIndex: 2,
+            }}
+          >
+            <Tooltip title={t("companies.selectPlatforms.platformLocked", "This platform has already been saved and cannot be removed")}>
+              <Chip
+                icon={<LockIcon />}
+                label={t("companies.selectPlatforms.locked", "Locked")}
+                size="small"
+                sx={{
+                  bgcolor: "rgba(0, 0, 0, 0.6)",
+                  color: "white",
+                  fontWeight: 600,
+                  "& .MuiChip-icon": {
+                    color: "white",
+                  },
+                }}
+              />
+            </Tooltip>
+          </Box>
+        )}
         {logoUrl ? (
           <Box
             component="img"
@@ -170,22 +203,39 @@ export const PlatformCard = ({
 
       {/* Actions Section - Selection Button */}
       <CardActions sx={{ p: 2, pt: 0 }}>
-        <Button
-          fullWidth
-          variant={selected ? "contained" : "outlined"}
-          onClick={handleToggle}
-          disabled={disabled}
-          sx={{
-            borderRadius: "980px",
-            textTransform: "none",
-            fontWeight: 600,
-            py: 1.5,
-          }}
+        <Tooltip
+          title={
+            locked
+              ? t("companies.selectPlatforms.platformLocked", "This platform has already been saved and cannot be removed")
+              : disabled
+              ? t("companies.selectPlatforms.cannotSelect", "You have reached your platform limit")
+              : ""
+          }
+          disableHoverListener={!locked && !disabled}
         >
-          {selected
-            ? t("companies.selectPlatforms.selected", "Selected")
-            : t("companies.selectPlatforms.select", "Select")}
-        </Button>
+          <span style={{ width: "100%" }}>
+            <Button
+              fullWidth
+              variant={selected ? "contained" : "outlined"}
+              onClick={handleToggle}
+              disabled={disabled || locked}
+              startIcon={locked ? <LockIcon /> : undefined}
+              sx={{
+                borderRadius: "980px",
+                textTransform: "none",
+                fontWeight: 600,
+                py: 1.5,
+                opacity: locked ? 0.7 : 1,
+              }}
+            >
+              {locked
+                ? t("companies.selectPlatforms.locked", "Locked")
+                : selected
+                ? t("companies.selectPlatforms.selected", "Selected")
+                : t("companies.selectPlatforms.select", "Select")}
+            </Button>
+          </span>
+        </Tooltip>
       </CardActions>
     </Card>
   );

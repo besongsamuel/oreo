@@ -156,21 +156,35 @@ export const SelectPlatforms = () => {
   const handleTogglePlatform = (platformId: string) => {
     setError(null);
     
+    // Prevent unselecting persisted platforms
+    if (userPlatforms.includes(platformId)) {
+      setError(
+        t("companies.selectPlatforms.errorCannotUnselect", "You cannot unselect a platform that has already been saved.")
+      );
+      return;
+    }
+    
     if (selectedPlatforms.includes(platformId)) {
-      // Deselect
+      // Deselect (only allowed for non-persisted platforms)
       setSelectedPlatforms(selectedPlatforms.filter((id) => id !== platformId));
     } else {
-      // Check if max reached
-      if (selectedPlatforms.length >= maxPlatforms) {
-      setError(
-        t("companies.selectPlatforms.errorMaxReached", {
-          max: maxPlatforms,
-          plural:
-            maxPlatforms > 1
-              ? t("companies.selectPlatforms.errorMaxReachedPlural")
-              : t("companies.selectPlatforms.errorMaxReachedSingular"),
-        })
-      );
+      // Calculate remaining slots (accounting for already persisted platforms)
+      const remainingSlots = maxPlatforms - userPlatforms.length;
+      const newSelectionsCount = selectedPlatforms.filter(
+        (id) => !userPlatforms.includes(id)
+      ).length;
+      
+      // Check if adding this would exceed remaining slots
+      if (newSelectionsCount >= remainingSlots) {
+        setError(
+          t("companies.selectPlatforms.errorMaxReached", {
+            max: maxPlatforms,
+            plural:
+              maxPlatforms > 1
+                ? t("companies.selectPlatforms.errorMaxReachedPlural")
+                : t("companies.selectPlatforms.errorMaxReachedSingular"),
+          })
+        );
         return;
       }
       // Select
@@ -180,20 +194,15 @@ export const SelectPlatforms = () => {
 
   const handleSave = async () => {
     if (!profile?.id) return;
-    if (selectedPlatforms.length === 0) {
-      setError(t("companies.selectPlatforms.errorMinRequired"));
-      return;
-    }
-    if (selectedPlatforms.length > maxPlatforms) {
-      setError(
-        t("companies.selectPlatforms.errorMaxReached", {
-          max: maxPlatforms,
-          plural:
-            maxPlatforms > 1
-              ? t("companies.selectPlatforms.errorMaxReachedPlural")
-              : t("companies.selectPlatforms.errorMaxReachedSingular"),
-        })
-      );
+    
+    // Filter out persisted platforms - only send new selections
+    const newPlatformIds = selectedPlatforms.filter(
+      (id) => !userPlatforms.includes(id)
+    );
+    
+    if (newPlatformIds.length === 0) {
+      // All selected platforms are already persisted, nothing to save
+      navigate("/select-platforms/success");
       return;
     }
 
@@ -201,33 +210,45 @@ export const SelectPlatforms = () => {
       setSaving(true);
       setError(null);
 
-      // Delete existing user platforms
-      const { error: deleteError } = await supabase
-        .from("user_platforms")
-        .delete()
-        .eq("user_id", profile.id);
+      // Call edge function to add new platforms
+      const { data, error: functionError } = await supabase.functions.invoke(
+        "add-user-platforms",
+        {
+          body: {
+            platform_ids: newPlatformIds,
+          },
+        }
+      );
 
-      if (deleteError) throw deleteError;
+      if (functionError) {
+        throw functionError;
+      }
 
-      // Insert new selections
-      if (selectedPlatforms.length > 0) {
-        const insertData = selectedPlatforms.map((platformId) => ({
-          user_id: profile.id,
-          platform_id: platformId,
-        }));
-
-        const { error: insertError } = await supabase
-          .from("user_platforms")
-          .insert(insertData);
-
-        if (insertError) throw insertError;
+      if (!data?.success) {
+        // Handle 403 errors specifically
+        if (data?.error && data.error.includes("Cannot add")) {
+          throw new Error(data.error);
+        }
+        throw new Error(data?.error || t("companies.selectPlatforms.errorSaveFailed"));
       }
 
       // Navigate to success page
       navigate("/select-platforms/success");
     } catch (err: any) {
       console.error("Error saving platform selection:", err);
-      setError(t("companies.selectPlatforms.errorSaveFailed"));
+      
+      // Check if it's a 403 error from the edge function
+      if (err.status === 403 || err.message?.includes("Cannot add")) {
+        setError(err.message || t("companies.selectPlatforms.errorMaxReached", {
+          max: maxPlatforms,
+          plural:
+            maxPlatforms > 1
+              ? t("companies.selectPlatforms.errorMaxReachedPlural")
+              : t("companies.selectPlatforms.errorMaxReachedSingular"),
+        }));
+      } else {
+        setError(err.message || t("companies.selectPlatforms.errorSaveFailed"));
+      }
       setSaving(false);
     }
   };
@@ -237,11 +258,17 @@ export const SelectPlatforms = () => {
     platform.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Calculate new platforms (excluding persisted ones)
+  const newPlatformIds = selectedPlatforms.filter(
+    (id) => !userPlatforms.includes(id)
+  );
+  
+  // Calculate remaining slots
+  const remainingSlots = maxPlatforms - userPlatforms.length;
+  
   const canSave =
-    selectedPlatforms.length > 0 &&
-    selectedPlatforms.length <= maxPlatforms &&
-    JSON.stringify(selectedPlatforms.sort()) !==
-      JSON.stringify(userPlatforms.sort());
+    newPlatformIds.length > 0 &&
+    newPlatformIds.length <= remainingSlots;
 
   return (
     <>
@@ -357,18 +384,28 @@ export const SelectPlatforms = () => {
                 gap: { xs: 2, sm: 3, md: 4 },
               }}
             >
-              {filteredPlatforms.map((platform) => (
-                <PlatformCard
-                  key={platform.id}
-                  platform={platform}
-                  selected={selectedPlatforms.includes(platform.id)}
-                  onToggle={handleTogglePlatform}
-                  disabled={
-                    !selectedPlatforms.includes(platform.id) &&
-                    selectedPlatforms.length >= maxPlatforms
-                  }
-                />
-              ))}
+              {filteredPlatforms.map((platform) => {
+                const isPersisted = userPlatforms.includes(platform.id);
+                const isSelected = selectedPlatforms.includes(platform.id);
+                const remainingSlots = maxPlatforms - userPlatforms.length;
+                const newSelectionsCount = selectedPlatforms.filter(
+                  (id) => !userPlatforms.includes(id)
+                ).length;
+                
+                return (
+                  <PlatformCard
+                    key={platform.id}
+                    platform={platform}
+                    selected={isSelected}
+                    onToggle={handleTogglePlatform}
+                    disabled={
+                      isPersisted || // Prevent unselecting persisted platforms
+                      (!isSelected && newSelectionsCount >= remainingSlots) // Prevent selecting when limit reached
+                    }
+                    locked={isPersisted} // Visual indicator for persisted platforms
+                  />
+                );
+              })}
             </Box>
           )}
 

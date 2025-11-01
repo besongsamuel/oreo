@@ -240,6 +240,10 @@
       "errorMaxReachedSingular": "",
       "errorMinRequired": "Please select at least one platform",
       "errorSaveFailed": "Failed to save platform selections",
+      "errorCannotUnselect": "You cannot unselect a platform that has already been saved.",
+      "platformLocked": "This platform has already been saved and cannot be removed",
+      "locked": "Locked",
+      "cannotSelect": "You have reached your platform limit",
       "successTitle": "Platforms Selected Successfully",
       "successDescription": "Your platform selection has been saved. You can now start managing your companies and reviews.",
       "backToCompanies": "Back to Companies"
