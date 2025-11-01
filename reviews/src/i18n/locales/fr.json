@@ -224,7 +224,11 @@
     "platformSelectionErrorMaxReachedSingular": "",
     "platformSelectionErrorMinRequired": "Veuillez sélectionner au moins une plateforme",
     "platformSelectionErrorSaveFailed": "Échec de l'enregistrement des sélections de plateformes",
-    "selectedPlatformsLabel": "Les avis seront récupérés depuis :"
+    "selectedPlatformsLabel": "Les avis seront récupérés depuis :",
+    "onboardingPlatformTitleNoSelection": "Commencer : Sélectionner vos plateformes",
+    "onboardingPlatformDescriptionNoSelection": "Avant de pouvoir commencer à gérer vos entreprises et avis, vous devez sélectionner les plateformes à partir desquelles vous souhaitez récupérer les avis.",
+    "onboardingPlatformTitlePartial": "Compléter la sélection de plateformes ({{count}} sur {{max}} sélectionnées)",
+    "onboardingPlatformDescriptionPartial": "Vous avez déjà sélectionné {{count}} plateforme{{plural}}. Complétez votre sélection de plateformes pour tirer le meilleur parti de votre abonnement."
   },
   "platform": {
     "title": "Connexion à la plateforme",

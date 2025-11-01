@@ -215,7 +215,11 @@
     "platformSelectionErrorMaxReachedSingular": "",
     "platformSelectionErrorMinRequired": "Please select at least one platform",
     "platformSelectionErrorSaveFailed": "Failed to save platform selections",
-    "selectedPlatformsLabel": "Reviews will be pulled from:"
+    "selectedPlatformsLabel": "Reviews will be pulled from:",
+    "onboardingPlatformTitleNoSelection": "Get Started: Select Your Platforms",
+    "onboardingPlatformDescriptionNoSelection": "Before you can start managing companies and reviews, you need to select the platforms where you want to pull reviews from.",
+    "onboardingPlatformTitlePartial": "Complete Platform Selection ({{count}} of {{max}} selected)",
+    "onboardingPlatformDescriptionPartial": "You've already selected {{count}} platform{{plural}}. Complete your platform selection to get the most out of your subscription."
   },
   "profile": {
     "title": "Profile Settings",

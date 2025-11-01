@@ -3,7 +3,6 @@ import {
   Business as BusinessIcon,
   Clear as ClearIcon,
   Facebook as FacebookIcon,
-  RadioButtonChecked as StepIcon,
   LanguageOutlined as WebIcon,
 } from "@mui/icons-material";
 import {
@@ -26,7 +25,6 @@ import {
   ListItemText,
   Menu,
   MenuItem,
-  Paper,
   Skeleton,
   Stack,
   TextField,
@@ -36,6 +34,7 @@ import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { CompaniesCompanyCard } from "../components/CompaniesCompanyCard";
+import { OnboardingCard } from "../components/OnboardingCard";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { PlatformSelection } from "../components/PlatformSelection";
 import { SEO } from "../components/SEO";
@@ -525,13 +524,21 @@ export const Companies = () => {
             profile &&
             profile.role !== "admin" &&
             selectedPlatformsList.length > 0 && (
-              <Box sx={{ pb: 3 }}>
-                <Stack spacing={2}>
+              <Box
+                sx={{
+                  pb: 3,
+                  bgcolor: "rgba(13, 45, 83, 0.02)",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 2,
+                }}
+              >
+                <Stack spacing={1.5}>
                   <Typography
-                    variant="body2"
+                    variant="caption"
                     color="text.secondary"
-                    fontWeight={500}
                     textAlign="center"
+                    sx={{ fontSize: "0.75rem" }}
                   >
                     {t("companies.selectedPlatformsLabel")}
                   </Typography>
@@ -546,10 +553,12 @@ export const Companies = () => {
                       <Chip
                         key={platform.id}
                         label={platform.display_name}
+                        size="small"
                         color="primary"
                         variant="outlined"
                         sx={{
-                          fontWeight: 500,
+                          fontSize: "0.75rem",
+                          height: 24,
                           borderColor: "primary.main",
                           color: "primary.main",
                         }}
@@ -557,7 +566,7 @@ export const Companies = () => {
                     ))}
                   </Stack>
                 </Stack>
-                <Divider sx={{ mt: 3 }} />
+                <Divider sx={{ mt: 2, borderColor: "divider" }} />
               </Box>
             )}
 
@@ -574,6 +583,7 @@ export const Companies = () => {
                 variant="h4"
                 component="h1"
                 gutterBottom
+                fontWeight={700}
                 sx={{ fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
               >
                 {t("companies.title")}
@@ -612,154 +622,7 @@ export const Companies = () => {
             </Button>
           </Stack>
 
-          {/* Platform Selection Prompt - Step 1 */}
-          {!platformCheckLoading &&
-            profile &&
-            profile.role !== "admin" &&
-            (() => {
-              const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
-              const remainingPlatforms = maxPlatforms - selectedPlatformsCount;
-
-              if (remainingPlatforms > 0) {
-                const hasNoSelection = selectedPlatformsCount === 0;
-
-                return (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      border: "2px solid",
-                      borderColor: "primary.main",
-                      borderRadius: 3,
-                      background:
-                        "linear-gradient(135deg, rgba(13, 45, 83, 0.08) 0%, rgba(13, 45, 83, 0.03) 100%)",
-                    }}
-                  >
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={3}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack spacing={1.5} sx={{ flexGrow: 1 }}>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <Box
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: "50%",
-                              bgcolor: "primary.main",
-                              color: "white",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <StepIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Box>
-                            <Typography
-                              variant="h6"
-                              fontWeight={700}
-                              sx={{ color: "primary.main", mb: 0.5 }}
-                            >
-                              {hasNoSelection
-                                ? t(
-                                    "companies.platformSelectionStep1NoSelection"
-                                  )
-                                : t("companies.platformSelectionStep1Partial")}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {hasNoSelection
-                                ? t(
-                                    "companies.platformSelectionDescriptionNoSelection"
-                                  )
-                                : t(
-                                    "companies.platformSelectionDescriptionPartial",
-                                    {
-                                      count: selectedPlatformsCount,
-                                      plural:
-                                        selectedPlatformsCount === 1
-                                          ? t(
-                                              "companies.platformSelectionDescriptionPartialSingular"
-                                            )
-                                          : t(
-                                              "companies.platformSelectionDescriptionPartialPlural"
-                                            ),
-                                    }
-                                  )}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                        {!hasNoSelection && (
-                          <Stack spacing={1}>
-                            <Typography variant="body2" fontWeight={600}>
-                              {remainingPlatforms === 1
-                                ? t(
-                                    "companies.platformSelectionRemainingSingular",
-                                    {
-                                      count: remainingPlatforms,
-                                    }
-                                  )
-                                : t(
-                                    "companies.platformSelectionRemainingPlural",
-                                    {
-                                      count: remainingPlatforms,
-                                    }
-                                  )}
-                            </Typography>
-                          </Stack>
-                        )}
-                        <Alert
-                          severity="warning"
-                          icon={false}
-                          sx={{
-                            bgcolor: "background.paper",
-                            border: "1px solid",
-                            borderColor: "warning.main",
-                            "& .MuiAlert-message": {
-                              width: "100%",
-                            },
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            fontWeight={600}
-                            color="text.primary"
-                          >
-                            ⚠️ {t("companies.platformSelectionWarning")}
-                          </Typography>
-                        </Alert>
-                      </Stack>
-                      <Box sx={{ flexShrink: 0 }}>
-                        <Button
-                          variant="contained"
-                          size="large"
-                          onClick={() => setShowPlatformSelection(true)}
-                          sx={{
-                            fontWeight: 600,
-                            px: 4,
-                            py: 1.5,
-                            fontSize: "1rem",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {t("companies.selectPlatforms")}
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                );
-              }
-              return null;
-            })()}
-
-          {/* Add Company Prompt - Step 2 */}
+          {/* Unified Onboarding Card */}
           {!platformCheckLoading &&
             profile &&
             profile.role !== "admin" &&
@@ -769,82 +632,31 @@ export const Companies = () => {
               const hasNoCompanies = companies.length === 0;
               const hasCompletedPlatformSelection = remainingPlatforms === 0;
 
-              if (hasCompletedPlatformSelection && hasNoCompanies) {
-                return (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      border: "2px solid",
-                      borderColor: "primary.main",
-                      borderRadius: 3,
-                      background:
-                        "linear-gradient(135deg, rgba(13, 45, 83, 0.08) 0%, rgba(13, 45, 83, 0.03) 100%)",
-                    }}
-                  >
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={3}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack spacing={1.5} sx={{ flexGrow: 1 }}>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <Box
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: "50%",
-                              bgcolor: "primary.main",
-                              color: "white",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <StepIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Box>
-                            <Typography
-                              variant="h6"
-                              fontWeight={700}
-                              sx={{ color: "primary.main", mb: 0.5 }}
-                            >
-                              {t("companies.addCompanyStep2")}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {t("companies.addCompanyStep2Description")}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </Stack>
-                      <Box sx={{ flexShrink: 0 }}>
-                        <Button
-                          variant="contained"
-                          size="large"
-                          startIcon={<AddIcon />}
-                          onClick={() => handleOpenDialog()}
-                          sx={{
-                            fontWeight: 600,
-                            px: 4,
-                            py: 1.5,
-                            fontSize: "1rem",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {t("companies.addCompanyStep2Button")}
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                );
+              let step:
+                | "platform-selection"
+                | "complete-platforms"
+                | "add-company"
+                | null = null;
+
+              if (remainingPlatforms > 0) {
+                step =
+                  selectedPlatformsCount === 0
+                    ? "platform-selection"
+                    : "complete-platforms";
+              } else if (hasCompletedPlatformSelection && hasNoCompanies) {
+                step = "add-company";
               }
-              return null;
+
+              return (
+                <OnboardingCard
+                  step={step}
+                  selectedPlatformsCount={selectedPlatformsCount}
+                  maxPlatforms={maxPlatforms}
+                  hasCompanies={!hasNoCompanies}
+                  onPlatformSelect={() => setShowPlatformSelection(true)}
+                  onAddCompany={() => handleOpenDialog()}
+                />
+              );
             })()}
 
           {error && <Alert severity="error">{error}</Alert>}
@@ -854,20 +666,33 @@ export const Companies = () => {
             <>
               {/* My Companies */}
               <Box>
-                <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+                <Typography
+                  variant="h5"
+                  fontWeight={600}
+                  gutterBottom
+                  sx={{ mb: 3 }}
+                >
                   My Companies
                 </Typography>
                 {companies.filter((c) => c.owner_id === profile.id).length ===
                 0 ? (
                   <Card>
                     <CardContent>
-                      <Stack spacing={2} alignItems="center" py={4}>
+                      <Stack spacing={2} alignItems="center" py={6}>
                         <BusinessIcon
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
                           You don't have any companies yet
                         </Typography>
+                        <Button
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={() => handleOpenDialog()}
+                          sx={{ mt: 1 }}
+                        >
+                          {t("companies.addCompany")}
+                        </Button>
                       </Stack>
                     </CardContent>
                   </Card>
@@ -880,7 +705,7 @@ export const Companies = () => {
                         md: "repeat(2, 1fr)",
                         lg: "repeat(3, 1fr)",
                       },
-                      gap: 3,
+                      gap: { xs: 2, sm: 3, md: 4 },
                       alignItems: "stretch",
                     }}
                   >
@@ -909,15 +734,20 @@ export const Companies = () => {
               </Box>
 
               {/* Other Companies */}
-              <Box>
-                <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              <Box sx={{ mt: 5 }}>
+                <Typography
+                  variant="h5"
+                  fontWeight={600}
+                  gutterBottom
+                  sx={{ mb: 3 }}
+                >
                   Other Companies
                 </Typography>
                 {companies.filter((c) => c.owner_id !== profile.id).length ===
                 0 ? (
                   <Card>
                     <CardContent>
-                      <Stack spacing={2} alignItems="center" py={4}>
+                      <Stack spacing={2} alignItems="center" py={6}>
                         <BusinessIcon
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
@@ -936,7 +766,7 @@ export const Companies = () => {
                         md: "repeat(2, 1fr)",
                         lg: "repeat(3, 1fr)",
                       },
-                      gap: 3,
+                      gap: { xs: 2, sm: 3, md: 4 },
                       alignItems: "stretch",
                     }}
                   >
@@ -950,6 +780,7 @@ export const Companies = () => {
                           industry={company.industry}
                           description={company.description}
                           website={company.website}
+                          logoUrl={company.logo_url}
                           totalLocations={company.total_locations || 0}
                           totalReviews={company.total_reviews || 0}
                           averageRating={company.average_rating || 0}
@@ -1015,7 +846,7 @@ export const Companies = () => {
                           md: "repeat(2, 1fr)",
                           lg: "repeat(3, 1fr)",
                         },
-                        gap: 3,
+                        gap: { xs: 2, sm: 3, md: 4 },
                         alignItems: "stretch",
                       }}
                     >

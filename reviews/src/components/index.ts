@@ -25,3 +25,4 @@ export {
 } from "./SkeletonLoaders";
 export { StatCardWithTrend } from "./StatCardWithTrend";
 export { PlatformSelection } from "./PlatformSelection";
+export { OnboardingCard } from "./OnboardingCard";

@@ -54,10 +54,18 @@ export const CompaniesCompanyCard = ({
   return (
     <Box sx={{ height: "100%" }}>
       <Card
+        elevation={0}
         sx={{
           height: "100%",
           display: "flex",
           flexDirection: "column",
+          borderRadius: "18px",
+          border: "none",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+          transition: "box-shadow 0.2s ease-in-out",
+          "&:hover": {
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+          },
         }}
       >
         <CardContent
@@ -65,113 +73,133 @@ export const CompaniesCompanyCard = ({
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
+            p: { xs: 2, sm: 2.5, md: 3 },
           }}
         >
           <Stack
             spacing={2}
             sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
           >
-            <Box sx={{ flexGrow: 0 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="flex-start"
+            {/* Top Section: Logo + Name */}
+            <Stack direction="row" spacing={2} alignItems="flex-start">
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
+                {logoUrl ? (
                   <Box
+                    component="img"
+                    src={logoUrl}
+                    alt={companyName}
                     sx={{
-                      width: 80,
-                      height: 80,
-                      flexShrink: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <BusinessIcon
+                    sx={{
+                      fontSize: 48,
+                      color: "primary.main",
+                    }}
+                  />
+                )}
+              </Box>
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  spacing={1}
+                >
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    onClick={onViewDetails}
+                    sx={{
+                      cursor: "pointer",
+                      color: "text.primary",
+                      "&:hover": {
+                        color: "primary.main",
+                        textDecoration: "underline",
+                      },
+                      flexGrow: 1,
                     }}
                   >
-                    {logoUrl ? (
-                      <Box
-                        component="img"
-                        src={logoUrl}
-                        alt={companyName}
-                        sx={{
-                          maxWidth: "100%",
-                          maxHeight: "100%",
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <BusinessIcon
-                        sx={{
-                          fontSize: 48,
-                          color: "primary.main",
-                        }}
-                      />
-                    )}
-                  </Box>
-                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      onClick={onViewDetails}
-                      sx={{
-                        cursor: "pointer",
-                        color: "primary.main",
-                        "&:hover": {
-                          textDecoration: "underline",
-                        },
-                      }}
-                    >
-                      {companyName}
-                    </Typography>
-                    {ownerName || ownerEmail ? (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.5 }}
-                      >
-                        Owner: {ownerName || ownerEmail}
-                      </Typography>
-                    ) : null}
-                    {industry && (
-                      <Chip label={industry} size="small" variant="outlined" />
-                    )}
-                  </Box>
+                    {companyName}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={onEdit}
+                    sx={{
+                      opacity: 0.6,
+                      "&:hover": {
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
                 </Stack>
-                <IconButton size="small" onClick={onEdit}>
-                  <EditIcon />
-                </IconButton>
+                {ownerName || ownerEmail ? (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Owner: {ownerName || ownerEmail}
+                  </Typography>
+                ) : null}
+              </Box>
+            </Stack>
+
+            {/* Primary Stats: Rating prominently */}
+            <Stack spacing={1.5}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <StarIcon
+                  fontSize="small"
+                  sx={{ color: "warning.main", fontSize: 20 }}
+                />
+                <Typography
+                  variant="body1"
+                  fontWeight={600}
+                  sx={{ color: "text.primary" }}
+                >
+                  {averageRating?.toFixed(1) || "0.0"}
+                </Typography>
               </Stack>
 
-              {description && (
+              {/* Secondary Stats */}
+              <Stack direction="row" spacing={2}>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <LocationIcon
+                    fontSize="small"
+                    sx={{ color: "text.secondary", fontSize: 16 }}
+                  />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.875rem" }}
+                  >
+                    {totalLocations}{" "}
+                    {totalLocations !== 1
+                      ? t("companies.multipleLocations")
+                      : t("companies.singleLocation")}
+                  </Typography>
+                </Stack>
                 <Typography
                   variant="body2"
                   color="text.secondary"
-                  sx={{ mt: 2 }}
+                  sx={{ fontSize: "0.875rem" }}
                 >
-                  {description}
-                </Typography>
-              )}
-
-              <Stack spacing={1} sx={{ mt: 2 }}>
-                <Stack direction="row" spacing={2}>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    <LocationIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
-                      {totalLocations}{" "}
-                      {totalLocations !== 1
-                        ? t("companies.multipleLocations")
-                        : t("companies.singleLocation")}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    <StarIcon fontSize="small" sx={{ color: "warning.main" }} />
-                    <Typography variant="body2">
-                      {averageRating?.toFixed(1) || "0.0"}
-                    </Typography>
-                  </Stack>
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
                   {totalReviews}{" "}
                   {totalReviews !== 1
                     ? t("companies.multipleReviews")
@@ -179,34 +207,40 @@ export const CompaniesCompanyCard = ({
                 </Typography>
               </Stack>
 
-              {website && (
-                <Typography
-                  variant="caption"
-                  component="a"
-                  href={website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ color: "primary.main", mt: 2, display: "block" }}
-                >
-                  {website}
-                </Typography>
+              {/* Industry Chip */}
+              {industry && (
+                <Box sx={{ pt: 0.5 }}>
+                  <Chip
+                    label={industry}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontSize: "0.75rem",
+                      height: 24,
+                    }}
+                  />
+                </Box>
               )}
-            </Box>
+            </Stack>
 
+            {/* Spacer */}
             <Box sx={{ flexGrow: 1 }} />
 
-            <Divider />
-
+            {/* Bottom Section */}
+            <Divider sx={{ my: 0 }} />
             <Button
               variant="text"
               endIcon={<ArrowForwardIcon />}
               onClick={onViewDetails}
               sx={{
-                justifyContent: "space-between",
+                justifyContent: "flex-end",
                 textTransform: "none",
                 fontWeight: 500,
-                alignSelf: "flex-end",
                 width: "100%",
+                px: 0,
+                "&:hover": {
+                  backgroundColor: "transparent",
+                },
               }}
             >
               {t("companies.viewDetails")}
