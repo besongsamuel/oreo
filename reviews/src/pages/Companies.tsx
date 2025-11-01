@@ -1,13 +1,8 @@
 import {
   Add as AddIcon,
-  ArrowForward as ArrowForwardIcon,
   Business as BusinessIcon,
   Clear as ClearIcon,
-  Edit as EditIcon,
   Facebook as FacebookIcon,
-  LocationOn as LocationIcon,
-  MoreVert as MoreVertIcon,
-  Star as StarIcon,
   LanguageOutlined as WebIcon,
 } from "@mui/icons-material";
 import {
@@ -17,13 +12,11 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
   InputAdornment,
   ListItemIcon,
@@ -38,6 +31,7 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { CompaniesCompanyCard } from "../components/CompaniesCompanyCard";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { PlatformSelection } from "../components/PlatformSelection";
 import { SEO } from "../components/SEO";
@@ -54,6 +48,7 @@ interface Company {
   description: string | null;
   industry: string | null;
   website: string | null;
+  logo_url?: string | null;
   total_locations?: number;
   total_reviews?: number;
   average_rating?: number;
@@ -96,7 +91,6 @@ export const Companies = () => {
   const navigate = useNavigate();
   const {
     connectPlatformUnified,
-    connecting,
     error: platformError,
     success: platformSuccess,
   } = usePlatformIntegration();
@@ -365,13 +359,6 @@ export const Companies = () => {
   };
 
   // Platform integration functions
-  const handlePlatformMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    company: Company
-  ) => {
-    setPlatformMenuAnchor(event.currentTarget);
-    setSelectedCompany(company);
-  };
 
   const handlePlatformMenuClose = () => {
     setPlatformMenuAnchor(null);
@@ -616,10 +603,10 @@ export const Companies = () => {
           {/* Admin View - Separate sections */}
           {profile?.role === "admin" ? (
             <>
-              {/* Owned by You */}
+              {/* My Companies */}
               <Box>
                 <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-                  Owned by You
+                  My Companies
                 </Typography>
                 {companies.filter((c) => c.owner_id === profile.id).length ===
                 0 ? (
@@ -630,7 +617,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          No companies you own
+                          You don't have any companies yet
                         </Typography>
                       </Stack>
                     </CardContent>
@@ -651,167 +638,31 @@ export const Companies = () => {
                     {companies
                       .filter((c) => c.owner_id === profile.id)
                       .map((company) => (
-                        <Box key={company.id} sx={{ height: "100%" }}>
-                          <Card
-                            sx={{
-                              height: "100%",
-                              display: "flex",
-                              flexDirection: "column",
-                            }}
-                          >
-                            <CardContent
-                              sx={{
-                                flexGrow: 1,
-                                display: "flex",
-                                flexDirection: "column",
-                              }}
-                            >
-                              <Stack spacing={2} sx={{ flexGrow: 1 }}>
-                                <Stack
-                                  direction="row"
-                                  justifyContent="space-between"
-                                  alignItems="flex-start"
-                                >
-                                  <Box sx={{ flexGrow: 1 }}>
-                                    <Typography
-                                      variant="h6"
-                                      gutterBottom
-                                      onClick={() =>
-                                        navigate(`/companies/${company.id}`)
-                                      }
-                                      sx={{
-                                        cursor: "pointer",
-                                        color: "primary.main",
-                                        "&:hover": {
-                                          textDecoration: "underline",
-                                        },
-                                      }}
-                                    >
-                                      {company.name}
-                                    </Typography>
-                                    {company.industry && (
-                                      <Chip
-                                        label={company.industry}
-                                        size="small"
-                                        variant="outlined"
-                                      />
-                                    )}
-                                  </Box>
-                                  <Stack direction="row" spacing={0.5}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={(e) =>
-                                        handlePlatformMenuOpen(e, company)
-                                      }
-                                      disabled={connecting}
-                                    >
-                                      <MoreVertIcon />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleOpenDialog(company)}
-                                    >
-                                      <EditIcon />
-                                    </IconButton>
-                                  </Stack>
-                                </Stack>
-
-                                {company.description && (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    {company.description}
-                                  </Typography>
-                                )}
-
-                                <Stack spacing={1}>
-                                  <Stack direction="row" spacing={2}>
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.5}
-                                      alignItems="center"
-                                    >
-                                      <LocationIcon
-                                        fontSize="small"
-                                        color="action"
-                                      />
-                                      <Typography variant="body2">
-                                        {company.total_locations}{" "}
-                                        {company.total_locations !== 1
-                                          ? t("companies.multipleLocations")
-                                          : t("companies.singleLocation")}
-                                      </Typography>
-                                    </Stack>
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.5}
-                                      alignItems="center"
-                                    >
-                                      <StarIcon
-                                        fontSize="small"
-                                        sx={{ color: "warning.main" }}
-                                      />
-                                      <Typography variant="body2">
-                                        {company.average_rating?.toFixed(1) ||
-                                          "0.0"}
-                                      </Typography>
-                                    </Stack>
-                                  </Stack>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {company.total_reviews}{" "}
-                                    {company.total_reviews !== 1
-                                      ? t("companies.multipleReviews")
-                                      : t("companies.singleReview")}
-                                  </Typography>
-                                </Stack>
-
-                                {company.website && (
-                                  <Typography
-                                    variant="caption"
-                                    component="a"
-                                    href={company.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{ color: "primary.main" }}
-                                  >
-                                    {company.website}
-                                  </Typography>
-                                )}
-
-                                <Divider />
-
-                                <Button
-                                  variant="text"
-                                  endIcon={<ArrowForwardIcon />}
-                                  onClick={() =>
-                                    navigate(`/companies/${company.id}`)
-                                  }
-                                  sx={{
-                                    justifyContent: "space-between",
-                                    textTransform: "none",
-                                    fontWeight: 500,
-                                    mt: "auto",
-                                  }}
-                                >
-                                  {t("companies.viewDetails")}
-                                </Button>
-                              </Stack>
-                            </CardContent>
-                          </Card>
-                        </Box>
+                        <CompaniesCompanyCard
+                          key={company.id}
+                          companyId={company.id}
+                          companyName={company.name}
+                          industry={company.industry}
+                          description={company.description}
+                          website={company.website}
+                          logoUrl={company.logo_url}
+                          totalLocations={company.total_locations || 0}
+                          totalReviews={company.total_reviews || 0}
+                          averageRating={company.average_rating || 0}
+                          onEdit={() => handleOpenDialog(company)}
+                          onViewDetails={() =>
+                            navigate(`/companies/${company.id}`)
+                          }
+                        />
                       ))}
                   </Box>
                 )}
               </Box>
 
-              {/* Owned by Others */}
+              {/* Other Companies */}
               <Box>
                 <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-                  Owned by Others
+                  Other Companies
                 </Typography>
                 {companies.filter((c) => c.owner_id !== profile.id).length ===
                 0 ? (
@@ -822,7 +673,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          No companies owned by other users
+                          No other companies
                         </Typography>
                       </Stack>
                     </CardContent>
@@ -843,168 +694,23 @@ export const Companies = () => {
                     {companies
                       .filter((c) => c.owner_id !== profile.id)
                       .map((company) => (
-                        <Box key={company.id} sx={{ height: "100%" }}>
-                          <Card
-                            sx={{
-                              height: "100%",
-                              display: "flex",
-                              flexDirection: "column",
-                            }}
-                          >
-                            <CardContent
-                              sx={{
-                                flexGrow: 1,
-                                display: "flex",
-                                flexDirection: "column",
-                              }}
-                            >
-                              <Stack spacing={2} sx={{ flexGrow: 1 }}>
-                                <Stack
-                                  direction="row"
-                                  justifyContent="space-between"
-                                  alignItems="flex-start"
-                                >
-                                  <Box sx={{ flexGrow: 1 }}>
-                                    <Typography
-                                      variant="h6"
-                                      gutterBottom
-                                      onClick={() =>
-                                        navigate(`/companies/${company.id}`)
-                                      }
-                                      sx={{
-                                        cursor: "pointer",
-                                        color: "primary.main",
-                                        "&:hover": {
-                                          textDecoration: "underline",
-                                        },
-                                      }}
-                                    >
-                                      {company.name}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      display="block"
-                                      sx={{ mb: 0.5 }}
-                                    >
-                                      Owner:{" "}
-                                      {company.owner_name ||
-                                        company.owner_email}
-                                    </Typography>
-                                    {company.industry && (
-                                      <Chip
-                                        label={company.industry}
-                                        size="small"
-                                        variant="outlined"
-                                      />
-                                    )}
-                                  </Box>
-                                  <Stack direction="row" spacing={0.5}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={(e) =>
-                                        handlePlatformMenuOpen(e, company)
-                                      }
-                                      disabled={connecting}
-                                    >
-                                      <MoreVertIcon />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleOpenDialog(company)}
-                                    >
-                                      <EditIcon />
-                                    </IconButton>
-                                  </Stack>
-                                </Stack>
-
-                                {company.description && (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    {company.description}
-                                  </Typography>
-                                )}
-
-                                <Stack spacing={1}>
-                                  <Stack direction="row" spacing={2}>
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.5}
-                                      alignItems="center"
-                                    >
-                                      <LocationIcon
-                                        fontSize="small"
-                                        color="action"
-                                      />
-                                      <Typography variant="body2">
-                                        {company.total_locations}{" "}
-                                        {company.total_locations !== 1
-                                          ? t("companies.multipleLocations")
-                                          : t("companies.singleLocation")}
-                                      </Typography>
-                                    </Stack>
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.5}
-                                      alignItems="center"
-                                    >
-                                      <StarIcon
-                                        fontSize="small"
-                                        sx={{ color: "warning.main" }}
-                                      />
-                                      <Typography variant="body2">
-                                        {company.average_rating?.toFixed(1) ||
-                                          "0.0"}
-                                      </Typography>
-                                    </Stack>
-                                  </Stack>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {company.total_reviews}{" "}
-                                    {company.total_reviews !== 1
-                                      ? t("companies.multipleReviews")
-                                      : t("companies.singleReview")}
-                                  </Typography>
-                                </Stack>
-
-                                {company.website && (
-                                  <Typography
-                                    variant="caption"
-                                    component="a"
-                                    href={company.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{ color: "primary.main" }}
-                                  >
-                                    {company.website}
-                                  </Typography>
-                                )}
-
-                                <Divider />
-
-                                <Button
-                                  variant="text"
-                                  endIcon={<ArrowForwardIcon />}
-                                  onClick={() =>
-                                    navigate(`/companies/${company.id}`)
-                                  }
-                                  sx={{
-                                    justifyContent: "space-between",
-                                    textTransform: "none",
-                                    fontWeight: 500,
-                                    mt: "auto",
-                                  }}
-                                >
-                                  {t("companies.viewDetails")}
-                                </Button>
-                              </Stack>
-                            </CardContent>
-                          </Card>
-                        </Box>
+                        <CompaniesCompanyCard
+                          key={company.id}
+                          companyId={company.id}
+                          companyName={company.name}
+                          industry={company.industry}
+                          description={company.description}
+                          website={company.website}
+                          totalLocations={company.total_locations || 0}
+                          totalReviews={company.total_reviews || 0}
+                          averageRating={company.average_rating || 0}
+                          ownerName={company.owner_name}
+                          ownerEmail={company.owner_email}
+                          onEdit={() => handleOpenDialog(company)}
+                          onViewDetails={() =>
+                            navigate(`/companies/${company.id}`)
+                          }
+                        />
                       ))}
                   </Box>
                 )}
@@ -1050,158 +756,19 @@ export const Companies = () => {
                   }}
                 >
                   {companies.map((company) => (
-                    <Box key={company.id} sx={{ height: "100%" }}>
-                      <Card
-                        sx={{
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                        }}
-                      >
-                        <CardContent
-                          sx={{
-                            flexGrow: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
-                          <Stack spacing={2} sx={{ flexGrow: 1 }}>
-                            <Stack
-                              direction="row"
-                              justifyContent="space-between"
-                              alignItems="flex-start"
-                            >
-                              <Box sx={{ flexGrow: 1 }}>
-                                <Typography
-                                  variant="h6"
-                                  gutterBottom
-                                  onClick={() =>
-                                    navigate(`/companies/${company.id}`)
-                                  }
-                                  sx={{
-                                    cursor: "pointer",
-                                    color: "primary.main",
-                                    "&:hover": {
-                                      textDecoration: "underline",
-                                    },
-                                  }}
-                                >
-                                  {company.name}
-                                </Typography>
-                                {company.industry && (
-                                  <Chip
-                                    label={company.industry}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                              <Stack direction="row" spacing={0.5}>
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) =>
-                                    handlePlatformMenuOpen(e, company)
-                                  }
-                                  disabled={connecting}
-                                >
-                                  <MoreVertIcon />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenDialog(company)}
-                                >
-                                  <EditIcon />
-                                </IconButton>
-                              </Stack>
-                            </Stack>
-
-                            {company.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {company.description}
-                              </Typography>
-                            )}
-
-                            <Stack spacing={1}>
-                              <Stack direction="row" spacing={2}>
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  alignItems="center"
-                                >
-                                  <LocationIcon
-                                    fontSize="small"
-                                    color="action"
-                                  />
-                                  <Typography variant="body2">
-                                    {company.total_locations}{" "}
-                                    {company.total_locations !== 1
-                                      ? t("companies.multipleLocations")
-                                      : t("companies.singleLocation")}
-                                  </Typography>
-                                </Stack>
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  alignItems="center"
-                                >
-                                  <StarIcon
-                                    fontSize="small"
-                                    sx={{ color: "warning.main" }}
-                                  />
-                                  <Typography variant="body2">
-                                    {company.average_rating?.toFixed(1) ||
-                                      "0.0"}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {company.total_reviews}{" "}
-                                {company.total_reviews !== 1
-                                  ? t("companies.multipleReviews")
-                                  : t("companies.singleReview")}
-                              </Typography>
-                            </Stack>
-
-                            {company.website && (
-                              <Typography
-                                variant="caption"
-                                component="a"
-                                href={company.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                sx={{ color: "primary.main" }}
-                              >
-                                {company.website}
-                              </Typography>
-                            )}
-
-                            <Divider />
-
-                            <Button
-                              variant="text"
-                              endIcon={<ArrowForwardIcon />}
-                              onClick={() =>
-                                navigate(`/companies/${company.id}`)
-                              }
-                              sx={{
-                                justifyContent: "space-between",
-                                textTransform: "none",
-                                fontWeight: 500,
-                                mt: "auto",
-                              }}
-                            >
-                              {t("companies.viewDetails")}
-                            </Button>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Box>
+                    <CompaniesCompanyCard
+                      key={company.id}
+                      companyId={company.id}
+                      companyName={company.name}
+                      industry={company.industry}
+                      description={company.description}
+                      website={company.website}
+                      totalLocations={company.total_locations || 0}
+                      totalReviews={company.total_reviews || 0}
+                      averageRating={company.average_rating || 0}
+                      onEdit={() => handleOpenDialog(company)}
+                      onViewDetails={() => navigate(`/companies/${company.id}`)}
+                    />
                   ))}
                 </Box>
               )}

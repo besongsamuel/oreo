@@ -2,6 +2,7 @@ export { RatingDistributionChart } from "./charts/RatingDistributionChart";
 export { ReviewsTimelineChart } from "./charts/ReviewsTimelineChart";
 export { SentimentDonutChart } from "./charts/SentimentDonutChart";
 export { CompanyCard } from "./CompanyCard";
+export { CompaniesCompanyCard } from "./CompaniesCompanyCard";
 export { CompanyHeader } from "./CompanyHeader";
 export { FetchPlatformReviews } from "./FetchPlatformReviews";
 export { Footer } from "./Footer";
