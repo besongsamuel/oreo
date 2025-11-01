@@ -6,6 +6,7 @@ import {
   Button,
   Typography,
   Box,
+  Divider,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
@@ -80,20 +81,15 @@ export const PlatformCard = ({
       <CardMedia
         component="div"
         sx={{
-          height: 200,
-          bgcolor: selected ? "primary.light" : "grey.50",
+          width: "100%",
+          height: "auto",
+          flex: "1 1 auto",
+          minHeight: 200,
+          bgcolor: "white",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          transition: "background-color 0.3s ease-in-out",
-          "&:hover": {
-            bgcolor: disabled
-              ? undefined
-              : selected
-              ? "primary.main"
-              : "primary.light",
-          },
         }}
       >
         {logoUrl ? (
@@ -111,9 +107,8 @@ export const PlatformCard = ({
             }}
             sx={{
               width: "100%",
-              height: "100%",
+              height: "auto",
               objectFit: "contain",
-              p: 2,
             }}
           />
         ) : null}
@@ -121,7 +116,7 @@ export const PlatformCard = ({
         <Box
           sx={{
             width: "100%",
-            height: "100%",
+            height: 200,
             display: logoUrl ? "none" : "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -131,13 +126,16 @@ export const PlatformCard = ({
             variant="h4"
             fontWeight={700}
             sx={{
-              color: selected ? "primary.contrastText" : "text.secondary",
+              color: "text.secondary",
             }}
           >
             {platform.display_name.charAt(0)}
           </Typography>
         </Box>
       </CardMedia>
+
+      {/* Divider between image and content */}
+      <Divider />
 
       {/* Content Section */}
       <CardContent sx={{ flexGrow: 1, p: 3 }}>
