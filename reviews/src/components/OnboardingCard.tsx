@@ -1,10 +1,8 @@
 import {
   Add as AddIcon,
   RadioButtonChecked as StepIcon,
-  Warning as WarningIcon,
 } from "@mui/icons-material";
 import {
-  Alert,
   Box,
   Button,
   Paper,
@@ -49,7 +47,6 @@ export const OnboardingCard = ({
   let description: string;
   let buttonText: string;
   let buttonAction: () => void;
-  let showWarning = true;
   let showRemainingCount = false;
 
   if (step === "platform-selection" || step === "complete-platforms") {
@@ -70,7 +67,7 @@ export const OnboardingCard = ({
       });
       showRemainingCount = true;
     }
-    buttonText = t("companies.selectPlatforms");
+    buttonText = t("companies.selectPlatforms.button");
     buttonAction = onPlatformSelect;
   } else {
     // step === "add-company"
@@ -78,7 +75,6 @@ export const OnboardingCard = ({
     description = t("companies.addCompanyStep2Description");
     buttonText = t("companies.addCompanyStep2Button");
     buttonAction = onAddCompany;
-    showWarning = false;
   }
 
   return (
@@ -141,24 +137,6 @@ export const OnboardingCard = ({
             </Typography>
           )}
 
-          {showWarning && (
-            <Alert
-              severity="warning"
-              icon={<WarningIcon />}
-              sx={{
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "warning.main",
-                "& .MuiAlert-message": {
-                  width: "100%",
-                },
-              }}
-            >
-              <Typography variant="caption" fontWeight={500} color="text.primary">
-                {t("companies.platformSelectionWarning")}
-              </Typography>
-            </Alert>
-          )}
         </Stack>
 
         <Box sx={{ flexShrink: 0 }}>

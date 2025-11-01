@@ -17,7 +17,9 @@ import {
 } from "./pages";
 import { CompanyPage } from "./pages/CompanyPage";
 // import { Dashboard } from "./pages/Dashboard";
+import { PlatformSelectionSuccess } from "./pages/PlatformSelectionSuccess";
 import { Profile } from "./pages/Profile";
+import { SelectPlatforms } from "./pages/SelectPlatforms";
 import { SubscriptionCancelled } from "./pages/SubscriptionCancelled";
 import { SubscriptionSuccess } from "./pages/SubscriptionSuccess";
 import { SuccessLocation } from "./pages/SuccessLocation";
@@ -123,6 +125,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/select-platforms"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SelectPlatforms />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/select-platforms/success"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PlatformSelectionSuccess />
               </Layout>
             </ProtectedRoute>
           }

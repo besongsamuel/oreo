@@ -36,7 +36,6 @@ import { useNavigate } from "react-router-dom";
 import { CompaniesCompanyCard } from "../components/CompaniesCompanyCard";
 import { OnboardingCard } from "../components/OnboardingCard";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
-import { PlatformSelection } from "../components/PlatformSelection";
 import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
@@ -127,7 +126,6 @@ export const Companies = () => {
     Array<{ id: string; name: string; display_name: string }>
   >([]);
   const [platformCheckLoading, setPlatformCheckLoading] = useState(true);
-  const [showPlatformSelection, setShowPlatformSelection] = useState(false);
 
   const platforms = getAllPlatforms();
 
@@ -653,7 +651,7 @@ export const Companies = () => {
                   selectedPlatformsCount={selectedPlatformsCount}
                   maxPlatforms={maxPlatforms}
                   hasCompanies={!hasNoCompanies}
-                  onPlatformSelect={() => setShowPlatformSelection(true)}
+                  onPlatformSelect={() => navigate("/select-platforms")}
                   onAddCompany={() => handleOpenDialog()}
                 />
               );
@@ -1040,88 +1038,6 @@ export const Companies = () => {
             </Alert>
           )}
 
-          {/* Platform Selection Dialog */}
-          <Dialog
-            open={showPlatformSelection}
-            onClose={() => setShowPlatformSelection(false)}
-            maxWidth="lg"
-            fullWidth
-            PaperProps={{
-              sx: {
-                maxHeight: "90vh",
-              },
-            }}
-          >
-            <DialogTitle>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Typography variant="h6">
-                  {t("companies.platformSelectionModalTitle")}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => setShowPlatformSelection(false)}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </Stack>
-            </DialogTitle>
-            <DialogContent dividers>
-              {profile?.id && (
-                <Box sx={{ py: 2 }}>
-                  <PlatformSelection
-                    userId={profile.id}
-                    onComplete={() => {
-                      setShowPlatformSelection(false);
-                      // Refresh platform list and count
-                      const checkPlatformSelection = async () => {
-                        try {
-                          const { data, error } = await supabase
-                            .from("user_platforms")
-                            .select(
-                              `
-                                platform_id,
-                                platforms:platform_id (
-                                  id,
-                                  name,
-                                  display_name
-                                )
-                              `
-                            )
-                            .eq("user_id", profile.id);
-
-                          if (error) throw error;
-
-                          const platforms = (data || [])
-                            .map((item: any) => ({
-                              id: item.platforms?.id,
-                              name: item.platforms?.name,
-                              display_name: item.platforms?.display_name,
-                            }))
-                            .filter(
-                              (p: any) => p.id && p.name && p.display_name
-                            );
-
-                          setSelectedPlatformsList(platforms);
-                          setSelectedPlatformsCount(platforms.length);
-                        } catch (err: any) {
-                          console.error(
-                            "Error checking platform selection:",
-                            err
-                          );
-                        }
-                      };
-                      checkPlatformSelection();
-                    }}
-                    allowSkip={false}
-                  />
-                </Box>
-              )}
-            </DialogContent>
-          </Dialog>
 
           {/* Upgrade Dialog */}
           <Dialog
