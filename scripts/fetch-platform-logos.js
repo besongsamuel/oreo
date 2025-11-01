@@ -45,9 +45,7 @@ const PLATFORM_NAME_MAP = {
 // Initialize Supabase client
 const supabaseUrl =
   process.env.SUPABASE_URL || "https://obwpbnpwwgmbirvjdzwo.supabase.co";
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id3BibnB3d2dtYmlydmpkendvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDk3MzI3NCwiZXhwIjoyMDc2NTQ5Mjc0fQ.dJePk5b2L2GUcBZvwG4gEdqQ6nWvqwI2Qs5922iLkyk";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error("❌ Missing required environment variables:");
