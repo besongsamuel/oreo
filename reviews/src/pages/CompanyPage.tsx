@@ -5,6 +5,7 @@ import {
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
   Star as StarIcon,
+  SwapHoriz as SwapHorizIcon,
 } from "@mui/icons-material";
 import {
   Accordion,
@@ -153,6 +154,7 @@ export const CompanyPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<CompanyDetails | null>(null);
+  const [companyOwnerId, setCompanyOwnerId] = useState<string | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [allReviews, setAllReviews] = useState<Review[]>([]); // All reviews for charts
@@ -244,17 +246,27 @@ export const CompanyPage = () => {
     setRefreshing(true);
     try {
       // Fetch company details
-      const { data: companyData, error: companyError } = await supabase
+      // For admins, don't filter by owner_id (they can see all companies)
+      // For regular users, filter by owner_id
+      let companyQuery = supabase
         .from("companies")
         .select("*")
-        .eq("id", companyId)
-        .eq("owner_id", profile.id)
-        .single();
+        .eq("id", companyId);
+
+      if (profile.role !== "admin") {
+        companyQuery = companyQuery.eq("owner_id", profile.id);
+      }
+
+      const { data: companyData, error: companyError } =
+        await companyQuery.single();
 
       if (companyError) {
         console.error("Error fetching company:", companyError);
         return;
       }
+
+      // Store owner_id for transfer button check
+      setCompanyOwnerId(companyData.owner_id);
 
       // Fetch company stats
       const { data: statsData, error: statsError } = await supabase
@@ -368,17 +380,28 @@ export const CompanyPage = () => {
 
       try {
         // Fetch company details
-        const { data: companyData, error: companyError } = await supabase
+        // For admins, don't filter by owner_id (they can see all companies)
+        // For regular users, filter by owner_id
+        let companyQuery = supabase
           .from("companies")
           .select("*")
-          .eq("id", companyId)
-          .single();
+          .eq("id", companyId);
+
+        if (profile.role !== "admin") {
+          companyQuery = companyQuery.eq("owner_id", profile.id);
+        }
+
+        const { data: companyData, error: companyError } =
+          await companyQuery.single();
 
         if (companyError) {
           console.error("Error fetching company:", companyError);
           navigate("/companies");
           return;
         }
+
+        // Store owner_id for transfer button check
+        setCompanyOwnerId(companyData.owner_id);
 
         // Fetch company stats
         const { data: statsData, error: statsError } = await supabase
@@ -1625,7 +1648,7 @@ export const CompanyPage = () => {
         sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
       >
         <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
-          {/* Back Button and Refresh */}
+          {/* Back Button and Actions */}
           <Stack direction="row" spacing={2} justifyContent="space-between">
             <Button
               startIcon={<ArrowBackIcon />}
@@ -1649,14 +1672,32 @@ export const CompanyPage = () => {
               </Box>
             </Button>
 
-            <Button
-              startIcon={<RefreshIcon />}
-              onClick={refreshPageData}
-              disabled={refreshing}
-              variant="outlined"
-            >
-              {t("companyPage.refresh")}
-            </Button>
+            <Stack direction="row" spacing={2}>
+              {/* Transfer Ownership Button - Show only if admin and owns company */}
+              {profile?.role === "admin" &&
+                companyOwnerId === profile.id &&
+                companyId && (
+                  <Button
+                    startIcon={<SwapHorizIcon />}
+                    onClick={() =>
+                      navigate(`/companies/${companyId}/transfer-ownership`)
+                    }
+                    variant="outlined"
+                    color="primary"
+                  >
+                    {t("companyPage.transferOwnership", "Transfer Ownership")}
+                  </Button>
+                )}
+
+              <Button
+                startIcon={<RefreshIcon />}
+                onClick={refreshPageData}
+                disabled={refreshing}
+                variant="outlined"
+              >
+                {t("companyPage.refresh")}
+              </Button>
+            </Stack>
           </Stack>
 
           {/* Company Header */}

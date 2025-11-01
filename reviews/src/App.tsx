@@ -14,6 +14,7 @@ import {
   Pricing,
   PrivacyPolicy,
   TermsOfUse,
+  TransferOwnership,
 } from "./pages";
 import { CompanyPage } from "./pages/CompanyPage";
 // import { Dashboard } from "./pages/Dashboard";
@@ -115,6 +116,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <SuccessLocation />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies/:companyId/transfer-ownership"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TransferOwnership />
               </Layout>
             </ProtectedRoute>
           }

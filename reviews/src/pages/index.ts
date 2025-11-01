@@ -11,3 +11,4 @@ export { Profile } from "./Profile";
 export { SelectPlatforms } from "./SelectPlatforms";
 export { SuccessLocation } from "./SuccessLocation";
 export { TermsOfUse } from "./TermsOfUse";
+export { TransferOwnership } from "./TransferOwnership";
