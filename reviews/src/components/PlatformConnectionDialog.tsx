@@ -1,6 +1,7 @@
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
   Alert,
+  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -16,8 +17,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 import {
   PlatformRegistryEntry,
@@ -103,6 +105,9 @@ export const PlatformConnectionDialog = ({
 }: PlatformConnectionDialogProps) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
+  const context = useContext(UserContext);
+  const isUserAdmin =
+    context?.isAdmin?.() || context?.profile?.role === "admin";
   const isLocationSpecificMode = !!preSelectedLocationId;
   const [selectedLocation, setSelectedLocation] = useState<string | null>(
     preSelectedLocationId || null
@@ -122,6 +127,54 @@ export const PlatformConnectionDialog = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [availableLocations, setAvailableLocations] = useState(locations);
+  const [allPlatforms, setAllPlatforms] = useState<PlatformRegistryEntry[]>([]);
+  const [loadingPlatforms, setLoadingPlatforms] = useState(false);
+
+  // Fetch all platforms if admin
+  useEffect(() => {
+    const fetchAllPlatforms = async () => {
+      if (!isUserAdmin || !isLocationSpecificMode || !open) {
+        return;
+      }
+
+      setLoadingPlatforms(true);
+      try {
+        const { data: platformsData, error: platformsError } = await supabase
+          .from("platforms")
+          .select("id, name, display_name, icon_url, base_url")
+          .eq("is_active", true)
+          .order("display_name");
+
+        if (platformsError) throw platformsError;
+
+        // Map database platforms to PlatformRegistryEntry format
+        const mappedPlatforms = (platformsData || [])
+          .map((platform) => {
+            const config = getPlatformConfig(platform.name);
+            return {
+              name: platform.name,
+              displayName: platform.display_name,
+              color: config?.color || "#666666",
+              iconUrl: platform.icon_url || config?.iconUrl,
+              status: (config?.status || "active") as
+                | "active"
+                | "coming_soon"
+                | "maintenance",
+              provider: null,
+            };
+          })
+          .filter((p) => p.status === "active");
+
+        setAllPlatforms(mappedPlatforms);
+      } catch (err: any) {
+        console.error("Error fetching all platforms:", err);
+      } finally {
+        setLoadingPlatforms(false);
+      }
+    };
+
+    fetchAllPlatforms();
+  }, [isUserAdmin, isLocationSpecificMode, open, supabase]);
 
   // Filter out locations that already have connections for this platform
   useEffect(() => {
@@ -229,6 +282,37 @@ export const PlatformConnectionDialog = ({
     setSuccess(false);
 
     try {
+      // Check if the slug already exists in platform_connections
+      const { data: platformData } = await supabase
+        .from("platforms")
+        .select("id")
+        .eq("name", selectedPlatformName.toLowerCase())
+        .single();
+
+      if (platformData) {
+        const { data: existingConnection, error: checkError } = await supabase
+          .from("platform_connections")
+          .select("id")
+          .eq("platform_id", platformData.id)
+          .eq("platform_location_id", platformLocationId.trim())
+          .limit(1);
+
+        if (checkError) {
+          throw new Error(checkError.message);
+        }
+
+        if (existingConnection && existingConnection.length > 0) {
+          setError(
+            t(
+              "platform.slugAlreadyExists",
+              "This platform location ID already exists in the system. If this page belongs to you, please contact tech@boresha.ca for assistance."
+            )
+          );
+          setConnecting(false);
+          return;
+        }
+      }
+
       await onConnect(
         platformLocationId.trim(),
         selectedLocation,
@@ -254,8 +338,15 @@ export const PlatformConnectionDialog = ({
     onClose();
   };
 
-  // Get platforms to display - use availablePlatforms if provided, otherwise use all active
-  const platformsToShow = availablePlatforms || [];
+  // Get platforms to display
+  // For admins: use all platforms from database
+  // For regular users: use availablePlatforms (their selected platforms)
+  const platformsToShow =
+    isUserAdmin && isLocationSpecificMode
+      ? allPlatforms
+      : availablePlatforms || [];
+
+  const shouldShowDropdown = platformsToShow.length > 6;
 
   return (
     <Dialog
@@ -333,7 +424,7 @@ export const PlatformConnectionDialog = ({
             </Box>
           )}
 
-          {/* Platform Selection Grid - Show when in location-specific mode and no platform selected */}
+          {/* Platform Selection - Show when in location-specific mode and no platform selected */}
           {isLocationSpecificMode && !selectedPlatformName && !success && (
             <Box>
               <Typography variant="h6" gutterBottom>
@@ -341,16 +432,93 @@ export const PlatformConnectionDialog = ({
                   defaultValue: "Select a Platform",
                 })}
               </Typography>
-              {platformsToShow.length === 0 ? (
+              {loadingPlatforms ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : platformsToShow.length === 0 ? (
                 <Alert severity="info" sx={{ mt: 2 }}>
                   <Typography variant="body2">
-                    {t("platform.noPlatformsSelected", {
-                      defaultValue:
-                        "You haven't selected any platforms yet. Please go to your Profile to select the platforms you want to use.",
-                    })}
+                    {isUserAdmin
+                      ? t("platform.noPlatformsAvailable", {
+                          defaultValue: "No active platforms available.",
+                        })
+                      : t("platform.noPlatformsSelected", {
+                          defaultValue:
+                            "You haven't selected any platforms yet. Please go to your Profile to select the platforms you want to use.",
+                        })}
                   </Typography>
                 </Alert>
+              ) : shouldShowDropdown ? (
+                // Dropdown for more than 6 platforms
+                <Autocomplete
+                  options={platformsToShow}
+                  getOptionLabel={(option) => option.displayName}
+                  isOptionEqualToValue={(option, value) =>
+                    option.name === value.name
+                  }
+                  value={
+                    platformsToShow.find(
+                      (p) => p.name === selectedPlatformName
+                    ) || null
+                  }
+                  onChange={(event, newValue) => {
+                    if (newValue) {
+                      setSelectedPlatformName(newValue.name);
+                      setPlatformLocationId("");
+                      setVerifiedListing(null);
+                      setVerificationError(null);
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t("platform.selectPlatform", {
+                        defaultValue: "Select a Platform",
+                      })}
+                      placeholder={t("platform.searchPlatform", {
+                        defaultValue: "Search or select a platform...",
+                      })}
+                      sx={{ mt: 2 }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box
+                      component="li"
+                      {...props}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        py: 1,
+                      }}
+                    >
+                      {option.iconUrl && (
+                        <Avatar
+                          src={option.iconUrl}
+                          alt={option.displayName}
+                          sx={{ width: 24, height: 24 }}
+                        />
+                      )}
+                      <Typography>{option.displayName}</Typography>
+                      {option.status === "coming_soon" && (
+                        <Chip
+                          label={t("platform.soon")}
+                          size="small"
+                          sx={{
+                            ml: "auto",
+                            height: 20,
+                            fontSize: "0.7rem",
+                            bgcolor: "text.secondary",
+                            color: "white",
+                          }}
+                        />
+                      )}
+                    </Box>
+                  )}
+                />
               ) : (
+                // Grid for 6 or fewer platforms
                 <Box
                   sx={{
                     display: "grid",

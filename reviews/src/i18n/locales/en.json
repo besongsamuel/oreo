@@ -505,7 +505,8 @@
     },
     "connectPlatformToLocation": "Connect Platform to Location",
     "selectPlatform": "Select a Platform",
-    "jobCreatedMessage": "A job has been created to get your reviews. Reviews will be available shortly."
+    "jobCreatedMessage": "A job has been created to get your reviews. Reviews will be available shortly.",
+    "slugAlreadyExists": "This platform location ID already exists in the system. If this page belongs to you, please contact tech@boresha.ca for assistance."
   },
   "pricing": {
     "title": "Pricing",

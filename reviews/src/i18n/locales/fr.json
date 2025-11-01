@@ -316,7 +316,8 @@
     },
     "connectPlatformToLocation": "Connecter une plateforme à l'emplacement",
     "selectPlatform": "Sélectionner une plateforme",
-    "jobCreatedMessage": "Un travail a été créé pour récupérer vos avis. Les avis seront disponibles sous peu."
+    "jobCreatedMessage": "Un travail a été créé pour récupérer vos avis. Les avis seront disponibles sous peu.",
+    "slugAlreadyExists": "Cet identifiant d'emplacement de plateforme existe déjà dans le système. Si cette page vous appartient, veuillez contacter tech@boresha.ca pour obtenir de l'aide."
   },
   "profile": {
     "title": "Paramètres du profil",

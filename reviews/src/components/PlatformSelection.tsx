@@ -50,7 +50,8 @@ export const PlatformSelection = ({
 }: PlatformSelectionProps) => {
     const supabase = useSupabase();
     const { t, i18n } = useTranslation();
-    const { getPlanLimit } = useContext(UserContext) || {};
+    const context = useContext(UserContext);
+    const { getPlanLimit, isAdmin, profile } = context || {};
 
     const [platforms, setPlatforms] = useState<SupportedPlatform[]>([]);
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -59,7 +60,11 @@ export const PlatformSelection = ({
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
+    // Admins have unlimited platforms
+    const isUserAdmin = isAdmin?.() || profile?.role === "admin";
+    const maxPlatforms = isUserAdmin 
+      ? Infinity 
+      : (getPlanLimit?.("max_platforms") ?? 3);
     const currentLanguage = i18n.language === "fr" ? "fr" : "en";
 
     useEffect(() => {
@@ -116,8 +121,8 @@ export const PlatformSelection = ({
                 selectedPlatforms.filter((name) => name !== platformName)
             );
         } else {
-            // Add platform (check limit)
-            if (selectedPlatforms.length >= maxPlatforms) {
+            // Add platform (check limit - admins have unlimited)
+            if (!isUserAdmin && selectedPlatforms.length >= maxPlatforms) {
                 setError(
                     t("companies.platformSelectionErrorMaxReached", {
                         max: maxPlatforms,
@@ -215,13 +220,15 @@ export const PlatformSelection = ({
                         {t("companies.platformSelectionTitle")}
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        {t("companies.platformSelectionDescription", {
-                            max: maxPlatforms,
-                            plural:
-                                maxPlatforms > 1
-                                    ? t("companies.platformSelectionDescriptionPlural")
-                                    : t("companies.platformSelectionDescriptionSingular"),
-                        })}
+                        {isUserAdmin
+                            ? t("companies.platformSelectionDescriptionUnlimited", "Select the review platforms you want to connect. You can select unlimited platforms.")
+                            : t("companies.platformSelectionDescription", {
+                                max: maxPlatforms,
+                                plural:
+                                    maxPlatforms > 1
+                                        ? t("companies.platformSelectionDescriptionPlural")
+                                        : t("companies.platformSelectionDescriptionSingular"),
+                            })}
                     </Typography>
                 </Box>
 
@@ -271,12 +278,16 @@ export const PlatformSelection = ({
 
                     <Box sx={{ mb: 2 }}>
                         <Chip
-                            label={t("companies.platformSelectionSelected", {
-                                selected: selectedPlatforms.length,
-                                max: maxPlatforms,
-                            })}
+                            label={isUserAdmin
+                                ? t("companies.platformSelectionSelectedUnlimited", "{{selected}} selected (unlimited)", {
+                                    selected: selectedPlatforms.length,
+                                  })
+                                : t("companies.platformSelectionSelected", {
+                                    selected: selectedPlatforms.length,
+                                    max: maxPlatforms,
+                                  })}
                             color={
-                                selectedPlatforms.length >= maxPlatforms
+                                !isUserAdmin && selectedPlatforms.length >= maxPlatforms
                                     ? "success"
                                     : "default"
                             }
@@ -299,6 +310,7 @@ export const PlatformSelection = ({
                                 selectedPlatforms.includes(platform.name);
                             const isDisabled =
                                 !isSelected &&
+                                !isUserAdmin &&
                                 selectedPlatforms.length >= maxPlatforms;
 
                             return (
@@ -440,7 +452,7 @@ export const PlatformSelection = ({
                         disabled={
                             saving ||
                             selectedPlatforms.length === 0 ||
-                            selectedPlatforms.length > maxPlatforms
+                            (!isUserAdmin && selectedPlatforms.length > maxPlatforms)
                         }
                         size="large"
                     >

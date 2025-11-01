@@ -49,7 +49,7 @@ export const SelectPlatforms = () => {
   const navigate = useNavigate();
   const supabase = useSupabase();
   const context = useContext(UserContext);
-  const { getPlanLimit } = context || {};
+  const { getPlanLimit, isAdmin, profile: contextProfile } = context || {};
 
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -60,7 +60,11 @@ export const SelectPlatforms = () => {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ id: string } | null>(null);
 
-  const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
+  // Admins have unlimited platforms - use Infinity instead of fallback
+  const isUserAdmin = isAdmin?.() || contextProfile?.role === "admin";
+  const maxPlatforms = isUserAdmin 
+    ? Infinity 
+    : (getPlanLimit?.("max_platforms") ?? 3);
 
   // Fetch user profile
   useEffect(() => {
@@ -168,24 +172,27 @@ export const SelectPlatforms = () => {
       // Deselect (only allowed for non-persisted platforms)
       setSelectedPlatforms(selectedPlatforms.filter((id) => id !== platformId));
     } else {
-      // Calculate remaining slots (accounting for already persisted platforms)
-      const remainingSlots = maxPlatforms - userPlatforms.length;
-      const newSelectionsCount = selectedPlatforms.filter(
-        (id) => !userPlatforms.includes(id)
-      ).length;
-      
-      // Check if adding this would exceed remaining slots
-      if (newSelectionsCount >= remainingSlots) {
-        setError(
-          t("companies.selectPlatforms.errorMaxReached", {
-            max: maxPlatforms,
-            plural:
-              maxPlatforms > 1
-                ? t("companies.selectPlatforms.errorMaxReachedPlural")
-                : t("companies.selectPlatforms.errorMaxReachedSingular"),
-          })
-        );
-        return;
+      // For admins (unlimited), skip limit check
+      if (!isUserAdmin) {
+        // Calculate remaining slots (accounting for already persisted platforms)
+        const remainingSlots = maxPlatforms - userPlatforms.length;
+        const newSelectionsCount = selectedPlatforms.filter(
+          (id) => !userPlatforms.includes(id)
+        ).length;
+        
+        // Check if adding this would exceed remaining slots
+        if (newSelectionsCount >= remainingSlots) {
+          setError(
+            t("companies.selectPlatforms.errorMaxReached", {
+              max: maxPlatforms,
+              plural:
+                maxPlatforms > 1
+                  ? t("companies.selectPlatforms.errorMaxReachedPlural")
+                  : t("companies.selectPlatforms.errorMaxReachedSingular"),
+            })
+          );
+          return;
+        }
       }
       // Select
       setSelectedPlatforms([...selectedPlatforms, platformId]);
@@ -239,13 +246,15 @@ export const SelectPlatforms = () => {
       
       // Check if it's a 403 error from the edge function
       if (err.status === 403 || err.message?.includes("Cannot add")) {
-        setError(err.message || t("companies.selectPlatforms.errorMaxReached", {
-          max: maxPlatforms,
-          plural:
-            maxPlatforms > 1
-              ? t("companies.selectPlatforms.errorMaxReachedPlural")
-              : t("companies.selectPlatforms.errorMaxReachedSingular"),
-        }));
+        setError(err.message || (isUserAdmin 
+          ? t("companies.selectPlatforms.errorSaveFailed", "Failed to save platform selection. Please try again.")
+          : t("companies.selectPlatforms.errorMaxReached", {
+              max: maxPlatforms,
+              plural:
+                maxPlatforms > 1
+                  ? t("companies.selectPlatforms.errorMaxReachedPlural")
+                  : t("companies.selectPlatforms.errorMaxReachedSingular"),
+            })));
       } else {
         setError(err.message || t("companies.selectPlatforms.errorSaveFailed"));
       }
@@ -263,12 +272,14 @@ export const SelectPlatforms = () => {
     (id) => !userPlatforms.includes(id)
   );
   
-  // Calculate remaining slots
-  const remainingSlots = maxPlatforms - userPlatforms.length;
+  // Calculate remaining slots (for non-admins only)
+  const remainingSlots = isUserAdmin 
+    ? Infinity 
+    : (maxPlatforms - userPlatforms.length);
   
   const canSave =
     newPlatformIds.length > 0 &&
-    newPlatformIds.length <= remainingSlots;
+    (isUserAdmin || newPlatformIds.length <= remainingSlots);
 
   return (
     <>
@@ -284,13 +295,15 @@ export const SelectPlatforms = () => {
               {t("companies.selectPlatforms.title")}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {t("companies.selectPlatforms.subtitle", {
-                max: maxPlatforms,
-                plural:
-                  maxPlatforms > 1
-                    ? t("companies.selectPlatforms.subtitlePlural")
-                    : t("companies.selectPlatforms.subtitleSingular"),
-              })}
+              {isUserAdmin
+                ? t("companies.selectPlatforms.subtitleUnlimited", "Choose the review platforms you want to connect. You can select unlimited platforms.")
+                : t("companies.selectPlatforms.subtitle", {
+                    max: maxPlatforms,
+                    plural:
+                      maxPlatforms > 1
+                        ? t("companies.selectPlatforms.subtitlePlural")
+                        : t("companies.selectPlatforms.subtitleSingular"),
+                  })}
             </Typography>
           </Stack>
 
@@ -344,11 +357,15 @@ export const SelectPlatforms = () => {
           {/* Selected Count */}
           <Box>
             <Chip
-              label={t("companies.selectPlatforms.selectedCount", {
-                count: selectedPlatforms.length,
-                max: maxPlatforms,
-              })}
-              color={selectedPlatforms.length === maxPlatforms ? "primary" : "default"}
+              label={isUserAdmin
+                ? t("companies.selectPlatforms.selectedCountUnlimited", "{{selected}} selected (unlimited)", {
+                    selected: selectedPlatforms.length,
+                  })
+                : t("companies.selectPlatforms.selectedCount", {
+                    count: selectedPlatforms.length,
+                    max: maxPlatforms,
+                  })}
+              color={!isUserAdmin && selectedPlatforms.length === maxPlatforms ? "primary" : "default"}
               sx={{ fontWeight: 600 }}
             />
           </Box>
@@ -387,7 +404,10 @@ export const SelectPlatforms = () => {
               {filteredPlatforms.map((platform) => {
                 const isPersisted = userPlatforms.includes(platform.id);
                 const isSelected = selectedPlatforms.includes(platform.id);
-                const remainingSlots = maxPlatforms - userPlatforms.length;
+                // For admins, no limit checks needed
+                const remainingSlots = isUserAdmin 
+                  ? Infinity 
+                  : (maxPlatforms - userPlatforms.length);
                 const newSelectionsCount = selectedPlatforms.filter(
                   (id) => !userPlatforms.includes(id)
                 ).length;
@@ -400,7 +420,7 @@ export const SelectPlatforms = () => {
                     onToggle={handleTogglePlatform}
                     disabled={
                       isPersisted || // Prevent unselecting persisted platforms
-                      (!isSelected && newSelectionsCount >= remainingSlots) // Prevent selecting when limit reached
+                      (!isUserAdmin && !isSelected && newSelectionsCount >= remainingSlots) // Prevent selecting when limit reached (non-admins only)
                     }
                     locked={isPersisted} // Visual indicator for persisted platforms
                   />

@@ -1,7 +1,6 @@
 import {
   Add as AddIcon,
   Business as BusinessIcon,
-  Clear as ClearIcon,
   Facebook as FacebookIcon,
   LanguageOutlined as WebIcon,
 } from "@mui/icons-material";
@@ -19,7 +18,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  IconButton,
   InputAdornment,
   ListItemIcon,
   ListItemText,
@@ -88,8 +86,8 @@ export const Companies = () => {
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
-  const canCreateCompany = context?.canCreateCompany;
   const getPlanLimit = context?.getPlanLimit;
+  const isAdmin = context?.isAdmin;
   const navigate = useNavigate();
   const {
     connectPlatformUnified,
@@ -254,17 +252,33 @@ export const Companies = () => {
   const handleOpenDialog = (company?: Company) => {
     // If creating new company, check limits first
     if (!company && !editingCompany) {
-      // Check if user can create another company
-      if (!canCreateCompany?.() && profile?.role !== "admin") {
-        const maxCompanies = getPlanLimit?.("max_companies") ?? 1;
-        setError(
-          t("companies.companyLimitReached", {
-            max: maxCompanies,
-            defaultValue: `You have reached the limit of ${maxCompanies} company. Please upgrade your plan to add more companies.`,
-          })
-        );
-        setUpgradeDialogOpen(true);
-        return;
+      // Admins have unlimited companies
+      if (isAdmin?.() || profile?.role === "admin") {
+        // Allow admins to proceed
+      } else {
+        // Check actual company count against plan limit for regular users
+        const maxCompanies = getPlanLimit?.("max_companies");
+
+        // If maxCompanies is null or undefined, it means unlimited
+        if (maxCompanies !== null && maxCompanies !== undefined) {
+          // Count only companies owned by the current user (not all companies for admins)
+          const userCompanyCount = companies.filter(
+            (c) => c.owner_id === profile?.id
+          ).length;
+
+          if (userCompanyCount >= maxCompanies) {
+            setError(
+              t("companies.companyLimitReached", {
+                max: maxCompanies,
+                defaultValue: `You have reached the limit of ${maxCompanies} ${
+                  maxCompanies === 1 ? "company" : "companies"
+                }. Please upgrade your plan to add more companies.`,
+              })
+            );
+            setUpgradeDialogOpen(true);
+            return;
+          }
+        }
       }
     }
 
@@ -342,14 +356,31 @@ export const Companies = () => {
         if (updateError) throw updateError;
       } else {
         // Check company limit before creating (backend will also enforce)
-        if (!canCreateCompany?.() && profile?.role !== "admin") {
-          const maxCompanies = getPlanLimit?.("max_companies") ?? 1;
-          throw new Error(
-            t("companies.companyLimitReached", {
-              max: maxCompanies,
-              defaultValue: `Company limit reached. Maximum ${maxCompanies} company allowed on your current plan.`,
-            })
-          );
+        // Admins have unlimited companies
+        if (isAdmin?.() || profile?.role === "admin") {
+          // Allow admins to proceed without limit check
+        } else {
+          // Check actual company count against plan limit for regular users
+          const maxCompanies = getPlanLimit?.("max_companies");
+
+          // If maxCompanies is null or undefined, it means unlimited
+          if (maxCompanies !== null && maxCompanies !== undefined) {
+            // Count only companies owned by the current user
+            const userCompanyCount = companies.filter(
+              (c) => c.owner_id === profile?.id
+            ).length;
+
+            if (userCompanyCount >= maxCompanies) {
+              throw new Error(
+                t("companies.companyLimitReached", {
+                  max: maxCompanies,
+                  defaultValue: `Company limit reached. Maximum ${maxCompanies} ${
+                    maxCompanies === 1 ? "company" : "companies"
+                  } allowed on your current plan.`,
+                })
+              );
+            }
+          }
         }
 
         // Create new company
@@ -625,7 +656,8 @@ export const Companies = () => {
             profile &&
             profile.role !== "admin" &&
             (() => {
-              const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
+              // Admins won't see this onboarding card, but ensure no fallback for non-admins
+              const maxPlatforms = getPlanLimit?.("max_platforms") ?? 3;
               const remainingPlatforms = maxPlatforms - selectedPlatformsCount;
               const hasNoCompanies = companies.length === 0;
               const hasCompletedPlatformSelection = remainingPlatforms === 0;
@@ -798,7 +830,8 @@ export const Companies = () => {
             <>
               {/* Regular User View */}
               {(() => {
-                const maxPlatforms = getPlanLimit?.("max_platforms") || 3;
+                // Admins won't see this section, but ensure proper handling
+                const maxPlatforms = getPlanLimit?.("max_platforms") ?? 3;
                 const remainingPlatforms =
                   maxPlatforms - selectedPlatformsCount;
                 const hasNoCompanies = companies.length === 0;
@@ -1037,7 +1070,6 @@ export const Companies = () => {
               {platformSuccess}
             </Alert>
           )}
-
 
           {/* Upgrade Dialog */}
           <Dialog

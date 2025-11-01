@@ -592,18 +592,29 @@ export const Profile = () => {
                             typeof feature.limit_value === "object"
                           ) {
                             const limits = feature.limit_value;
-                            if (limits.max_companies) {
-                              displayText = `${displayText} (${
-                                limits.max_companies
-                              } ${
-                                limits.max_companies === 1
-                                  ? "company"
-                                  : "companies"
-                              })`;
-                            } else if (limits.max_locations_per_company) {
-                              displayText = `${displayText} (${limits.max_locations_per_company} per company)`;
-                            } else if (limits.max_reviews_per_sync) {
-                              displayText = `${displayText} (${limits.max_reviews_per_sync} reviews)`;
+                            // Admins have unlimited - show "Unlimited" instead of numbers
+                            if (profile?.role === "admin") {
+                              if (limits.max_companies) {
+                                displayText = `${displayText} (Unlimited)`;
+                              } else if (limits.max_locations_per_company) {
+                                displayText = `${displayText} (Unlimited per company)`;
+                              } else if (limits.max_reviews_per_sync) {
+                                displayText = `${displayText} (Unlimited reviews)`;
+                              }
+                            } else {
+                              if (limits.max_companies) {
+                                displayText = `${displayText} (${
+                                  limits.max_companies
+                                } ${
+                                  limits.max_companies === 1
+                                    ? "company"
+                                    : "companies"
+                                })`;
+                              } else if (limits.max_locations_per_company) {
+                                displayText = `${displayText} (${limits.max_locations_per_company} per company)`;
+                              } else if (limits.max_reviews_per_sync) {
+                                displayText = `${displayText} (${limits.max_reviews_per_sync} reviews)`;
+                              }
                             }
                           }
 
@@ -754,8 +765,10 @@ export const Profile = () => {
 
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         You have selected {selectedPlatforms.length} of{" "}
-                        {context?.getPlanLimit?.("max_platforms") || 3} available
-                        platform{selectedPlatforms.length !== 1 ? "s" : ""}.
+                        {profile?.role === "admin"
+                          ? "Unlimited"
+                          : (context?.getPlanLimit?.("max_platforms") ?? 3)}{" "}
+                        platform{selectedPlatforms.length !== 1 ? "s" : ""} available.
                       </Typography>
                     </>
                   ) : (
