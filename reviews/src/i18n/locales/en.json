@@ -221,6 +221,8 @@
     "onboardingPlatformDescriptionPartial": "You've already selected {{count}} platform{{plural}}. Complete your platform selection to get the most out of your subscription.",
     "selectPlatforms": {
       "button": "Select Platforms",
+      "select": "Select",
+      "selected": "Selected",
       "title": "Select Your Platforms",
       "subtitle": "Choose the review platforms you want to connect. You can select up to {{max}} platform{{plural}}.",
       "subtitlePlural": "s",

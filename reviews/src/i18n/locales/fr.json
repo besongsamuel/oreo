@@ -230,6 +230,8 @@
     "onboardingPlatformDescriptionPartial": "Vous avez déjà sélectionné {{count}} plateforme{{plural}}. Complétez votre sélection de plateformes pour tirer le meilleur parti de votre abonnement.",
     "selectPlatforms": {
       "button": "Sélectionner les plateformes",
+      "select": "Sélectionner",
+      "selected": "Sélectionné",
       "title": "Sélectionnez vos plateformes",
       "subtitle": "Choisissez les plateformes d'avis que vous souhaitez connecter. Vous pouvez sélectionner jusqu'à {{max}} plateforme{{plural}}.",
       "subtitlePlural": "s",
