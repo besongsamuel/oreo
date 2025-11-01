@@ -119,9 +119,13 @@ export const PlatformSelection = ({
             // Add platform (check limit)
             if (selectedPlatforms.length >= maxPlatforms) {
                 setError(
-                    `You can only select up to ${maxPlatforms} platform${
-                        maxPlatforms > 1 ? "s" : ""
-                    }. Please remove a platform first.`
+                    t("companies.platformSelectionErrorMaxReached", {
+                        max: maxPlatforms,
+                        plural:
+                            maxPlatforms > 1
+                                ? t("companies.platformSelectionErrorMaxReachedPlural")
+                                : t("companies.platformSelectionErrorMaxReachedSingular"),
+                    })
                 );
                 return;
             }
@@ -131,7 +135,7 @@ export const PlatformSelection = ({
 
     const handleSave = async () => {
         if (selectedPlatforms.length === 0) {
-            setError("Please select at least one platform");
+            setError(t("companies.platformSelectionErrorMinRequired"));
             return;
         }
 
@@ -174,7 +178,7 @@ export const PlatformSelection = ({
             onComplete();
         } catch (err: any) {
             console.error("Error saving platforms:", err);
-            setError(err.message || "Failed to save platform selections");
+            setError(err.message || t("companies.platformSelectionErrorSaveFailed"));
         } finally {
             setSaving(false);
         }
@@ -197,7 +201,7 @@ export const PlatformSelection = ({
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Typography variant="body1" color="text.secondary">
-                    Loading platforms...
+                    {t("companies.platformSelectionLoading")}
                 </Typography>
             </Container>
         );
@@ -208,12 +212,16 @@ export const PlatformSelection = ({
             <Stack spacing={4}>
                 <Box>
                     <Typography variant="h4" component="h1" gutterBottom>
-                        Select Your Platforms
+                        {t("companies.platformSelectionTitle")}
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Choose the review platforms you want to connect. You can
-                        select up to {maxPlatforms} platform
-                        {maxPlatforms > 1 ? "s" : ""}.
+                        {t("companies.platformSelectionDescription", {
+                            max: maxPlatforms,
+                            plural:
+                                maxPlatforms > 1
+                                    ? t("companies.platformSelectionDescriptionPlural")
+                                    : t("companies.platformSelectionDescriptionSingular"),
+                        })}
                     </Typography>
                 </Box>
 
@@ -222,11 +230,10 @@ export const PlatformSelection = ({
                     icon={<WarningIcon />}
                 >
                     <Typography variant="body2" fontWeight={600}>
-                        Platform selection cannot be changed
+                        {t("companies.platformSelectionWarningTitle")}
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 0.5 }}>
-                        Your platform selection is permanent and cannot be modified after
-                        you save. Please choose carefully.
+                        {t("companies.platformSelectionWarningMessage")}
                     </Typography>
                 </Alert>
 
@@ -239,7 +246,7 @@ export const PlatformSelection = ({
                 <Box>
                     <TextField
                         fullWidth
-                        placeholder="Search platforms..."
+                        placeholder={t("companies.platformSelectionSearchPlaceholder")}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
@@ -264,7 +271,10 @@ export const PlatformSelection = ({
 
                     <Box sx={{ mb: 2 }}>
                         <Chip
-                            label={`${selectedPlatforms.length} of ${maxPlatforms} selected`}
+                            label={t("companies.platformSelectionSelected", {
+                                selected: selectedPlatforms.length,
+                                max: maxPlatforms,
+                            })}
                             color={
                                 selectedPlatforms.length >= maxPlatforms
                                     ? "success"
@@ -404,7 +414,9 @@ export const PlatformSelection = ({
                     {filteredPlatforms.length === 0 && (
                         <Paper sx={{ p: 4, textAlign: "center" }}>
                             <Typography variant="body1" color="text.secondary">
-                                No platforms found matching "{searchQuery}"
+                                {t("companies.platformSelectionNoResults", {
+                                    query: searchQuery,
+                                })}
                             </Typography>
                         </Paper>
                     )}
@@ -419,7 +431,7 @@ export const PlatformSelection = ({
                 >
                     {allowSkip && onSkip && (
                         <Button onClick={onSkip} disabled={saving}>
-                            Skip
+                            {t("companies.platformSelectionSkip")}
                         </Button>
                     )}
                     <Button
@@ -432,7 +444,9 @@ export const PlatformSelection = ({
                         }
                         size="large"
                     >
-                        {saving ? "Saving..." : "Continue"}
+                        {saving
+                            ? t("companies.platformSelectionSaving")
+                            : t("companies.platformSelectionContinue")}
                     </Button>
                 </Box>
             </Stack>
