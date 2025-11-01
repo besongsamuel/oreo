@@ -1,12 +1,5 @@
 import { CheckCircle, RadioButtonUnchecked } from "@mui/icons-material";
-import {
-  Box,
-  Card,
-  CardContent,
-  Checkbox,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 interface PlatformCardProps {
@@ -29,12 +22,17 @@ export const PlatformCard = ({
   onToggle,
   disabled = false,
 }: PlatformCardProps) => {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
   const isFrench = i18n.language === "fr";
   const description =
-    (isFrench ? platform.short_description_fr : platform.short_description_en) ||
+    (isFrench
+      ? platform.short_description_fr
+      : platform.short_description_en) ||
     platform.short_description_en ||
     "";
+
+  // Use icon_url from database
+  const logoUrl = platform.icon_url;
 
   const handleClick = () => {
     if (!disabled) {
@@ -103,34 +101,43 @@ export const PlatformCard = ({
               flexShrink: 0,
             }}
           >
-            {platform.icon_url ? (
+            {logoUrl ? (
               <Box
                 component="img"
-                src={platform.icon_url}
+                src={logoUrl}
                 alt={platform.display_name}
+                onError={(e) => {
+                  // If image fails to load, hide it and show placeholder
+                  const img = e.target as HTMLImageElement;
+                  img.style.display = "none";
+                  const placeholder = img.nextElementSibling as HTMLElement;
+                  if (placeholder) {
+                    placeholder.style.display = "flex";
+                  }
+                }}
                 sx={{
                   maxWidth: "100%",
                   maxHeight: "100%",
                   objectFit: "contain",
+                  display: "block",
                 }}
               />
-            ) : (
-              <Box
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  bgcolor: "grey.100",
-                  borderRadius: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  {platform.display_name.charAt(0)}
-                </Typography>
-              </Box>
-            )}
+            ) : null}
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                bgcolor: "grey.100",
+                borderRadius: 2,
+                display: logoUrl ? "none" : "flex", // Show if no logo URL, hide if logo exists
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {platform.display_name.charAt(0)}
+              </Typography>
+            </Box>
           </Box>
 
           {/* Platform Name */}
@@ -168,4 +175,3 @@ export const PlatformCard = ({
     </Card>
   );
 };
-
