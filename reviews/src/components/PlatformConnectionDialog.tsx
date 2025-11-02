@@ -133,9 +133,7 @@ export const PlatformConnectionDialog = ({
   const [availableLocations, setAvailableLocations] = useState(locations);
   const [allPlatforms, setAllPlatforms] = useState<PlatformRegistryEntry[]>([]);
   const [loadingPlatforms, setLoadingPlatforms] = useState(false);
-  const [platformInstructions, setPlatformInstructions] = useState<any>(null);
   const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
-  const [loadingInstructions, setLoadingInstructions] = useState(false);
 
   // Fetch all platforms if admin
   useEffect(() => {
@@ -183,34 +181,7 @@ export const PlatformConnectionDialog = ({
     fetchAllPlatforms();
   }, [isUserAdmin, isLocationSpecificMode, open, supabase]);
 
-  // Fetch platform instructions when platform is selected
-  useEffect(() => {
-    const fetchPlatformInstructions = async () => {
-      if (!selectedPlatformName || !open) {
-        setPlatformInstructions(null);
-        return;
-      }
-
-      setLoadingInstructions(true);
-      try {
-        const { data, error } = await supabase
-          .from("platforms")
-          .select("instructions")
-          .eq("name", selectedPlatformName.toLowerCase())
-          .single();
-
-        if (error) throw error;
-        setPlatformInstructions(data?.instructions || null);
-      } catch (err: any) {
-        console.error("Error fetching platform instructions:", err);
-        setPlatformInstructions(null);
-      } finally {
-        setLoadingInstructions(false);
-      }
-    };
-
-    fetchPlatformInstructions();
-  }, [selectedPlatformName, open, supabase]);
+  // Instructions are now retrieved from the hardcoded slugFormatPerNetwork object
 
   // Filter out locations that already have connections for this platform
   useEffect(() => {
@@ -663,7 +634,6 @@ export const PlatformConnectionDialog = ({
                     size="small"
                     startIcon={<HelpOutlineIcon />}
                     onClick={() => setInstructionsModalOpen(true)}
-                    disabled={!platformInstructions || loadingInstructions}
                     sx={{
                       textTransform: "none",
                       color: "primary.main",
@@ -676,13 +646,9 @@ export const PlatformConnectionDialog = ({
                       },
                     }}
                   >
-                    {loadingInstructions
-                      ? t("platform.loadingInstructions", {
-                          defaultValue: "Loading instructions...",
-                        })
-                      : t("platform.howToFindSlug", {
-                          defaultValue: "How to find the slug?",
-                        })}
+                    {t("platform.howToFindSlug", {
+                      defaultValue: "How to find the slug?",
+                    })}
                   </Button>
                 </Box>
                 <Stack spacing={2}>
@@ -820,7 +786,7 @@ export const PlatformConnectionDialog = ({
           getPlatformConfig(selectedPlatformName)?.displayName ||
           selectedPlatformName
         }
-        instructions={platformInstructions}
+        platformSlug={selectedPlatformName}
       />
     </Dialog>
   );

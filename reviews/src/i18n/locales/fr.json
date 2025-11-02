@@ -308,7 +308,7 @@
       "placeId": "ID de lieu",
       "businessId": "ID d'entreprise",
       "restaurantId": "ID de restaurant",
-      "locationId": "ID d'emplacement"
+      "locationId": "Enter slug ID"
     },
     "platformIdPlaceholders": {
       "facebook": "ex. : 123456789012345",

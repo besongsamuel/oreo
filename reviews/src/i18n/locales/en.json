@@ -497,7 +497,7 @@
       "placeId": "Place ID",
       "businessId": "Business ID",
       "restaurantId": "Restaurant ID",
-      "locationId": "Location ID"
+      "locationId": "Enter slug ID"
     },
     "platformIdPlaceholders": {
       "facebook": "e.g., 123456789012345",

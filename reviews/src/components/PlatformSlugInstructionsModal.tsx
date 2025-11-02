@@ -1,3 +1,4 @@
+import { Close as CloseIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -12,30 +13,28 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
-
-interface PlatformInstructions {
-  exampleUrl: string;
-  acceptableFormats: string[];
-  patterns: string[];
-  lowerCased: boolean;
-}
+import { slugFormatPerNetwork } from "../utils/slugFormatPerNetwork";
 
 interface PlatformSlugInstructionsModalProps {
   open: boolean;
   onClose: () => void;
   platformName: string;
-  instructions: PlatformInstructions | null;
+  platformSlug: string; // The platform slug/key (e.g., "facebook", "google")
 }
 
 export const PlatformSlugInstructionsModal = ({
   open,
   onClose,
   platformName,
-  instructions,
+  platformSlug,
 }: PlatformSlugInstructionsModalProps) => {
   const { t } = useTranslation();
+
+  // Look up instructions from the hardcoded object
+  const instructions = platformSlug
+    ? slugFormatPerNetwork[platformSlug.toLowerCase()]
+    : null;
 
   if (!instructions) {
     return null;
@@ -56,7 +55,10 @@ export const PlatformSlugInstructionsModal = ({
 
   const exampleUrl = instructions.exampleUrl;
   const slugText = extractSlugFromUrl(exampleUrl);
-  const urlBeforeSlug = exampleUrl.substring(0, exampleUrl.lastIndexOf(slugText));
+  const urlBeforeSlug = exampleUrl.substring(
+    0,
+    exampleUrl.lastIndexOf(slugText)
+  );
   const urlAfterSlug = exampleUrl.substring(
     exampleUrl.lastIndexOf(slugText) + slugText.length
   );
@@ -195,8 +197,7 @@ export const PlatformSlugInstructionsModal = ({
               sx={{ mb: 1.5 }}
             >
               {t("platform.slugInstructions.acceptableFormats", {
-                defaultValue:
-                  "Acceptable slug formats in order of preference:",
+                defaultValue: "Acceptable slug formats in order of preference:",
               })}
             </Typography>
             <List dense sx={{ pl: 0 }}>
@@ -246,4 +247,3 @@ export const PlatformSlugInstructionsModal = ({
     </Dialog>
   );
 };
-
