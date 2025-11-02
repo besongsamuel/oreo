@@ -1,4 +1,4 @@
-import { Check as CheckIcon, Star as StarIcon, Warning as WarningIcon } from "@mui/icons-material";
+import { Check as CheckIcon, Star as StarIcon } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -49,7 +49,9 @@ export const Profile = () => {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [showPlatformManagement, setShowPlatformManagement] = useState(false);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Array<{ id: string; name: string; display_name: string }>>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<
+    Array<{ id: string; name: string; display_name: string }>
+  >([]);
   const [platformsLoading, setPlatformsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -728,19 +730,6 @@ export const Profile = () => {
                 <>
                   {selectedPlatforms.length > 0 ? (
                     <>
-                      <Alert
-                        severity="warning"
-                        icon={<WarningIcon />}
-                        sx={{ mb: 2 }}
-                      >
-                        <Typography variant="body2" fontWeight={600}>
-                          Platform selection cannot be changed
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                          Your platform selection is permanent. Please choose carefully.
-                        </Typography>
-                      </Alert>
-
                       <Box>
                         <Typography
                           variant="caption"
@@ -751,7 +740,12 @@ export const Profile = () => {
                         >
                           Selected Platforms
                         </Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          gap={1}
+                        >
                           {selectedPlatforms.map((platform) => (
                             <Chip
                               key={platform.id}
@@ -763,20 +757,26 @@ export const Profile = () => {
                         </Stack>
                       </Box>
 
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                      >
                         You have selected {selectedPlatforms.length} of{" "}
                         {profile?.role === "admin"
                           ? "Unlimited"
-                          : (context?.getPlanLimit?.("max_platforms") ?? 3)}{" "}
-                        platform{selectedPlatforms.length !== 1 ? "s" : ""} available.
+                          : context?.getPlanLimit?.("max_platforms") ?? 3}{" "}
+                        platform{selectedPlatforms.length !== 1 ? "s" : ""}{" "}
+                        available.
                       </Typography>
                     </>
                   ) : (
                     <>
                       <Alert severity="info">
                         <Typography variant="body2">
-                          You haven't selected any platforms yet. Use the platform
-                          selection below to choose your review platforms.
+                          You haven't selected any platforms yet. Use the
+                          platform selection below to choose your review
+                          platforms.
                         </Typography>
                       </Alert>
 
@@ -829,11 +829,16 @@ export const Profile = () => {
                                   name: item.platforms?.name,
                                   display_name: item.platforms?.display_name,
                                 }))
-                                .filter((p: any) => p.id && p.name && p.display_name);
+                                .filter(
+                                  (p: any) => p.id && p.name && p.display_name
+                                );
 
                               setSelectedPlatforms(platforms);
                             } catch (err: any) {
-                              console.error("Error fetching selected platforms:", err);
+                              console.error(
+                                "Error fetching selected platforms:",
+                                err
+                              );
                             }
                           };
                           fetchSelectedPlatforms();

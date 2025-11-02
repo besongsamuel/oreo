@@ -1,4 +1,9 @@
-import { Check as CheckIcon, Warning as WarningIcon } from "@mui/icons-material";
+import {
+  Check as CheckIcon,
+  Clear as ClearIcon,
+  Search as SearchIcon,
+  Warning as WarningIcon,
+} from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -12,7 +17,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -32,16 +36,16 @@ interface Platform {
 
 // Popular platforms that should appear first (in order)
 const POPULAR_PLATFORM_NAMES = [
-  'google',
-  'facebook',
-  'yelp',
-  'opentable',
-  'tripadvisor',
-  'trustpilot',
-  'booking',
-  'airbnb',
-  'glassdoor',
-  'indeed',
+  "google",
+  "facebook",
+  "yelp",
+  "opentable",
+  "tripadvisor",
+  "trustpilot",
+  "booking",
+  "airbnb",
+  "glassdoor",
+  "indeed",
 ];
 
 export const SelectPlatforms = () => {
@@ -62,9 +66,9 @@ export const SelectPlatforms = () => {
 
   // Admins have unlimited platforms - use Infinity instead of fallback
   const isUserAdmin = isAdmin?.() || contextProfile?.role === "admin";
-  const maxPlatforms = isUserAdmin 
-    ? Infinity 
-    : (getPlanLimit?.("max_platforms") ?? 3);
+  const maxPlatforms = isUserAdmin
+    ? Infinity
+    : getPlanLimit?.("max_platforms") ?? 3;
 
   // Fetch user profile
   useEffect(() => {
@@ -93,7 +97,9 @@ export const SelectPlatforms = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from("platforms")
-          .select("id, name, display_name, icon_url, short_description_en, short_description_fr")
+          .select(
+            "id, name, display_name, icon_url, short_description_en, short_description_fr"
+          )
           .eq("is_active", true)
           .order("display_name");
 
@@ -159,15 +165,18 @@ export const SelectPlatforms = () => {
 
   const handleTogglePlatform = (platformId: string) => {
     setError(null);
-    
+
     // Prevent unselecting persisted platforms
     if (userPlatforms.includes(platformId)) {
       setError(
-        t("companies.selectPlatforms.errorCannotUnselect", "You cannot unselect a platform that has already been saved.")
+        t(
+          "companies.selectPlatforms.errorCannotUnselect",
+          "You cannot unselect a platform that has already been saved."
+        )
       );
       return;
     }
-    
+
     if (selectedPlatforms.includes(platformId)) {
       // Deselect (only allowed for non-persisted platforms)
       setSelectedPlatforms(selectedPlatforms.filter((id) => id !== platformId));
@@ -179,7 +188,7 @@ export const SelectPlatforms = () => {
         const newSelectionsCount = selectedPlatforms.filter(
           (id) => !userPlatforms.includes(id)
         ).length;
-        
+
         // Check if adding this would exceed remaining slots
         if (newSelectionsCount >= remainingSlots) {
           setError(
@@ -201,12 +210,12 @@ export const SelectPlatforms = () => {
 
   const handleSave = async () => {
     if (!profile?.id) return;
-    
+
     // Filter out persisted platforms - only send new selections
     const newPlatformIds = selectedPlatforms.filter(
       (id) => !userPlatforms.includes(id)
     );
-    
+
     if (newPlatformIds.length === 0) {
       // All selected platforms are already persisted, nothing to save
       navigate("/select-platforms/success");
@@ -236,25 +245,33 @@ export const SelectPlatforms = () => {
         if (data?.error && data.error.includes("Cannot add")) {
           throw new Error(data.error);
         }
-        throw new Error(data?.error || t("companies.selectPlatforms.errorSaveFailed"));
+        throw new Error(
+          data?.error || t("companies.selectPlatforms.errorSaveFailed")
+        );
       }
 
       // Navigate to success page
       navigate("/select-platforms/success");
     } catch (err: any) {
       console.error("Error saving platform selection:", err);
-      
+
       // Check if it's a 403 error from the edge function
       if (err.status === 403 || err.message?.includes("Cannot add")) {
-        setError(err.message || (isUserAdmin 
-          ? t("companies.selectPlatforms.errorSaveFailed", "Failed to save platform selection. Please try again.")
-          : t("companies.selectPlatforms.errorMaxReached", {
-              max: maxPlatforms,
-              plural:
-                maxPlatforms > 1
-                  ? t("companies.selectPlatforms.errorMaxReachedPlural")
-                  : t("companies.selectPlatforms.errorMaxReachedSingular"),
-            })));
+        setError(
+          err.message ||
+            (isUserAdmin
+              ? t(
+                  "companies.selectPlatforms.errorSaveFailed",
+                  "Failed to save platform selection. Please try again."
+                )
+              : t("companies.selectPlatforms.errorMaxReached", {
+                  max: maxPlatforms,
+                  plural:
+                    maxPlatforms > 1
+                      ? t("companies.selectPlatforms.errorMaxReachedPlural")
+                      : t("companies.selectPlatforms.errorMaxReachedSingular"),
+                }))
+        );
       } else {
         setError(err.message || t("companies.selectPlatforms.errorSaveFailed"));
       }
@@ -262,21 +279,22 @@ export const SelectPlatforms = () => {
     }
   };
 
-  const filteredPlatforms = platforms.filter((platform) =>
-    platform.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    platform.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPlatforms = platforms.filter(
+    (platform) =>
+      platform.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      platform.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Calculate new platforms (excluding persisted ones)
   const newPlatformIds = selectedPlatforms.filter(
     (id) => !userPlatforms.includes(id)
   );
-  
+
   // Calculate remaining slots (for non-admins only)
-  const remainingSlots = isUserAdmin 
-    ? Infinity 
-    : (maxPlatforms - userPlatforms.length);
-  
+  const remainingSlots = isUserAdmin
+    ? Infinity
+    : maxPlatforms - userPlatforms.length;
+
   const canSave =
     newPlatformIds.length > 0 &&
     (isUserAdmin || newPlatformIds.length <= remainingSlots);
@@ -296,7 +314,10 @@ export const SelectPlatforms = () => {
             </Typography>
             <Typography variant="body1" color="text.secondary">
               {isUserAdmin
-                ? t("companies.selectPlatforms.subtitleUnlimited", "Choose the review platforms you want to connect. You can select unlimited platforms.")
+                ? t(
+                    "companies.selectPlatforms.subtitleUnlimited",
+                    "Choose the review platforms you want to connect. You can select unlimited platforms."
+                  )
                 : t("companies.selectPlatforms.subtitle", {
                     max: maxPlatforms,
                     plural:
@@ -357,15 +378,25 @@ export const SelectPlatforms = () => {
           {/* Selected Count */}
           <Box>
             <Chip
-              label={isUserAdmin
-                ? t("companies.selectPlatforms.selectedCountUnlimited", "{{selected}} selected (unlimited)", {
-                    selected: selectedPlatforms.length,
-                  })
-                : t("companies.selectPlatforms.selectedCount", {
-                    count: selectedPlatforms.length,
-                    max: maxPlatforms,
-                  })}
-              color={!isUserAdmin && selectedPlatforms.length === maxPlatforms ? "primary" : "default"}
+              label={
+                isUserAdmin
+                  ? t(
+                      "companies.selectPlatforms.selectedCountUnlimited",
+                      "{{selected}} selected (unlimited)",
+                      {
+                        selected: selectedPlatforms.length,
+                      }
+                    )
+                  : t("companies.selectPlatforms.selectedCount", {
+                      count: selectedPlatforms.length,
+                      max: maxPlatforms,
+                    })
+              }
+              color={
+                !isUserAdmin && selectedPlatforms.length === maxPlatforms
+                  ? "primary"
+                  : "default"
+              }
               sx={{ fontWeight: 600 }}
             />
           </Box>
@@ -405,13 +436,13 @@ export const SelectPlatforms = () => {
                 const isPersisted = userPlatforms.includes(platform.id);
                 const isSelected = selectedPlatforms.includes(platform.id);
                 // For admins, no limit checks needed
-                const remainingSlots = isUserAdmin 
-                  ? Infinity 
-                  : (maxPlatforms - userPlatforms.length);
+                const remainingSlots = isUserAdmin
+                  ? Infinity
+                  : maxPlatforms - userPlatforms.length;
                 const newSelectionsCount = selectedPlatforms.filter(
                   (id) => !userPlatforms.includes(id)
                 ).length;
-                
+
                 return (
                   <PlatformCard
                     key={platform.id}
@@ -420,7 +451,9 @@ export const SelectPlatforms = () => {
                     onToggle={handleTogglePlatform}
                     disabled={
                       isPersisted || // Prevent unselecting persisted platforms
-                      (!isUserAdmin && !isSelected && newSelectionsCount >= remainingSlots) // Prevent selecting when limit reached (non-admins only)
+                      (!isUserAdmin &&
+                        !isSelected &&
+                        newSelectionsCount >= remainingSlots) // Prevent selecting when limit reached (non-admins only)
                     }
                     locked={isPersisted} // Visual indicator for persisted platforms
                   />
@@ -466,7 +499,9 @@ export const SelectPlatforms = () => {
                   fontWeight: 600,
                 }}
               >
-                {saving ? t("companies.selectPlatforms.saving") : t("companies.selectPlatforms.save")}
+                {saving
+                  ? t("companies.selectPlatforms.saving")
+                  : t("companies.selectPlatforms.save")}
               </Button>
             </Stack>
           </Paper>
@@ -475,4 +510,3 @@ export const SelectPlatforms = () => {
     </>
   );
 };
-

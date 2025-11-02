@@ -1,4 +1,7 @@
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import {
+  ArrowBack as ArrowBackIcon,
+  HelpOutline as HelpOutlineIcon,
+} from "@mui/icons-material";
 import {
   Alert,
   Autocomplete,
@@ -25,6 +28,7 @@ import {
   PlatformRegistryEntry,
   getPlatformConfig,
 } from "../services/platforms/platformRegistry";
+import { PlatformSlugInstructionsModal } from "./PlatformSlugInstructionsModal";
 
 interface ZembraListing {
   name: string;
@@ -129,6 +133,9 @@ export const PlatformConnectionDialog = ({
   const [availableLocations, setAvailableLocations] = useState(locations);
   const [allPlatforms, setAllPlatforms] = useState<PlatformRegistryEntry[]>([]);
   const [loadingPlatforms, setLoadingPlatforms] = useState(false);
+  const [platformInstructions, setPlatformInstructions] = useState<any>(null);
+  const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
+  const [loadingInstructions, setLoadingInstructions] = useState(false);
 
   // Fetch all platforms if admin
   useEffect(() => {
@@ -175,6 +182,35 @@ export const PlatformConnectionDialog = ({
 
     fetchAllPlatforms();
   }, [isUserAdmin, isLocationSpecificMode, open, supabase]);
+
+  // Fetch platform instructions when platform is selected
+  useEffect(() => {
+    const fetchPlatformInstructions = async () => {
+      if (!selectedPlatformName || !open) {
+        setPlatformInstructions(null);
+        return;
+      }
+
+      setLoadingInstructions(true);
+      try {
+        const { data, error } = await supabase
+          .from("platforms")
+          .select("instructions")
+          .eq("name", selectedPlatformName.toLowerCase())
+          .single();
+
+        if (error) throw error;
+        setPlatformInstructions(data?.instructions || null);
+      } catch (err: any) {
+        console.error("Error fetching platform instructions:", err);
+        setPlatformInstructions(null);
+      } finally {
+        setLoadingInstructions(false);
+      }
+    };
+
+    fetchPlatformInstructions();
+  }, [selectedPlatformName, open, supabase]);
 
   // Filter out locations that already have connections for this platform
   useEffect(() => {
@@ -621,19 +657,34 @@ export const PlatformConnectionDialog = ({
                     label: getPlatformIdLabel(selectedPlatformName, t),
                   })}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  {t(
-                    `platform.platformIdInstructions.${selectedPlatformName.toLowerCase()}` as any,
-                    {
-                      defaultValue:
-                        "Enter the location identifier from your platform account",
-                    }
-                  )}
-                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<HelpOutlineIcon />}
+                    onClick={() => setInstructionsModalOpen(true)}
+                    disabled={!platformInstructions || loadingInstructions}
+                    sx={{
+                      textTransform: "none",
+                      color: "primary.main",
+                      fontWeight: 500,
+                      p: 0,
+                      minWidth: "auto",
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
+                    {loadingInstructions
+                      ? t("platform.loadingInstructions", {
+                          defaultValue: "Loading instructions...",
+                        })
+                      : t("platform.howToFindSlug", {
+                          defaultValue: "How to find the slug?",
+                        })}
+                  </Button>
+                </Box>
                 <Stack spacing={2}>
                   <TextField
                     fullWidth
@@ -760,6 +811,17 @@ export const PlatformConnectionDialog = ({
           </>
         )}
       </DialogActions>
+
+      {/* Platform Slug Instructions Modal */}
+      <PlatformSlugInstructionsModal
+        open={instructionsModalOpen}
+        onClose={() => setInstructionsModalOpen(false)}
+        platformName={
+          getPlatformConfig(selectedPlatformName)?.displayName ||
+          selectedPlatformName
+        }
+        instructions={platformInstructions}
+      />
     </Dialog>
   );
 };

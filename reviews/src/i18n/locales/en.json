@@ -482,6 +482,16 @@
     "pleaseEnterPlatformId": "Please enter a Platform Location ID",
     "failedVerifyListing": "Failed to verify listing. Please check the ID.",
     "failedConnectPlatform": "Failed to connect platform",
+    "howToFindSlug": "How to find the slug?",
+    "loadingInstructions": "Loading instructions...",
+    "slugInstructions": {
+      "title": "Where can I find the slug?",
+      "explanation": "The slug is the part of the URL that uniquely identifies the business. It varies from network to another.",
+      "selectNetwork": "Select a network to find out where to find the slug and what are the acceptable formats:",
+      "network": "Network",
+      "exampleUrl": "Example of business URL",
+      "acceptableFormats": "Acceptable slug formats in order of preference:"
+    },
     "platformIdLabels": {
       "pageId": "Page ID",
       "placeId": "Place ID",

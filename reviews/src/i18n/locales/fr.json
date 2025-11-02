@@ -293,6 +293,16 @@
     "pleaseEnterPlatformId": "Veuillez entrer un identifiant d'emplacement de plateforme",
     "failedVerifyListing": "Échec de la vérification de l'annonce. Veuillez vérifier l'identifiant.",
     "failedConnectPlatform": "Échec de la connexion à la plateforme",
+    "howToFindSlug": "Comment trouver le slug ?",
+    "loadingInstructions": "Chargement des instructions...",
+    "slugInstructions": {
+      "title": "Où puis-je trouver le slug ?",
+      "explanation": "Le slug est la partie de l'URL qui identifie de manière unique l'entreprise. Il varie d'un réseau à l'autre.",
+      "selectNetwork": "Sélectionnez un réseau pour découvrir où trouver le slug et quels sont les formats acceptables :",
+      "network": "Réseau",
+      "exampleUrl": "Exemple d'URL d'entreprise",
+      "acceptableFormats": "Formats de slug acceptables par ordre de préférence :"
+    },
     "platformIdLabels": {
       "pageId": "ID de page",
       "placeId": "ID de lieu",
