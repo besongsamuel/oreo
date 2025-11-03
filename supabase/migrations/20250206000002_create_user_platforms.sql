@@ -17,3 +17,4 @@ COMMENT ON COLUMN user_platforms.platform_id IS 'Reference to supported platform
 CREATE INDEX IF NOT EXISTS idx_user_platforms_user_id ON user_platforms(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_platforms_platform_id ON user_platforms(platform_id);
 
+

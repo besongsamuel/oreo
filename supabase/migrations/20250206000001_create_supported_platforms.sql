@@ -24,3 +24,4 @@ COMMENT ON COLUMN supported_platforms.is_active IS 'Whether this platform is cur
 CREATE INDEX IF NOT EXISTS idx_supported_platforms_name ON supported_platforms(name);
 CREATE INDEX IF NOT EXISTS idx_supported_platforms_is_active ON supported_platforms(is_active);
 
+
