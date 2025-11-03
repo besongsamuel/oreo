@@ -10,8 +10,8 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabaseClient";
 import { PlatformSelection } from "../../components/PlatformSelection";
+import { supabase } from "../../lib/supabaseClient";
 
 export const CompleteSignup = () => {
   const navigate = useNavigate();

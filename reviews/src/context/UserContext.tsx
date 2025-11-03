@@ -68,40 +68,150 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchPlan = async (planId: string) => {
+  const fetchPlan = async (planId: string, userLanguage?: string) => {
     try {
-      const { data, error } = await supabase
-        .from("plans_with_features")
+      // Get user language preference (from parameter, profile, or default to 'en')
+      const language = userLanguage || profile?.preferred_language || "en";
+      const isFrench = language === "fr" || language.startsWith("fr-");
+
+      // 1. Fetch the plan
+      const { data: planData, error: planError } = await supabase
+        .from("subscription_plans")
         .select("*")
-        .eq("plan_id", planId)
+        .eq("id", planId)
         .single();
 
-      if (error) {
-        console.error("Error fetching plan:", error);
-        setCurrentPlan(null);
-      } else {
-        setCurrentPlan(data as SubscriptionPlan);
+      if (planError) {
+        throw planError;
       }
+
+      // 2. Fetch all features with localization
+      const { data: featuresData, error: featuresError } = await supabase
+        .from("features")
+        .select("id, code, display_name, description, display_name_fr, description_fr")
+        .order("code");
+
+      if (featuresError) {
+        throw featuresError;
+      }
+
+      // 3. Fetch plan-feature relationships (for limits)
+      const { data: planFeaturesData, error: planFeaturesError } = await supabase
+        .from("plan_features")
+        .select("plan_id, feature_id, limit_value")
+        .eq("plan_id", planId);
+
+      if (planFeaturesError) {
+        throw planFeaturesError;
+      }
+
+      // 4. Match features to plan
+      const features: PlanFeature[] = (featuresData || []).map((feature) => {
+        const planFeature = (planFeaturesData || []).find(
+          (pf) => pf.feature_id === feature.id
+        );
+
+        // Select language-appropriate display name and description
+        const displayName = isFrench
+          ? feature.display_name_fr || feature.display_name
+          : feature.display_name;
+        const description = isFrench
+          ? feature.description_fr || feature.description
+          : feature.description;
+
+        return {
+          feature_id: feature.id,
+          feature_code: feature.code,
+          feature_display_name: displayName,
+          feature_description: description,
+          limit_value: planFeature?.limit_value || null,
+        };
+      });
+
+      setCurrentPlan({
+        plan_id: planData.id,
+        plan_name: planData.name,
+        plan_display_name: planData.display_name,
+        price_monthly: planData.price_monthly,
+        stripe_price_id: planData.stripe_price_id,
+        is_active: planData.is_active,
+        features,
+      });
     } catch (error) {
       console.error("Error fetching plan:", error);
       setCurrentPlan(null);
     }
   };
 
-  const fetchPlanByName = async (planName: string) => {
+  const fetchPlanByName = async (planName: string, userLanguage?: string) => {
     try {
-      const { data, error } = await supabase
-        .from("plans_with_features")
+      // Get user language preference (from parameter, profile, or default to 'en')
+      const language = userLanguage || profile?.preferred_language || "en";
+      const isFrench = language === "fr" || language.startsWith("fr-");
+
+      // 1. Fetch the plan
+      const { data: planData, error: planError } = await supabase
+        .from("subscription_plans")
         .select("*")
-        .eq("plan_name", planName)
+        .eq("name", planName)
         .single();
 
-      if (error) {
-        console.error("Error fetching plan:", error);
-        setCurrentPlan(null);
-      } else {
-        setCurrentPlan(data as SubscriptionPlan);
+      if (planError) {
+        throw planError;
       }
+
+      // 2. Fetch all features with localization
+      const { data: featuresData, error: featuresError } = await supabase
+        .from("features")
+        .select("id, code, display_name, description, display_name_fr, description_fr")
+        .order("code");
+
+      if (featuresError) {
+        throw featuresError;
+      }
+
+      // 3. Fetch plan-feature relationships (for limits)
+      const { data: planFeaturesData, error: planFeaturesError } = await supabase
+        .from("plan_features")
+        .select("plan_id, feature_id, limit_value")
+        .eq("plan_id", planData.id);
+
+      if (planFeaturesError) {
+        throw planFeaturesError;
+      }
+
+      // 4. Match features to plan
+      const features: PlanFeature[] = (featuresData || []).map((feature) => {
+        const planFeature = (planFeaturesData || []).find(
+          (pf) => pf.feature_id === feature.id
+        );
+
+        // Select language-appropriate display name and description
+        const displayName = isFrench
+          ? feature.display_name_fr || feature.display_name
+          : feature.display_name;
+        const description = isFrench
+          ? feature.description_fr || feature.description
+          : feature.description;
+
+        return {
+          feature_id: feature.id,
+          feature_code: feature.code,
+          feature_display_name: displayName,
+          feature_description: description,
+          limit_value: planFeature?.limit_value || null,
+        };
+      });
+
+      setCurrentPlan({
+        plan_id: planData.id,
+        plan_name: planData.name,
+        plan_display_name: planData.display_name,
+        price_monthly: planData.price_monthly,
+        stripe_price_id: planData.stripe_price_id,
+        is_active: planData.is_active,
+        features,
+      } as SubscriptionPlan);
     } catch (error) {
       console.error("Error fetching plan:", error);
       setCurrentPlan(null);
@@ -123,11 +233,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       } else {
         setProfile(data as Profile);
         // Fetch plan information if plan_id exists
+        // Pass the preferred_language from the fetched profile data
+        const userLanguage = data.preferred_language || "en";
         if (data.subscription_plan_id) {
-          await fetchPlan(data.subscription_plan_id);
+          await fetchPlan(data.subscription_plan_id, userLanguage);
         } else {
           // Default to free plan
-          await fetchPlanByName("free");
+          await fetchPlanByName("free", userLanguage);
         }
       }
     } catch (error) {
@@ -185,7 +297,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Update local profile state
       if (profile) {
-        setProfile({ ...profile, preferred_language: language });
+        const updatedProfile = { ...profile, preferred_language: language };
+        setProfile(updatedProfile);
+        
+        // Re-fetch plan with new language
+        if (currentPlan) {
+          if (currentPlan.plan_id) {
+            await fetchPlan(currentPlan.plan_id, language);
+          } else if (currentPlan.plan_name) {
+            await fetchPlanByName(currentPlan.plan_name, language);
+          }
+        }
       }
     } catch (error) {
       console.error("Error updating language:", error);

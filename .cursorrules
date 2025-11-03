@@ -206,3 +206,44 @@ import { Grid2 as Grid } from '@mui/material';
 - `Property 'item' does not exist` → Remove `item` prop, use `size` prop
 - `Property 'xs' does not exist` → Use `size={{ xs: 12 }}` format
 - `No overload matches this call` → Check MUI version and use correct Grid component
+
+## Database Migrations
+
+### Supabase Migration Creation (REQUIRED)
+
+**ALWAYS use Supabase CLI to create new migration files.**
+
+#### Implementation Requirements:
+
+1. **Never manually create migration files** in `supabase/migrations/`
+2. **Always use Supabase CLI command**: `supabase migration new <migration_name>`
+3. Migration names should be descriptive and use snake_case
+4. The CLI automatically generates a timestamped filename (e.g., `YYYYMMDDHHMMSS_migration_name.sql`)
+
+#### Example:
+
+```bash
+# ✅ CORRECT - Create migration using Supabase CLI
+supabase migration new add_french_localization_to_features
+
+# This creates: supabase/migrations/YYYYMMDDHHMMSS_add_french_localization_to_features.sql
+
+# ❌ AVOID - Manually creating migration files
+# Do NOT create files like: supabase/migrations/20250207000005_add_french_localization_to_features.sql
+```
+
+#### Migration Naming Convention:
+
+- Use descriptive, snake_case names
+- Examples:
+  - `add_french_localization_to_features`
+  - `update_user_platforms_access`
+  - `create_platform_logo_bucket`
+- The timestamp prefix is automatically added by the CLI
+
+#### Why Use Supabase CLI:
+
+- **Consistency**: Ensures proper timestamp format and naming
+- **Version Control**: Tracks migration order correctly
+- **Best Practice**: Aligns with Supabase documentation and tooling
+- **Error Prevention**: Avoids duplicate timestamps or naming conflicts
