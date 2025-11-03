@@ -12,8 +12,10 @@ import {
   Companies,
   Home,
   Pricing,
-  PrivacyPolicy,
-  TermsOfUse,
+  PrivacyPolicyEN,
+  PrivacyPolicyFR,
+  TermsOfUseEN,
+  TermsOfUseFR,
   TransferOwnership,
 } from "./pages";
 import { CompanyPage } from "./pages/CompanyPage";
@@ -26,6 +28,15 @@ import { SubscriptionSuccess } from "./pages/SubscriptionSuccess";
 import { SuccessLocation } from "./pages/SuccessLocation";
 import { CompleteSignup, ForgotPassword, Login, Signup } from "./pages/auth";
 import { GoogleCallback } from "./pages/auth/GoogleCallback";
+
+// Redirect component for language-specific routes
+function LanguageRedirect({ basePath }: { basePath: string }) {
+  const { i18n } = useTranslation();
+  const currentLanguage = i18n.language || "en";
+  const languageCode = currentLanguage.startsWith("fr") ? "fr" : "en";
+
+  return <Navigate to={`/${languageCode}${basePath}`} replace />;
+}
 
 function AppContent() {
   const { i18n } = useTranslation();
@@ -189,19 +200,48 @@ function AppContent() {
         <Route path="/google-callback" element={<GoogleCallback />} />
 
         {/* Public legal pages (with layout) */}
+        {/* Base routes redirect to language-specific routes */}
         <Route
           path="/privacy-policy"
+          element={<LanguageRedirect basePath="/privacy-policy" />}
+        />
+        <Route
+          path="/terms-of-use"
+          element={<LanguageRedirect basePath="/terms-of-use" />}
+        />
+
+        {/* English legal pages */}
+        <Route
+          path="/en/privacy-policy"
           element={
             <Layout>
-              <PrivacyPolicy />
+              <PrivacyPolicyEN />
             </Layout>
           }
         />
         <Route
-          path="/terms-of-use"
+          path="/en/terms-of-use"
           element={
             <Layout>
-              <TermsOfUse />
+              <TermsOfUseEN />
+            </Layout>
+          }
+        />
+
+        {/* French legal pages */}
+        <Route
+          path="/fr/privacy-policy"
+          element={
+            <Layout>
+              <PrivacyPolicyFR />
+            </Layout>
+          }
+        />
+        <Route
+          path="/fr/terms-of-use"
+          element={
+            <Layout>
+              <TermsOfUseFR />
             </Layout>
           }
         />

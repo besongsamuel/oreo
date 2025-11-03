@@ -6,10 +6,6 @@ import {
   Card,
   CardContent,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Stack,
   TextField,
   Typography,
@@ -18,6 +14,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
+import { UpgradeDialog } from "../components/UpgradeDialog";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
@@ -383,48 +380,18 @@ export const AddLocation = () => {
         </Card>
 
         {/* Upgrade Dialog */}
-        <Dialog
+        <UpgradeDialog
           open={upgradeDialogOpen}
           onClose={() => setUpgradeDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            {t("location.upgradeRequired", {
-              defaultValue: "Upgrade Required",
-            })}
-          </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <Typography variant="body1">
-                {t("location.locationLimitMessage", {
-                  defaultValue: "You've reached the maximum number of locations allowed per company on your current plan.",
-                })}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t("location.upgradeToAddMore", {
-                  defaultValue: "Upgrade to a higher plan to add more locations and unlock additional features.",
-                })}
-              </Typography>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setUpgradeDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                setUpgradeDialogOpen(false);
-                navigate("/pricing");
-              }}
-            >
-              {t("location.viewPricing", {
-                defaultValue: "View Pricing",
-              })}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          message={t("location.locationLimitMessage", {
+            defaultValue:
+              "You've reached the maximum number of locations allowed per company on your current plan.",
+          })}
+          description={t("location.upgradeToAddMore", {
+            defaultValue:
+              "Upgrade to a higher plan to add more locations and unlock additional features.",
+          })}
+        />
       </Container>
     </>
   );

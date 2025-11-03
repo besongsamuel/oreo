@@ -36,6 +36,7 @@ import { OnboardingCard } from "../components/OnboardingCard";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { CompanyCardSkeleton } from "../components/SkeletonLoaders";
+import { UpgradeDialog } from "../components/UpgradeDialog";
 import { UserContext } from "../context/UserContext";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useSupabase } from "../hooks/useSupabase";
@@ -702,7 +703,7 @@ export const Companies = () => {
                   gutterBottom
                   sx={{ mb: 3 }}
                 >
-                  My Companies
+                  {t("companies.myCompanies")}
                 </Typography>
                 {companies.filter((c) => c.owner_id === profile.id).length ===
                 0 ? (
@@ -713,7 +714,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          You don't have any companies yet
+                          {t("companies.noCompaniesYetAdmin")}
                         </Typography>
                         <Button
                           variant="contained"
@@ -771,7 +772,7 @@ export const Companies = () => {
                   gutterBottom
                   sx={{ mb: 3 }}
                 >
-                  Other Companies
+                  {t("companies.otherCompanies")}
                 </Typography>
                 {companies.filter((c) => c.owner_id !== profile.id).length ===
                 0 ? (
@@ -782,7 +783,7 @@ export const Companies = () => {
                           sx={{ fontSize: 64, color: "text.secondary" }}
                         />
                         <Typography variant="h6" color="text.secondary">
-                          No other companies
+                          {t("companies.noOtherCompanies")}
                         </Typography>
                       </Stack>
                     </CardContent>
@@ -1072,50 +1073,18 @@ export const Companies = () => {
           )}
 
           {/* Upgrade Dialog */}
-          <Dialog
+          <UpgradeDialog
             open={upgradeDialogOpen}
             onClose={() => setUpgradeDialogOpen(false)}
-            maxWidth="sm"
-            fullWidth
-          >
-            <DialogTitle>
-              {t("companies.upgradeRequired", {
-                defaultValue: "Upgrade Required",
-              })}
-            </DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <Typography variant="body1">
-                  {t("companies.companyLimitMessage", {
-                    defaultValue:
-                      "You've reached the maximum number of companies allowed on your current plan.",
-                  })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t("companies.upgradeToAddMore", {
-                    defaultValue:
-                      "Upgrade to a higher plan to add more companies and unlock additional features.",
-                  })}
-                </Typography>
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setUpgradeDialogOpen(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setUpgradeDialogOpen(false);
-                  navigate("/pricing");
-                }}
-              >
-                {t("companies.viewPricing", {
-                  defaultValue: "View Pricing",
-                })}
-              </Button>
-            </DialogActions>
-          </Dialog>
+            message={t("companies.companyLimitMessage", {
+              defaultValue:
+                "You've reached the maximum number of companies allowed on your current plan.",
+            })}
+            description={t("companies.upgradeToAddMore", {
+              defaultValue:
+                "Upgrade to a higher plan to add more companies and unlock additional features.",
+            })}
+          />
         </Stack>
       </Container>
     </>

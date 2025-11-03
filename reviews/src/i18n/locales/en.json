@@ -53,7 +53,8 @@
     "less": "Less",
     "language": "Language",
     "english": "English",
-    "french": "French"
+    "french": "French",
+    "pricing": "Pricing"
   },
   "auth": {
     "welcome": "Welcome",
@@ -139,6 +140,10 @@
     "singleReview": "review",
     "multipleReviews": "reviews",
     "viewDetails": "View Details",
+    "myCompanies": "My Companies",
+    "otherCompanies": "Other Companies",
+    "noCompaniesYetAdmin": "You don't have any companies yet",
+    "noOtherCompanies": "No other companies in the system",
     "addCompanyDialog": "Add Company",
     "companyName": "Company Name",
     "industry": "Industry",
@@ -729,5 +734,10 @@
     "errorFetchUsers": "Failed to load users",
     "errorNoUser": "Please select a user to transfer ownership to",
     "errorTransfer": "Failed to transfer ownership"
+  },
+  "upgrade": {
+    "dialogTitle": "Upgrade Required",
+    "viewPricing": "View Pricing",
+    "cancel": "Cancel"
   }
 }

@@ -15,7 +15,12 @@ import { useTranslation } from "react-i18next";
 import { Link as RouterLink } from "react-router-dom";
 
 export const Footer = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Get current language for legal page links
+  const currentLanguage = i18n.language || "en";
+  const languageCode = currentLanguage.startsWith("fr") ? "fr" : "en";
+
   return (
     <Box
       component="footer"
@@ -107,11 +112,11 @@ export const Footer = () => {
                 },
               }}
             >
-              {t("common.pricing", { defaultValue: "Pricing" })}
+              {t("common.pricing")}
             </Link>
             <Link
               component={RouterLink}
-              to="/privacy-policy"
+              to={`/${languageCode}/privacy-policy`}
               sx={{
                 color: "text.secondary",
                 textDecoration: "none",
@@ -126,7 +131,7 @@ export const Footer = () => {
             </Link>
             <Link
               component={RouterLink}
-              to="/terms-of-use"
+              to={`/${languageCode}/terms-of-use`}
               sx={{
                 color: "text.secondary",
                 textDecoration: "none",

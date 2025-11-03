@@ -1,8 +1,8 @@
 export { RatingDistributionChart } from "./charts/RatingDistributionChart";
 export { ReviewsTimelineChart } from "./charts/ReviewsTimelineChart";
 export { SentimentDonutChart } from "./charts/SentimentDonutChart";
-export { CompanyCard } from "./CompanyCard";
 export { CompaniesCompanyCard } from "./CompaniesCompanyCard";
+export { CompanyCard } from "./CompanyCard";
 export { CompanyHeader } from "./CompanyHeader";
 export { FetchPlatformReviews } from "./FetchPlatformReviews";
 export { Footer } from "./Footer";
@@ -10,6 +10,8 @@ export { Header } from "./Header";
 export { Layout } from "./Layout";
 export { LocationComponent } from "./LocationComponent";
 export { MonthlySummary } from "./MonthlySummary";
+export { OnboardingCard } from "./OnboardingCard";
+export { PlatformSelection } from "./PlatformSelection";
 export { ProtectedRoute } from "./ProtectedRoute";
 export { ReviewComponent } from "./ReviewComponent";
 export { SEO } from "./SEO";
@@ -24,5 +26,4 @@ export {
     StatCardSkeleton,
 } from "./SkeletonLoaders";
 export { StatCardWithTrend } from "./StatCardWithTrend";
-export { PlatformSelection } from "./PlatformSelection";
-export { OnboardingCard } from "./OnboardingCard";
+export { UpgradeDialog } from "./UpgradeDialog";

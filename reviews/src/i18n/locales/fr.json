@@ -53,7 +53,8 @@
     "less": "Moins",
     "language": "Langue",
     "english": "Anglais",
-    "french": "Français"
+    "french": "Français",
+    "pricing": "Tarification"
   },
   "auth": {
     "welcome": "Bienvenue",
@@ -139,6 +140,11 @@
     "review": "avis",
     "reviews": "avis",
     "viewDetails": "Voir les détails",
+    "myCompanies": "Mes entreprises",
+    "otherCompanies": "Autres entreprises",
+    "noCompaniesYetAdmin": "Vous n'avez pas encore d'entreprises",
+    "noOtherCompanies": "Aucune autre entreprise dans le système",
+    "addCompanyDialog": "Ajouter une entreprise",
     "companyName": "Nom de l'entreprise",
     "industry": "Industrie",
     "industryPlaceholder": "Sélectionnez ou tapez une industrie",
@@ -153,21 +159,13 @@
     "failedLoadLocations": "Échec du chargement des emplacements de l'entreprise",
     "failedConnectPlatform": "Échec de la connexion à la plateforme",
     "createFirst": "Créez votre première entreprise",
-    "companyName": "Nom de l'entreprise",
-    "industry": "Industrie",
-    "website": "Site web",
     "logo": "Logo",
     "viewCompany": "Voir l'entreprise",
     "totalLocations": "Total des emplacements",
     "totalReviews": "Total des avis",
     "memberSince": "Membre depuis",
     "editCompanyDetails": "Modifier les détails de l'entreprise",
-    "companyName": "Nom de l'entreprise",
-    "industry": "Industrie",
-    "description": "Description",
-    "website": "Site web",
     "cancel": "Annuler",
-    "saving": "Enregistrement...",
     "saveChanges": "Enregistrer les modifications",
     "uploadImage": "Veuillez sélectionner un fichier image",
     "imageTooLarge": "L'image doit faire moins de 5 Mo",
@@ -179,7 +177,6 @@
     "lastSync": "Dernière synchronisation",
     "never": "Jamais",
     "companyDetails": "Détails de l'entreprise",
-    "locations": "Emplacements",
     "platformConnections": "Connexions aux plateformes",
     "saveCompany": "Enregistrer l'entreprise",
     "companyCreated": "Entreprise créée avec succès",
@@ -288,7 +285,6 @@
     "rating": "Note : {{rating}} / 5.0",
     "reviewsCount": "{{count}} avis",
     "connecting": "Connexion...",
-    "connect": "Connecter",
     "cancel": "Annuler",
     "pleaseEnterPlatformId": "Veuillez entrer un identifiant d'emplacement de plateforme",
     "failedVerifyListing": "Échec de la vérification de l'annonce. Veuillez vérifier l'identifiant.",
@@ -718,7 +714,6 @@
     "backToCompany": "Retour à l'entreprise",
     "companyInfo": "Informations sur l'entreprise",
     "companyName": "Nom de l'entreprise",
-    "description": "Description",
     "industry": "Secteur d'activité",
     "totalLocations": "Total des emplacements",
     "totalReviews": "Total des avis",
@@ -738,5 +733,10 @@
     "errorFetchUsers": "Échec du chargement des utilisateurs",
     "errorNoUser": "Veuillez sélectionner un utilisateur pour transférer la propriété",
     "errorTransfer": "Échec du transfert de propriété"
+  },
+  "upgrade": {
+    "dialogTitle": "Mise à niveau requise",
+    "viewPricing": "Voir les tarifs",
+    "cancel": "Annuler"
   }
 }
