@@ -14,6 +14,7 @@ export { OnboardingCard } from "./OnboardingCard";
 export { PlatformSelection } from "./PlatformSelection";
 export { ProtectedRoute } from "./ProtectedRoute";
 export { ReviewComponent } from "./ReviewComponent";
+export { ReviewsList } from "./ReviewsList";
 export { SEO } from "./SEO";
 export {
     CompanyCardSkeleton,

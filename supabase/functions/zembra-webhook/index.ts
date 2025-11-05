@@ -248,7 +248,7 @@ serve(async (req) => {
                         ...corsHeaders,
                         "Content-Type": "application/json",
                     },
-                    status: 404,
+                    status: 200,
                 },
             );
         }

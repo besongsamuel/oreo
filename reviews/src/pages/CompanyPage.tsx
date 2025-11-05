@@ -3,7 +3,6 @@ import {
   Close as CloseIcon,
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
-  FilterList as FilterListIcon,
   Refresh as RefreshIcon,
   Star as StarIcon,
   SwapHoriz as SwapHorizIcon,
@@ -43,7 +42,7 @@ import {
   LocationComponent,
   MonthlySummary,
   RatingDistributionChart,
-  ReviewComponent,
+  ReviewsList,
   ReviewsTimelineChart,
   StatCardWithTrend,
 } from "../components";
@@ -215,10 +214,8 @@ export const CompanyPage = () => {
 
   // Pagination for reviews
   const [currentPage, setCurrentPage] = useState(1);
-  const reviewsPerPage = 10;
-
-  // Toggle between recent (last 30 days) and all reviews
-  const [showRecentOnly, setShowRecentOnly] = useState(false);
+  const reviewsPerPage = 50;
+  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
 
   // Toggle for showing all topics and keywords
   const [showAllTopics, setShowAllTopics] = useState(false);
@@ -521,23 +518,92 @@ export const CompanyPage = () => {
       if (!companyId || loading) return;
 
       try {
-        // Fetch reviews for this company with filters
+        // Build base query for reviews
         let reviewsQuery = supabase
           .from("recent_reviews")
           .select("*")
           .eq("company_id", companyId);
 
+        let countQuery = supabase
+          .from("recent_reviews")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
         // Apply location filter
         if (filterLocation !== "all") {
           reviewsQuery = reviewsQuery.eq("location_name", filterLocation);
+          countQuery = countQuery.eq("location_name", filterLocation);
         }
 
         // Apply date range filters
         if (filterStartDate) {
           reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
+          countQuery = countQuery.gte("published_at", filterStartDate);
         }
         if (filterEndDate) {
           reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
+          countQuery = countQuery.lte("published_at", filterEndDate);
+        }
+
+        // Apply rating filter
+        if (selectedRating !== "all") {
+          const ratingNum = parseInt(selectedRating);
+          reviewsQuery = reviewsQuery
+            .gte("rating", ratingNum)
+            .lt("rating", ratingNum + 1);
+          countQuery = countQuery
+            .gte("rating", ratingNum)
+            .lt("rating", ratingNum + 1);
+        }
+
+        // Apply keyword filter - requires fetching review IDs that have the keyword
+        if (selectedKeyword !== "all") {
+          // First, get all review IDs that match this keyword
+          const { data: keywordReviews } = await supabase
+            .from("review_keywords")
+            .select("review_id, keywords!inner(text)")
+            .ilike("keywords.text", selectedKeyword);
+
+          const reviewIds =
+            keywordReviews?.map((rk: any) => rk.review_id) || [];
+
+          if (reviewIds.length > 0) {
+            reviewsQuery = reviewsQuery.in("id", reviewIds);
+            countQuery = countQuery.in("id", reviewIds);
+          } else {
+            // No reviews match this keyword, return empty results
+            setReviews([]);
+            setTotalReviewsCount(0);
+            setAllReviews([]);
+            return;
+          }
+        }
+
+        // Get total count for pagination
+        const { count, error: countError } = await countQuery;
+
+        if (countError) {
+          console.error("Error counting reviews:", countError);
+          setTotalReviewsCount(0);
+        } else {
+          setTotalReviewsCount(count || 0);
+        }
+
+        // Calculate pagination offset
+        const offset = (currentPage - 1) * reviewsPerPage;
+
+        // Apply server-side pagination
+        reviewsQuery = reviewsQuery
+          .order("published_at", { ascending: false })
+          .range(offset, offset + reviewsPerPage - 1);
+
+        const { data: reviewsData, error: reviewsError } = await reviewsQuery;
+
+        if (reviewsError) {
+          console.error("Error fetching reviews:", reviewsError);
+          setReviews([]);
+        } else {
+          setReviews(reviewsData || []);
         }
 
         // Fetch all reviews for charts (ignore recent filter)
@@ -548,28 +614,6 @@ export const CompanyPage = () => {
 
         if (allReviewsData) {
           setAllReviews(allReviewsData);
-        }
-
-        // Apply recent filter (last 30 days) if showRecentOnly is true
-        if (showRecentOnly) {
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          reviewsQuery = reviewsQuery.gte(
-            "published_at",
-            thirtyDaysAgo.toISOString()
-          );
-
-          // Limit to 50 most recent reviews
-          reviewsQuery = reviewsQuery.limit(50);
-        }
-
-        const { data: reviewsData, error: reviewsError } =
-          await reviewsQuery.order("published_at", { ascending: false });
-
-        if (reviewsError) {
-          console.error("Error fetching reviews:", reviewsError);
-        } else {
-          setReviews(reviewsData || []);
         }
 
         // Fetch sentiment analysis data with filters
@@ -1070,7 +1114,7 @@ export const CompanyPage = () => {
     selectedRating,
     selectedTopic,
     loading,
-    showRecentOnly,
+    currentPage,
   ]);
 
   // Calculate chart data from reviews
@@ -1478,63 +1522,8 @@ export const CompanyPage = () => {
     setSelectedPlatform("");
   };
 
-  // Filter reviews based on review-specific filters (keyword, rating, topic)
-  // Location and date filters are already applied at the query level
-  const filteredReviews = reviews.filter((review) => {
-    // Filter by keyword (check review_keywords mapping, compare in lowercase)
-    if (selectedKeyword !== "all") {
-      const reviewKeywords = reviewKeywordsMap[review.id] || [];
-      const selectedKeywordLower = selectedKeyword.toLowerCase();
-      const keywordExists = reviewKeywords.some(
-        (k) => k.toLowerCase() === selectedKeywordLower
-      );
-      if (!keywordExists) {
-        return false;
-      }
-    }
-
-    // Filter by rating
-    if (selectedRating !== "all") {
-      const rating = review.rating;
-      switch (selectedRating) {
-        case "5":
-          if (rating < 5) return false;
-          break;
-        case "4":
-          if (rating < 4 || rating >= 5) return false;
-          break;
-        case "3":
-          if (rating < 3 || rating >= 4) return false;
-          break;
-        case "2":
-          if (rating < 2 || rating >= 3) return false;
-          break;
-        case "1":
-          if (rating < 1 || rating >= 2) return false;
-          break;
-      }
-    }
-
-    // Filter by topic (check review_topics mapping, compare in lowercase)
-    if (selectedTopic !== "all") {
-      const reviewTopics = reviewTopicsMap[review.id] || [];
-      const selectedTopicLower = selectedTopic.toLowerCase();
-      const topicExists = reviewTopics.some(
-        (t) => t.toLowerCase() === selectedTopicLower
-      );
-      if (!topicExists) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
-  const startIndex = (currentPage - 1) * reviewsPerPage;
-  const endIndex = startIndex + reviewsPerPage;
-  const paginatedReviews = filteredReviews.slice(startIndex, endIndex);
+  // Calculate total pages from server-side count
+  const totalPages = Math.ceil(totalReviewsCount / reviewsPerPage);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -2408,135 +2397,19 @@ export const CompanyPage = () => {
             </Paper>
           )}
 
-          {/* Recent Reviews */}
-          <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 3 }}
-            >
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  {showRecentOnly
-                    ? t("companyPage.recentReviews")
-                    : t("companyPage.allReviews")}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t("companyPage.showingReviews", {
-                    shown: paginatedReviews.length,
-                    total: filteredReviews.length,
-                  })}
-                  {totalPages > 1 &&
-                    t("companyPage.pageOf", {
-                      current: currentPage,
-                      total: totalPages,
-                    })}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button
-                  variant={showRecentOnly ? "outlined" : "text"}
-                  size="small"
-                  onClick={() => setShowRecentOnly(!showRecentOnly)}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 500,
-                  }}
-                >
-                  {showRecentOnly
-                    ? t("companyPage.showAllReviews")
-                    : t("companyPage.recentOnly")}
-                </Button>
-                {(selectedKeyword !== "all" || selectedRating !== "all") && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={handleClearFilters}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {t("companyPage.clearFilters")}
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-
-            {filteredReviews.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 6 }}>
-                <FilterListIcon
-                  sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
-                />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  {t("companyPage.noReviewsMatch")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 3 }}
-                >
-                  {t("companyPage.noReviewsMatchDescription")}
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleClearFilters}
-                  sx={{ borderRadius: 980 }}
-                >
-                  {t("companyPage.clearAllFilters")}
-                </Button>
-              </Box>
-            ) : (
-              <>
-                <Stack spacing={2}>
-                  {paginatedReviews.map((review) => (
-                    <ReviewComponent
-                      key={review.id}
-                      review={review}
-                      getSentimentColor={getSentimentColor}
-                    />
-                  ))}
-                </Stack>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: 1,
-                      mt: 3,
-                    }}
-                  >
-                    <Button
-                      variant="outlined"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      sx={{ borderRadius: 980 }}
-                    >
-                      {t("companyPage.previous")}
-                    </Button>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("companyPage.pageOfShort", {
-                        current: currentPage,
-                        total: totalPages,
-                      })}
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      sx={{ borderRadius: 980 }}
-                    >
-                      {t("companyPage.next")}
-                    </Button>
-                  </Box>
-                )}
-              </>
-            )}
-          </Paper>
+          {/* Reviews */}
+          <ReviewsList
+            reviews={reviews}
+            totalCount={totalReviewsCount}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            loading={loading}
+            selectedKeyword={selectedKeyword}
+            selectedRating={selectedRating}
+            onClearFilters={handleClearFilters}
+            getSentimentColor={getSentimentColor}
+          />
 
           {/* Delete Company Section - Admin Only */}
           {profile?.role === "admin" && (
