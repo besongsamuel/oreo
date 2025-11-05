@@ -32,6 +32,7 @@ import { PlatformSlugInstructionsModal } from "./PlatformSlugInstructionsModal";
 
 interface ZembraListing {
   name: string;
+  slug: string; // The canonical slug from Zembra
   address?: {
     street: string;
     city: string;
@@ -289,6 +290,9 @@ export const PlatformConnectionDialog = ({
     setSuccess(false);
 
     try {
+      // Use the canonical slug from Zembra
+      const canonicalSlug = verifiedListing.slug;
+
       // Check if the slug already exists in platform_connections
       const { data: platformData } = await supabase
         .from("platforms")
@@ -301,7 +305,7 @@ export const PlatformConnectionDialog = ({
           .from("platform_connections")
           .select("id")
           .eq("platform_id", platformData.id)
-          .eq("platform_location_id", platformLocationId.trim())
+          .eq("platform_location_id", canonicalSlug)
           .limit(1);
 
         if (checkError) {
@@ -321,7 +325,7 @@ export const PlatformConnectionDialog = ({
       }
 
       await onConnect(
-        platformLocationId.trim(),
+        canonicalSlug,
         selectedLocation,
         selectedPlatformName,
         verifiedListing
@@ -742,6 +746,19 @@ export const PlatformConnectionDialog = ({
                           })}
                         </Typography>
                       )}
+                      {verifiedListing.slug &&
+                        verifiedListing.slug !== platformLocationId.trim() && (
+                          <Typography
+                            variant="caption"
+                            color="primary.main"
+                            sx={{ mt: 1, display: "block" }}
+                          >
+                            {t("platform.canonicalSlug", {
+                              defaultValue: "Canonical ID: {{slug}}",
+                              slug: verifiedListing.slug,
+                            })}
+                          </Typography>
+                        )}
                     </Box>
                   </Stack>
                 </CardContent>

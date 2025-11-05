@@ -744,7 +744,8 @@ export const CompanyPage = () => {
                 .filter(
                   (r: any) =>
                     r.sentiment_analysis &&
-                    typeof r.sentiment_analysis === "object"
+                    typeof r.sentiment_analysis === "object" &&
+                    r.sentiment_analysis.sentiment_score !== 0 // Ignore sentiments with score of 0
                 )
                 .map((r: any) => ({
                   sentiment: r.sentiment_analysis.sentiment,

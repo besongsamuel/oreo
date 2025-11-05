@@ -287,60 +287,65 @@ serve(async (req) => {
             `Transformed ${standardReviews.length} reviews for connection: ${connectionId}`,
         );
 
-        // Save reviews to database
-        let reviewsNew = 0;
+        // Transform all reviews to database format
+        const reviewsToUpsert = standardReviews.map((review) => ({
+            platform_connection_id: connectionId,
+            external_id: review.externalId,
+            author_name: review.authorName,
+            author_avatar_url: review.authorAvatar,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            published_at: review.publishedAt.toISOString(),
+            reply_content: review.replyContent,
+            reply_at: review.replyAt?.toISOString(),
+            raw_data: review.rawData,
+            updated_at: new Date().toISOString(),
+        }));
+
+        // Save reviews to database in batches of 200
+        let reviewsUpserted = 0;
         const errors: string[] = [];
+        const BATCH_SIZE = 200;
 
-        for (const review of standardReviews) {
+        for (let i = 0; i < reviewsToUpsert.length; i += BATCH_SIZE) {
+            const batch = reviewsToUpsert.slice(i, i + BATCH_SIZE);
+
             try {
-                // Check if review already exists
-                const { data: existingReview } = await supabaseClient
+                const { error: upsertError } = await supabaseClient
                     .from("reviews")
-                    .select("id")
-                    .eq("platform_connection_id", connectionId)
-                    .eq("external_id", review.externalId)
-                    .maybeSingle();
+                    .upsert(batch, {
+                        onConflict: "platform_connection_id, external_id",
+                    });
 
-                const reviewData = {
-                    platform_connection_id: connectionId,
-                    external_id: review.externalId,
-                    author_name: review.authorName,
-                    author_avatar_url: review.authorAvatar,
-                    rating: review.rating,
-                    title: review.title,
-                    content: review.content,
-                    published_at: review.publishedAt.toISOString(),
-                    reply_content: review.replyContent,
-                    reply_at: review.replyAt?.toISOString(),
-                    raw_data: review.rawData,
-                    updated_at: new Date().toISOString(),
-                };
-
-                if (!existingReview) {
-                    const { error: insertError } = await supabaseClient
-                        .from("reviews")
-                        .insert(reviewData);
-
-                    if (insertError) {
-                        errors.push(
-                            `Failed to insert review ${review.externalId}: ${insertError.message}`,
-                        );
-                    } else {
-                        reviewsNew++;
-                    }
+                if (upsertError) {
+                    errors.push(
+                        `Failed to upsert batch ${
+                            i / BATCH_SIZE + 1
+                        }: ${upsertError.message}`,
+                    );
+                } else {
+                    reviewsUpserted += batch.length;
+                    console.log(
+                        `Batch ${
+                            i / BATCH_SIZE + 1
+                        }: upserted ${batch.length} reviews`,
+                    );
                 }
             } catch (err) {
                 const errorMessage = err instanceof Error
                     ? err.message
                     : "Unknown error";
                 errors.push(
-                    `Error processing review ${review.externalId}: ${errorMessage}`,
+                    `Error processing batch ${
+                        i / BATCH_SIZE + 1
+                    }: ${errorMessage}`,
                 );
             }
         }
 
         console.log(
-            `Saved ${reviewsNew} new reviews for connection: ${connectionId}`,
+            `Upserted ${reviewsUpserted} reviews for connection: ${connectionId}`,
         );
 
         // Update platform connection metadata with fetch time and count
@@ -367,7 +372,7 @@ serve(async (req) => {
         // Create sync log
         const syncStats = {
             reviewsFetched: reviews.length,
-            reviewsNew,
+            reviewsNew: reviewsUpserted,
             reviewsUpdated: 0,
             errorMessage: errors.length > 0 ? errors.join("; ") : undefined,
         };
@@ -389,28 +394,11 @@ serve(async (req) => {
             console.error("Failed to create sync log:", syncLogError);
         }
 
-        // Trigger sentiment analysis for new reviews
-        if (reviewsNew > 0) {
-            try {
-                await supabaseClient.functions.invoke(
-                    "perform-sentiment-analysis",
-                    {
-                        body: { connectionId },
-                    },
-                );
-                console.log(
-                    `Triggered sentiment analysis for ${reviewsNew} new reviews`,
-                );
-            } catch (err) {
-                console.error("Failed to trigger sentiment analysis:", err);
-            }
-        }
-
         return new Response(
             JSON.stringify({
                 success: true,
-                message: `Processed ${reviewsNew} new reviews`,
-                reviewsProcessed: reviewsNew,
+                message: `Processed ${reviewsUpserted} reviews`,
+                reviewsProcessed: reviewsUpserted,
             }),
             {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },

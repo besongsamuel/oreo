@@ -600,8 +600,8 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
             >
               {isRefreshing
                 ? "Processing..."
-                : unprocessedCount > 100
-                ? `Process 100 of ${unprocessedCount} unprocessed reviews`
+                : unprocessedCount > 25
+                ? `Process 25 of ${unprocessedCount} unprocessed reviews`
                 : `Process ${unprocessedCount} unprocessed review${
                     unprocessedCount > 1 ? "s" : ""
                   }`}

@@ -39,6 +39,11 @@ interface LocationData {
     company_id: string;
 }
 
+interface BatchAnalysisResult {
+    reviewId: string;
+    analysis: EnhancedAnalysisResult;
+}
+
 /**
  * Wait for rate limit before making OpenAI API call
  * Uses database to track requests across function invocations
@@ -104,7 +109,8 @@ async function waitForRateLimit(
     }
 }
 
-async function callOpenAIForAnalysis(
+// Kept as fallback for single review processing if needed
+async function _callOpenAIForAnalysis(
     content: string,
     apiKey: string,
     language: string = "fr",
@@ -164,9 +170,9 @@ IMPORTANT: All keywords, topics, and descriptions MUST be in ${languageName}`,
 
     if (!openaiResponse.ok) {
         const errorText = await openaiResponse.text();
-        const error: any = new Error(
+        const error = new Error(
             `OpenAI API error: ${openaiResponse.status} ${errorText}`,
-        );
+        ) as Error & { statusCode: number };
         error.statusCode = openaiResponse.status;
         throw error;
     }
@@ -195,13 +201,195 @@ IMPORTANT: All keywords, topics, and descriptions MUST be in ${languageName}`,
     return analysisResult;
 }
 
+async function callOpenAIForBatchAnalysis(
+    reviews: ProcessedReview[],
+    apiKey: string,
+    language: string = "fr",
+    supabaseClient?: SupabaseClient,
+): Promise<BatchAnalysisResult[]> {
+    if (supabaseClient) {
+        await waitForRateLimit(supabaseClient, 200);
+    }
+
+    const languageNames: Record<string, string> = {
+        "en": "English",
+        "fr": "French",
+    };
+    const languageName = languageNames[language] || "French";
+
+    // Prepare reviews for batch processing
+    const reviewsFormatted = reviews.map((review, index) =>
+        `Review ${index + 1} (ID: ${review.id}): "${review.content}"`
+    ).join("\n\n");
+
+    const openaiResponse = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "gpt-3.5-turbo",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            `Analyze these ${reviews.length} reviews and return a JSON array where each element corresponds to a review analysis. 
+                            
+Each analysis object MUST include:
+1. reviewId: the ID from the review (CRITICAL - must match exactly)
+2. sentiment: one of "positive", "negative", "neutral", or "mixed"
+3. score: number from 1-100 (1=very negative, 50=neutral, 100=very positive)
+4. emotions: array of emoticons representing emotions (optional)
+5. keywords: array of objects with:
+   - text: the keyword/phrase (MUST be 1-2 words maximum, generate in ${languageName})
+   - category: one of "service", "food", "ambiance", "price", "quality", "cleanliness", "staff", "other"
+   - relevance: number from 0-1 indicating importance
+6. topics: array of objects with:
+   - name: brief topic name (MUST be 1-2 words maximum, generate in ${languageName})
+   - category: one of "satisfaction", "dissatisfaction", "neutral"
+   - description: brief description (generate in ${languageName})
+   - relevance: number from 0-1
+
+IMPORTANT: 
+- Return ONLY a JSON array with exactly ${reviews.length} objects
+- Each object MUST have the reviewId field matching the ID from the input
+- All keywords, topics, and descriptions MUST be in ${languageName}
+- Format: [{"reviewId": "xxx", "sentiment": "positive", ...}, ...]`,
+                    },
+                    {
+                        role: "user",
+                        content: reviewsFormatted,
+                    },
+                ],
+                temperature: 0.3,
+                max_tokens: Math.min(4000, 800 + (reviews.length * 60)), // More conservative token calculation
+            }),
+        },
+    );
+
+    if (!openaiResponse.ok) {
+        const errorText = await openaiResponse.text();
+        const error = new Error(
+            `OpenAI API error: ${openaiResponse.status} ${errorText}`,
+        ) as Error & { statusCode: number };
+        error.statusCode = openaiResponse.status;
+        throw error;
+    }
+
+    const openaiData = await openaiResponse.json();
+    const analysisText = openaiData.choices?.[0]?.message?.content;
+
+    if (!analysisText) {
+        throw new Error("No analysis returned from OpenAI");
+    }
+
+    console.log(`OpenAI response length: ${analysisText.length} characters`);
+
+    // Try to find JSON array in the response
+    const jsonMatch = analysisText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+        console.error(
+            "OpenAI response (first 500 chars):",
+            analysisText.substring(0, 500),
+        );
+        throw new Error("No JSON array found in OpenAI response");
+    }
+
+    let analysisResults;
+    try {
+        analysisResults = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("JSON string length:", jsonMatch[0].length);
+        console.error(
+            "JSON string (first 1000 chars):",
+            jsonMatch[0].substring(0, 1000),
+        );
+        console.error(
+            "JSON string (last 500 chars):",
+            jsonMatch[0].substring(jsonMatch[0].length - 500),
+        );
+
+        // Try to fix common JSON issues
+        try {
+            // Attempt to fix truncated JSON by closing arrays/objects
+            let fixedJson = jsonMatch[0];
+
+            // Count opening and closing brackets
+            const openBrackets = (fixedJson.match(/\[/g) || []).length;
+            const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+            const openBraces = (fixedJson.match(/\{/g) || []).length;
+            const closeBraces = (fixedJson.match(/\}/g) || []).length;
+
+            // Close any unclosed braces first
+            for (let i = 0; i < (openBraces - closeBraces); i++) {
+                fixedJson += "}";
+            }
+
+            // Then close unclosed brackets
+            for (let i = 0; i < (openBrackets - closeBrackets); i++) {
+                fixedJson += "]";
+            }
+
+            console.log("Attempting to parse fixed JSON...");
+            analysisResults = JSON.parse(fixedJson);
+            console.log("Successfully parsed fixed JSON");
+        } catch (fixError) {
+            console.error("Failed to fix and parse JSON:", fixError);
+            throw new Error(
+                `Failed to parse OpenAI response as JSON: ${parseError}`,
+            );
+        }
+    }
+
+    if (!Array.isArray(analysisResults)) {
+        throw new Error("OpenAI response is not an array");
+    }
+
+    console.log(
+        `Parsed ${analysisResults.length} results from OpenAI response`,
+    );
+
+    // Map results back to reviews
+    const batchResults: BatchAnalysisResult[] = [];
+
+    for (const result of analysisResults) {
+        if (!result.reviewId) {
+            console.warn("Skipping result without reviewId:", result);
+            continue;
+        }
+
+        console.log("result", result);
+
+        const analysis: EnhancedAnalysisResult = {
+            sentiment: result.sentiment || "neutral",
+            score: result.score || 50,
+            emotions: result.emotions || [],
+            keywords: result.keywords || [],
+            topics: result.topics || [],
+        };
+
+        batchResults.push({
+            reviewId: result.reviewId,
+            analysis,
+        });
+    }
+
+    return batchResults;
+}
+
 async function processKeywords(
     supabaseClient: SupabaseClient,
     reviewId: string,
     platformConnectionId: string,
     keywords: KeywordResult[],
 ): Promise<number> {
-    let processed = 0;
+    if (keywords.length === 0) return 0;
+
+    const reviewKeywordRecords = [];
 
     for (const kw of keywords) {
         const normalizedText = kw.text.toUpperCase().trim();
@@ -231,20 +419,25 @@ async function processKeywords(
             keywordId = newKeyword.id;
         }
 
-        await supabaseClient
-            .from("review_keywords")
-            .insert({
-                review_id: reviewId,
-                keyword_id: keywordId,
-                platform_connection_id: platformConnectionId,
-                frequency: 1,
-                relevance_score: kw.relevance || 0.5,
-            });
-
-        processed++;
+        reviewKeywordRecords.push({
+            review_id: reviewId,
+            keyword_id: keywordId,
+            platform_connection_id: platformConnectionId,
+            frequency: 1,
+            relevance_score: kw.relevance || 0.5,
+        });
     }
 
-    return processed;
+    // Batch insert all review_keywords
+    if (reviewKeywordRecords.length > 0) {
+        const { error } = await supabaseClient
+            .from("review_keywords")
+            .insert(reviewKeywordRecords);
+
+        if (error) throw error;
+    }
+
+    return reviewKeywordRecords.length;
 }
 
 async function processTopics(
@@ -253,7 +446,7 @@ async function processTopics(
     reviewId: string,
     topics: TopicResult[],
 ): Promise<number> {
-    let processed = 0;
+    if (topics.length === 0) return 0;
 
     const { data: connectionData } = await supabaseClient
         .from("platform_connections")
@@ -267,6 +460,8 @@ async function processTopics(
 
     const companyId =
         (connectionData.locations as unknown as LocationData).company_id;
+
+    const reviewTopicRecords = [];
 
     for (const topic of topics) {
         const { data: existingTopic } = await supabaseClient
@@ -318,19 +513,24 @@ async function processTopics(
             topicId = newTopic.id;
         }
 
-        await supabaseClient
-            .from("review_topics")
-            .insert({
-                review_id: reviewId,
-                topic_id: topicId,
-                platform_connection_id: platformConnectionId,
-                relevance_score: topic.relevance || 0.5,
-            });
-
-        processed++;
+        reviewTopicRecords.push({
+            review_id: reviewId,
+            topic_id: topicId,
+            platform_connection_id: platformConnectionId,
+            relevance_score: topic.relevance || 0.5,
+        });
     }
 
-    return processed;
+    // Batch insert all review_topics
+    if (reviewTopicRecords.length > 0) {
+        const { error } = await supabaseClient
+            .from("review_topics")
+            .insert(reviewTopicRecords);
+
+        if (error) throw error;
+    }
+
+    return reviewTopicRecords.length;
 }
 
 Deno.serve(async (req: Request) => {
@@ -498,27 +698,59 @@ Deno.serve(async (req: Request) => {
             `Processing ${unprocessedReviews.length} of ${totalCount} unprocessed reviews for company ${company_id}`,
         );
 
-        // Process each review
+        // Process reviews in batches of 25
         let processed = 0;
         let skipped = 0;
         let errors = 0;
+        const batchSize = 25; // Reduced to avoid JSON truncation issues
 
-        for (const review of unprocessedReviews) {
+        for (let i = 0; i < unprocessedReviews.length; i += batchSize) {
+            const batch = unprocessedReviews.slice(i, i + batchSize);
+            console.log(
+                `Processing batch ${
+                    Math.floor(i / batchSize) + 1
+                } (${batch.length} reviews)...`,
+            );
+
             try {
-                console.log(`Processing review ${review.id}...`);
-
-                // Call OpenAI for analysis
-                const analysisResult = await callOpenAIForAnalysis(
-                    review.content,
+                // Call OpenAI for batch analysis
+                const batchResults = await callOpenAIForBatchAnalysis(
+                    batch,
                     openaiApiKey,
                     preferredLanguage,
                     supabaseClient,
                 );
 
-                // Insert sentiment analysis with default values for nullable fields
-                const { error: sentimentError } = await supabaseClient
-                    .from("sentiment_analysis")
-                    .insert({
+                console.log(
+                    `Received ${batchResults.length} analysis results from OpenAI`,
+                );
+
+                // Prepare all sentiment records for batch insert
+                const sentimentRecords = [];
+                const validResults: Array<{
+                    review: ProcessedReview;
+                    analysis: EnhancedAnalysisResult;
+                }> = [];
+
+                for (const batchResult of batchResults) {
+                    // Find the corresponding review
+                    const review = batch.find((r: ProcessedReview) =>
+                        r.id === batchResult.reviewId
+                    );
+
+                    if (!review) {
+                        console.warn(
+                            `Review not found for ID: ${batchResult.reviewId}`,
+                        );
+                        errors++;
+                        continue;
+                    }
+
+                    const analysisResult = batchResult.analysis;
+
+                    console.log(analysisResult);
+
+                    sentimentRecords.push({
                         review_id: review.id,
                         sentiment: analysisResult.sentiment || "neutral",
                         sentiment_score: analysisResult.score
@@ -530,48 +762,79 @@ Deno.serve(async (req: Request) => {
                         confidence: 0.85,
                     });
 
-                if (sentimentError) {
-                    console.error(
-                        `Error inserting sentiment for review ${review.id} ${
-                            JSON.stringify(analysisResult, null, 2)
-                        }:`,
-                        JSON.stringify(sentimentError, null, 2),
-                    );
-                    errors++;
-                    continue;
+                    validResults.push({ review, analysis: analysisResult });
                 }
 
-                // Process keywords
-                await processKeywords(
-                    supabaseClient,
-                    review.id,
-                    review.platform_connection_id,
-                    analysisResult.keywords,
-                );
+                // Batch insert all sentiment analysis records
+                if (sentimentRecords.length > 0) {
+                    const { error: sentimentError } = await supabaseClient
+                        .from("sentiment_analysis")
+                        .insert(sentimentRecords);
 
-                // Process topics
-                await processTopics(
-                    supabaseClient,
-                    review.platform_connection_id,
-                    review.id,
-                    analysisResult.topics,
-                );
+                    if (sentimentError) {
+                        console.error(
+                            `Error batch inserting sentiments:`,
+                            JSON.stringify(sentimentError, null, 2),
+                        );
+                        errors += sentimentRecords.length;
+                        continue; // Skip processing keywords/topics for this batch
+                    }
 
-                processed++;
-                console.log(`Successfully processed review ${review.id}`);
-            } catch (error: any) {
-                // Handle 429 rate limit errors
-                if (error.statusCode === 429) {
+                    console.log(
+                        `Successfully inserted ${sentimentRecords.length} sentiment records`,
+                    );
+                }
+
+                // Process keywords and topics for each review
+                for (const { review, analysis } of validResults) {
+                    try {
+                        // Process keywords
+                        await processKeywords(
+                            supabaseClient,
+                            review.id,
+                            review.platform_connection_id,
+                            analysis.keywords,
+                        );
+
+                        // Process topics
+                        await processTopics(
+                            supabaseClient,
+                            review.platform_connection_id,
+                            review.id,
+                            analysis.topics,
+                        );
+
+                        processed++;
+                        console.log(
+                            `Successfully processed review ${review.id}`,
+                        );
+                    } catch (innerError) {
+                        console.error(
+                            `Error processing keywords/topics for review ${review.id}:`,
+                            innerError,
+                        );
+                        errors++;
+                    }
+                }
+            } catch (error) {
+                // Handle 429 rate limit errors for the entire batch
+                const errorWithStatus = error as { statusCode?: number };
+                if (errorWithStatus.statusCode === 429) {
                     console.warn(
-                        `Rate limit hit for review ${review.id}, skipping...`,
+                        `Rate limit hit for batch ${
+                            Math.floor(i / batchSize) + 1
+                        }, skipping remaining reviews...`,
                     );
-                    skipped++;
-                    continue;
+                    skipped += batch.length;
+                    break; // Stop processing further batches
                 }
 
-                // Handle other errors
-                console.error(`Error processing review ${review.id}:`, error);
-                errors++;
+                // Handle other batch-level errors
+                console.error(
+                    `Error processing batch ${Math.floor(i / batchSize) + 1}:`,
+                    error,
+                );
+                errors += batch.length; // Count entire batch as errors
             }
         }
 
