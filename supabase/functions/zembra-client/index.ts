@@ -269,13 +269,13 @@ serve(async (req) => {
 
             // Extract the listing from the network-keyed response
             const networkData = data.data[network];
-            if (!networkData || networkData.length === 0) {
+            if (!networkData) {
                 throw new Error("Listing not found for network");
             }
 
             const result: ZembraClientResponse = {
                 success: true,
-                listing: networkData[0],
+                listing: networkData,
             };
 
             return new Response(JSON.stringify(result), {

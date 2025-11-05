@@ -95,7 +95,7 @@ export interface ZembraListingResponse {
     status: string;
     message: string;
     data: {
-        [network: string]: ZembraTarget[];
+        [network: string]: ZembraTarget;
     };
     cost: number;
     balance: number;
