@@ -50,6 +50,7 @@ import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog
 import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import {
+  KeywordChipSkeleton,
   ReviewCardSkeleton,
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
@@ -211,6 +212,7 @@ export const CompanyPage = () => {
   const [selectedRating, setSelectedRating] = useState<string>("all");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
 
   // Pagination for reviews
   const [currentPage, setCurrentPage] = useState(1);
@@ -517,6 +519,7 @@ export const CompanyPage = () => {
     const fetchFilteredData = async () => {
       if (!companyId || loading) return;
 
+      setFilterLoading(true);
       try {
         // Build base query for reviews
         let reviewsQuery = supabase
@@ -903,7 +906,7 @@ export const CompanyPage = () => {
           }
         }
 
-        // Fetch keywords for this company's reviews
+        // Fetch keywords for this company's reviews using platform_connection_id
         let keywordLocationIds = (locationsData || []).map(
           (loc: any) => loc.id
         );
@@ -914,54 +917,33 @@ export const CompanyPage = () => {
           keywordLocationIds = filteredLocs.map((loc: any) => loc.id);
         }
 
-        // Get review IDs for this company through platform_connections
-        const reviewIds: string[] = [];
+        // Get platform_connection IDs directly (much more efficient than getting all review IDs)
+        const platformConnectionIds: string[] = [];
         if (keywordLocationIds.length > 0) {
           const { data: pcData } = await supabase
             .from("platform_connections")
             .select("id")
             .in("location_id", keywordLocationIds);
 
-          const pcIds = pcData?.map((pc) => pc.id) || [];
-
-          if (pcIds.length > 0) {
-            // Build query with date filters if applicable
-            let reviewQuery = supabase
-              .from("reviews")
-              .select("id")
-              .in("platform_connection_id", pcIds);
-
-            // Apply date filters
-            if (filterStartDate) {
-              reviewQuery = reviewQuery.gte("published_at", filterStartDate);
-            }
-            if (filterEndDate) {
-              reviewQuery = reviewQuery.lte("published_at", filterEndDate);
-            }
-
-            const { data: reviewData } = await reviewQuery;
-            reviewIds.push(...(reviewData?.map((r) => r.id) || []));
-          }
+          platformConnectionIds.push(...(pcData?.map((pc) => pc.id) || []));
         }
 
-        if (reviewIds.length > 0) {
-          // Get reviews with their keywords and topics in a single query
-          const { data: reviewsWithData } = await supabase
-            .from("reviews")
+        if (platformConnectionIds.length > 0) {
+          // Query review_keywords directly by platform_connection_id (avoids URL length limits)
+          const { data: reviewKeywordsData } = await supabase
+            .from("review_keywords")
             .select(
               `
-              id,
-              review_keywords (
-                keywords (
-                  text,
-                  category
-                )
+              review_id,
+              keywords (
+                text,
+                category
               )
             `
             )
-            .in("id", reviewIds);
+            .in("platform_connection_id", platformConnectionIds);
 
-          if (reviewsWithData && reviewsWithData.length > 0) {
+          if (reviewKeywordsData && reviewKeywordsData.length > 0) {
             // Build review keywords map and count occurrences
             const keywordsMap: Record<string, string[]> = {};
             const keywordCountMap = new Map<
@@ -969,15 +951,24 @@ export const CompanyPage = () => {
               { keyword_text: string; category: string; count: number }
             >();
 
-            reviewsWithData.forEach((review: any) => {
-              if (review.review_keywords && review.review_keywords.length > 0) {
-                // Build keywords map for this review
-                keywordsMap[review.id] = review.review_keywords.map((rk: any) =>
-                  rk.keywords.text.toLowerCase()
-                );
+            // Group by review_id to build the map
+            const reviewKeywordsGrouped: Record<string, any[]> = {};
+            reviewKeywordsData.forEach((rk: any) => {
+              if (!reviewKeywordsGrouped[rk.review_id]) {
+                reviewKeywordsGrouped[rk.review_id] = [];
+              }
+              reviewKeywordsGrouped[rk.review_id].push(rk);
+            });
+
+            // Build keywords map and count
+            Object.entries(reviewKeywordsGrouped).forEach(
+              ([reviewId, reviewKeywords]) => {
+                keywordsMap[reviewId] = reviewKeywords
+                  .filter((rk: any) => rk.keywords)
+                  .map((rk: any) => rk.keywords.text.toLowerCase());
 
                 // Count keyword occurrences
-                review.review_keywords.forEach((rk: any) => {
+                reviewKeywords.forEach((rk: any) => {
                   if (rk.keywords) {
                     const key = rk.keywords.text;
                     const existing = keywordCountMap.get(key);
@@ -993,7 +984,7 @@ export const CompanyPage = () => {
                   }
                 });
               }
-            });
+            );
 
             setReviewKeywordsMap(keywordsMap);
 
@@ -1014,25 +1005,23 @@ export const CompanyPage = () => {
             setReviewKeywordsMap({});
           }
 
-          // Fetch reviews with their topics
-          const { data: reviewsWithTopicsData } = await supabase
-            .from("reviews")
+          // Query review_topics directly by platform_connection_id (avoids URL length limits)
+          const { data: reviewTopicsData } = await supabase
+            .from("review_topics")
             .select(
               `
-              id,
-              review_topics (
-                topics (
-                  id,
-                  name,
-                  category,
-                  description
-                )
+              review_id,
+              topics (
+                id,
+                name,
+                category,
+                description
               )
             `
             )
-            .in("id", reviewIds);
+            .in("platform_connection_id", platformConnectionIds);
 
-          if (reviewsWithTopicsData && reviewsWithTopicsData.length > 0) {
+          if (reviewTopicsData && reviewTopicsData.length > 0) {
             // Build review topics map and count occurrences
             const topicsMap: Record<string, string[]> = {};
             const topicCountMap = new Map<
@@ -1046,15 +1035,24 @@ export const CompanyPage = () => {
               }
             >();
 
-            reviewsWithTopicsData.forEach((review: any) => {
-              if (review.review_topics && review.review_topics.length > 0) {
-                // Build topics map for this review
-                topicsMap[review.id] = review.review_topics.map((rt: any) =>
-                  rt.topics.name.toLowerCase()
-                );
+            // Group by review_id to build the map
+            const reviewTopicsGrouped: Record<string, any[]> = {};
+            reviewTopicsData.forEach((rt: any) => {
+              if (!reviewTopicsGrouped[rt.review_id]) {
+                reviewTopicsGrouped[rt.review_id] = [];
+              }
+              reviewTopicsGrouped[rt.review_id].push(rt);
+            });
+
+            // Build topics map and count
+            Object.entries(reviewTopicsGrouped).forEach(
+              ([reviewId, reviewTopics]) => {
+                topicsMap[reviewId] = reviewTopics
+                  .filter((rt: any) => rt.topics)
+                  .map((rt: any) => rt.topics.name.toLowerCase());
 
                 // Count topic occurrences
-                review.review_topics.forEach((rt: any) => {
+                reviewTopics.forEach((rt: any) => {
                   if (rt.topics) {
                     const topicId = rt.topics.id;
                     const topicName = rt.topics.name;
@@ -1073,7 +1071,7 @@ export const CompanyPage = () => {
                   }
                 });
               }
-            });
+            );
 
             setReviewTopicsMap(topicsMap);
 
@@ -1100,6 +1098,8 @@ export const CompanyPage = () => {
         }
       } catch (error) {
         console.error("Error fetching filtered data:", error);
+      } finally {
+        setFilterLoading(false);
       }
     };
 
@@ -2332,7 +2332,7 @@ export const CompanyPage = () => {
           )}
 
           {/* Trending Keywords */}
-          {keywords.length > 0 && (
+          {(filterLoading || keywords.length > 0) && (
             <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
               <Stack
                 direction="row"
@@ -2352,7 +2352,7 @@ export const CompanyPage = () => {
                     {t("companyPage.trendingKeywordsDescription")}
                   </Typography>
                 </Box>
-                {keywords.length > 10 && (
+                {!filterLoading && keywords.length > 10 && (
                   <Button
                     variant="text"
                     size="small"
@@ -2369,29 +2369,38 @@ export const CompanyPage = () => {
                 )}
               </Stack>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {(showAllKeywords ? keywords : keywords.slice(0, 10)).map(
-                  (keyword, index) => {
-                    const isSelected = selectedKeyword === keyword.keyword_text;
-                    return (
-                      <Chip
-                        key={index}
-                        label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                        color={getCategoryColor(keyword.category || "other")}
-                        variant={isSelected ? "filled" : "outlined"}
-                        onClick={() =>
-                          setSelectedKeyword(
-                            isSelected ? "all" : keyword.keyword_text
-                          )
-                        }
-                        sx={{
-                          fontWeight: 500,
-                          fontSize: "0.95rem",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease-in-out",
-                        }}
-                      />
-                    );
-                  }
+                {filterLoading ? (
+                  <>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                      <KeywordChipSkeleton key={i} />
+                    ))}
+                  </>
+                ) : (
+                  (showAllKeywords ? keywords : keywords.slice(0, 10)).map(
+                    (keyword, index) => {
+                      const isSelected =
+                        selectedKeyword === keyword.keyword_text;
+                      return (
+                        <Chip
+                          key={index}
+                          label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                          color={getCategoryColor(keyword.category || "other")}
+                          variant={isSelected ? "filled" : "outlined"}
+                          onClick={() =>
+                            setSelectedKeyword(
+                              isSelected ? "all" : keyword.keyword_text
+                            )
+                          }
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: "0.95rem",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease-in-out",
+                          }}
+                        />
+                      );
+                    }
+                  )
                 )}
               </Stack>
             </Paper>
@@ -2404,7 +2413,7 @@ export const CompanyPage = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
-            loading={loading}
+            loading={filterLoading}
             selectedKeyword={selectedKeyword}
             selectedRating={selectedRating}
             onClearFilters={handleClearFilters}

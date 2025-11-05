@@ -230,6 +230,7 @@ Deno.serve(async (req: Request) => {
     const keywordsProcessed = await processKeywords(
       supabaseClient,
       review.id,
+      review.platform_connection_id,
       analysisResult.keywords,
     );
 
@@ -398,6 +399,7 @@ Example response:
 async function processKeywords(
   supabaseClient: SupabaseClient,
   reviewId: string,
+  platformConnectionId: string,
   keywords: KeywordResult[],
 ): Promise<number> {
   let processed = 0;
@@ -439,6 +441,7 @@ async function processKeywords(
       .insert({
         review_id: reviewId,
         keyword_id: keywordId,
+        platform_connection_id: platformConnectionId,
         frequency: 1,
         relevance_score: kw.relevance,
       });
@@ -531,6 +534,7 @@ async function processTopics(
       .insert({
         review_id: reviewId,
         topic_id: topicId,
+        platform_connection_id: platformConnectionId,
         relevance_score: topic.relevance,
       });
 
