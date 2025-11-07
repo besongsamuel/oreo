@@ -94,9 +94,7 @@ export interface ZembraReviewsResponse {
 export interface ZembraListingResponse {
     status: string;
     message: string;
-    data: {
-        [network: string]: ZembraTarget;
-    };
+    data: ZembraTarget;
     cost: number;
     balance: number;
 }

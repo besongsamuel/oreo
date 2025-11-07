@@ -268,7 +268,7 @@ serve(async (req) => {
             }
 
             // Extract the listing from the network-keyed response
-            const networkData = data.data[network];
+            const networkData = data.data;
             if (!networkData) {
                 throw new Error("Listing not found for network");
             }
