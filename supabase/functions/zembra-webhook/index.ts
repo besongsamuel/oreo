@@ -224,7 +224,7 @@ serve(async (req) => {
         // Find platform connection by slug matching platform_location_id
         const { data: connections, error: findError } = await supabaseClient
             .from("platform_connections")
-            .select("id")
+            .select("id, location_id, locations!inner(company_id)")
             .eq("platform_location_id", target.slug);
 
         if (findError) {
@@ -254,6 +254,9 @@ serve(async (req) => {
         }
 
         const connectionId = connections[0].id;
+        const companyId = (connections[0].locations as unknown as {
+            company_id: string;
+        }).company_id;
 
         // Transform Zembra reviews to StandardReview format
         const standardReviews: StandardReview[] = reviews.map((review) => {
@@ -394,11 +397,47 @@ serve(async (req) => {
             console.error("Failed to create sync log:", syncLogError);
         }
 
+        // Trigger sentiment analysis and wait for completion
+        let sentimentAnalysisResult;
+        if (reviewsUpserted > 0) {
+            console.log(
+                `Triggering sentiment analysis for company ${companyId}`,
+            );
+            try {
+                const sentimentUrl =
+                    `${supabaseUrl}/functions/v1/sentiment-analysis`;
+                const sentimentResponse = await fetch(sentimentUrl, {
+                    method: "POST",
+                    headers: {
+                        "X-Internal-Key": supabaseServiceKey,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        company_id: companyId,
+                        retry_count: 0,
+                    }),
+                });
+
+                sentimentAnalysisResult = await sentimentResponse.json();
+                console.log(
+                    "Sentiment analysis completed:",
+                    sentimentAnalysisResult,
+                );
+            } catch (err) {
+                console.error("Error calling sentiment-analysis:", err);
+                sentimentAnalysisResult = {
+                    success: false,
+                    error: err instanceof Error ? err.message : "Unknown error",
+                };
+            }
+        }
+
         return new Response(
             JSON.stringify({
                 success: true,
                 message: `Processed ${reviewsUpserted} reviews`,
                 reviewsProcessed: reviewsUpserted,
+                sentimentAnalysis: sentimentAnalysisResult,
             }),
             {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
