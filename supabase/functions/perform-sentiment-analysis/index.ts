@@ -201,6 +201,7 @@ Deno.serve(async (req: Request) => {
     // Call OpenAI API for enhanced analysis
     const analysisResult = await callOpenAIForAnalysis(
       review.content,
+      review.rating,
       openaiApiKey,
       preferredLanguage,
       supabaseClient, // Pass client for rate limiting
@@ -277,10 +278,38 @@ Deno.serve(async (req: Request) => {
 
 async function callOpenAIForAnalysis(
   content: string,
+  rating: number,
   apiKey: string,
   language: string = "fr",
   supabaseClient?: SupabaseClient,
 ): Promise<EnhancedAnalysisResult> {
+  // If there's no content, generate sentiment based on rating
+  if (!content || content.trim().length === 0) {
+    const score = rating * 2; // Convert 1-5 rating to 1-10 score
+    let sentiment: "positive" | "negative" | "neutral" | "mixed";
+
+    if (score < 4) {
+      sentiment = "negative";
+    } else if (score === 4 || score === 6) {
+      sentiment = "mixed";
+    } else if (score === 5) {
+      sentiment = "neutral";
+    } else { // score > 6
+      sentiment = "positive";
+    }
+
+    console.log(
+      `No content for review, using rating-based sentiment: ${sentiment} (score: ${score} from rating: ${rating})`,
+    );
+
+    return {
+      sentiment,
+      score: score * 10, // Convert to 1-100 scale for consistency
+      keywords: [],
+      topics: [],
+    };
+  }
+
   // Wait for rate limit before making the API call
   if (supabaseClient) {
     await waitForRateLimit(supabaseClient, 200); // 200 requests per minute

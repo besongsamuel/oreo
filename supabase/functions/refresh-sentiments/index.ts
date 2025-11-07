@@ -112,10 +112,38 @@ async function waitForRateLimit(
 // Kept as fallback for single review processing if needed
 async function _callOpenAIForAnalysis(
     content: string,
+    rating: number,
     apiKey: string,
     language: string = "fr",
     supabaseClient?: SupabaseClient,
 ): Promise<EnhancedAnalysisResult> {
+    // If there's no content, generate sentiment based on rating
+    if (!content || content.trim().length === 0) {
+        const score = rating * 2; // Convert 1-5 rating to 1-10 score
+        let sentiment: "positive" | "negative" | "neutral" | "mixed";
+
+        if (score < 4) {
+            sentiment = "negative";
+        } else if (score === 4 || score === 6) {
+            sentiment = "mixed";
+        } else if (score === 5) {
+            sentiment = "neutral";
+        } else { // score > 6
+            sentiment = "positive";
+        }
+
+        console.log(
+            `No content for review, using rating-based sentiment: ${sentiment} (score: ${score} from rating: ${rating})`,
+        );
+
+        return {
+            sentiment,
+            score: score * 10, // Convert to 1-100 scale for consistency
+            keywords: [],
+            topics: [],
+        };
+    }
+
     if (supabaseClient) {
         await waitForRateLimit(supabaseClient, 200);
     }
@@ -207,6 +235,58 @@ async function callOpenAIForBatchAnalysis(
     language: string = "fr",
     supabaseClient?: SupabaseClient,
 ): Promise<BatchAnalysisResult[]> {
+    // Separate reviews with and without content
+    const reviewsWithContent = reviews.filter((r) =>
+        r.content && r.content.trim().length > 0
+    );
+    const reviewsWithoutContent = reviews.filter((r) =>
+        !r.content || r.content.trim().length === 0
+    );
+
+    console.log(
+        `Processing ${reviewsWithContent.length} reviews with content and ${reviewsWithoutContent.length} reviews without content`,
+    );
+
+    // Generate rating-based sentiment for reviews without content
+    const ratingBasedResults: BatchAnalysisResult[] = reviewsWithoutContent
+        .map((review) => {
+            const score = review.rating * 2; // Convert 1-5 rating to 1-10 score
+            let sentiment: "positive" | "negative" | "neutral" | "mixed";
+
+            if (score < 4) {
+                sentiment = "negative";
+            } else if (score === 4 || score === 6) {
+                sentiment = "mixed";
+            } else if (score === 5) {
+                sentiment = "neutral";
+            } else { // score > 6
+                sentiment = "positive";
+            }
+
+            console.log(
+                `Review ${review.id}: No content, using rating-based sentiment: ${sentiment} (score: ${score} from rating: ${review.rating})`,
+            );
+
+            return {
+                reviewId: review.id,
+                analysis: {
+                    sentiment,
+                    score: score * 10, // Convert to 1-100 scale for consistency
+                    keywords: [],
+                    topics: [],
+                },
+            };
+        });
+
+    // If no reviews have content, return only rating-based results
+    if (reviewsWithContent.length === 0) {
+        console.log(
+            "No reviews with content, returning rating-based results only",
+        );
+        return ratingBasedResults;
+    }
+
+    // Process reviews with content through OpenAI
     if (supabaseClient) {
         await waitForRateLimit(supabaseClient, 200);
     }
@@ -217,8 +297,8 @@ async function callOpenAIForBatchAnalysis(
     };
     const languageName = languageNames[language] || "French";
 
-    // Prepare reviews for batch processing
-    const reviewsFormatted = reviews.map((review, index) =>
+    // Prepare reviews for batch processing (only those with content)
+    const reviewsFormatted = reviewsWithContent.map((review, index) =>
         `Review ${index + 1} (ID: ${review.id}): "${review.content}"`
     ).join("\n\n");
 
@@ -236,7 +316,7 @@ async function callOpenAIForBatchAnalysis(
                     {
                         role: "system",
                         content:
-                            `Analyze these ${reviews.length} reviews and return a JSON array where each element corresponds to a review analysis. 
+                            `Analyze these ${reviewsWithContent.length} reviews and return a JSON array where each element corresponds to a review analysis. 
                             
 Each analysis object MUST include:
 1. reviewId: the ID from the review (CRITICAL - must match exactly)
@@ -254,7 +334,7 @@ Each analysis object MUST include:
    - relevance: number from 0-1
 
 IMPORTANT: 
-- Return ONLY a JSON array with exactly ${reviews.length} objects
+- Return ONLY a JSON array with exactly ${reviewsWithContent.length} objects
 - Each object MUST have the reviewId field matching the ID from the input
 - All keywords, topics, and descriptions MUST be in ${languageName}
 - Format: [{"reviewId": "xxx", "sentiment": "positive", ...}, ...]`,
@@ -265,7 +345,10 @@ IMPORTANT:
                     },
                 ],
                 temperature: 0.3,
-                max_tokens: Math.min(4000, 800 + (reviews.length * 60)), // More conservative token calculation
+                max_tokens: Math.min(
+                    4000,
+                    800 + (reviewsWithContent.length * 60),
+                ), // More conservative token calculation
             }),
         },
     );
@@ -378,7 +461,13 @@ IMPORTANT:
         });
     }
 
-    return batchResults;
+    // Combine rating-based results with OpenAI results
+    const allResults = [...ratingBasedResults, ...batchResults];
+    console.log(
+        `Returning ${allResults.length} total results (${ratingBasedResults.length} rating-based + ${batchResults.length} OpenAI-based)`,
+    );
+
+    return allResults;
 }
 
 async function processKeywords(

@@ -1309,22 +1309,6 @@ export const CompanyPage = () => {
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<
-      string,
-      "primary" | "secondary" | "info" | "warning" | "success" | "error"
-    > = {
-      service: "primary",
-      food: "secondary",
-      ambiance: "info",
-      price: "warning",
-      quality: "success",
-      cleanliness: "info",
-      staff: "primary",
-    };
-    return colors[category] || "default";
-  };
-
   const handleFetchReviews = async (platform: string) => {
     setSelectedPlatform(platform);
 
@@ -2385,7 +2369,7 @@ export const CompanyPage = () => {
                         <Chip
                           key={index}
                           label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                          color={getCategoryColor(keyword.category || "other")}
+                          color="primary"
                           variant={isSelected ? "filled" : "outlined"}
                           onClick={() =>
                             setSelectedKeyword(
