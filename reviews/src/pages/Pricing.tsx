@@ -27,6 +27,7 @@ import {
   useSubscriptionPlans,
 } from "../hooks/useSubscriptionPlans";
 import { useSupabase } from "../hooks/useSupabase";
+import { getFormattedPlanName } from "../utils/planNames";
 
 export const Pricing = () => {
   const { t } = useTranslation();
@@ -38,6 +39,12 @@ export const Pricing = () => {
   const { plans, loading: plansLoading } = useSubscriptionPlans();
   const supabase = useSupabase();
   const [loading, setLoading] = useState(false);
+  const hidePricing =
+    (process.env.REACT_APP_HIDE_PRICING ?? process.env.HIDE_PRICING ?? "1") !==
+    "0";
+
+  const getPlanDisplayName = (plan: SubscriptionPlan) =>
+    getFormattedPlanName(plan.plan_name, plan.plan_display_name, t);
 
   const handleGetStarted = (planName?: string) => {
     if (user) {
@@ -216,6 +223,8 @@ export const Pricing = () => {
                   const isCurrentPlan = currentPlan?.plan_id === plan.plan_id;
                   const isPopular = plan.plan_name === "pro";
                   const isFree = plan.price_monthly === 0;
+                  const shouldHidePrice =
+                    hidePricing && plan.plan_name === "enterprise";
 
                   return (
                     <Card
@@ -281,22 +290,30 @@ export const Pricing = () => {
                               fontWeight={700}
                               gutterBottom
                             >
-                              {plan.plan_display_name}
+                              {getPlanDisplayName(plan)}
                             </Typography>
                             <Stack
                               direction="row"
                               spacing={1}
                               alignItems="baseline"
                             >
-                              <Typography variant="h2" fontWeight={700}>
-                                ${plan.price_monthly.toFixed(0)}
-                              </Typography>
-                              <Typography
-                                variant="body1"
-                                color="text.secondary"
-                              >
-                                {t("pricing.perMonth")}
-                              </Typography>
+                              {shouldHidePrice ? (
+                                <Typography variant="h5" fontWeight={600}>
+                                  {t("pricing.customPricing")}
+                                </Typography>
+                              ) : (
+                                <>
+                                  <Typography variant="h2" fontWeight={700}>
+                                    ${plan.price_monthly.toFixed(0)}
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    color="text.secondary"
+                                  >
+                                    {t("pricing.perMonth")}
+                                  </Typography>
+                                </>
+                              )}
                             </Stack>
                           </Box>
 
@@ -348,7 +365,7 @@ export const Pricing = () => {
                           {plans.map((plan) => (
                             <TableCell key={plan.plan_id} align="center">
                               <Typography variant="subtitle2" fontWeight={600}>
-                                {plan.plan_display_name}
+                                {getPlanDisplayName(plan)}
                               </Typography>
                             </TableCell>
                           ))}

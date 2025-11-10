@@ -27,6 +27,7 @@ import { SEO } from "../components/SEO";
 import { UserContext } from "../context/UserContext";
 import { useTrial } from "../hooks/useTrial";
 import { AdminUser, fetchAllUsers } from "../services/adminService";
+import { getFormattedPlanName } from "../utils/planNames";
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -63,13 +64,20 @@ export const AdminDashboard = () => {
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = users.filter(
-      (user) =>
+    const filtered = users.filter((user) => {
+      const planLabel = getFormattedPlanName(
+        user.subscription_plan_name,
+        user.subscription_plan_display_name,
+      )
+        .toLowerCase();
+
+      return (
         user.email?.toLowerCase().includes(query) ||
         user.full_name?.toLowerCase().includes(query) ||
         user.company_name?.toLowerCase().includes(query) ||
-        user.subscription_plan_display_name?.toLowerCase().includes(query)
-    );
+        planLabel.includes(query)
+      );
+    });
     setFilteredUsers(filtered);
   }, [searchQuery, users]);
 
@@ -283,7 +291,10 @@ export const AdminDashboard = () => {
                           <TableCell>
                             <Chip
                               label={
-                                user.subscription_plan_display_name || "Free"
+                                getFormattedPlanName(
+                                  user.subscription_plan_name,
+                                  user.subscription_plan_display_name,
+                                ) || "Free"
                               }
                               size="small"
                               color={

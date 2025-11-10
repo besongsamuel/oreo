@@ -27,6 +27,8 @@ import { PlatformSelection } from "../components/PlatformSelection";
 import { ProfileSectionSkeleton } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { useUser } from "../hooks/useUser";
+import { getFormattedPlanName } from "../utils/planNames";
 import { supabase as supabaseClient } from "../lib/supabaseClient";
 
 export const Profile = () => {
@@ -269,6 +271,12 @@ export const Profile = () => {
       setSubscriptionLoading(false);
     }
   };
+
+  const formattedCurrentPlanName = getFormattedPlanName(
+    currentPlan?.plan_name,
+    currentPlan?.plan_display_name,
+    t,
+  );
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -560,7 +568,7 @@ export const Profile = () => {
                     </Typography>
                     <Chip
                       label={
-                        currentPlan?.plan_display_name || t("subscription.paid")
+                        formattedCurrentPlanName || t("subscription.paid")
                       }
                       size="small"
                       color={

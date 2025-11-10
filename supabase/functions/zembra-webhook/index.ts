@@ -397,39 +397,29 @@ serve(async (req) => {
             console.error("Failed to create sync log:", syncLogError);
         }
 
-        // Trigger sentiment analysis and wait for completion
-        let sentimentAnalysisResult;
+        // Trigger sentiment analysis in the background (fire-and-forget)
         if (reviewsUpserted > 0) {
             console.log(
                 `Triggering sentiment analysis for company ${companyId}`,
             );
-            try {
-                const sentimentUrl =
-                    `${supabaseUrl}/functions/v1/sentiment-analysis`;
-                const sentimentResponse = await fetch(sentimentUrl, {
-                    method: "POST",
-                    headers: {
-                        "X-Internal-Key": supabaseServiceKey,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        company_id: companyId,
-                        retry_count: 0,
-                    }),
-                });
-
-                sentimentAnalysisResult = await sentimentResponse.json();
-                console.log(
-                    "Sentiment analysis completed:",
-                    sentimentAnalysisResult,
+            const sentimentUrl =
+                `${supabaseUrl}/functions/v1/sentiment-analysis`;
+            fetch(sentimentUrl, {
+                method: "POST",
+                headers: {
+                    "X-Internal-Key": supabaseServiceKey,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    company_id: companyId,
+                    retry_count: 0,
+                }),
+            }).catch((err) => {
+                console.error(
+                    "Error calling sentiment-analysis (non-blocking):",
+                    err,
                 );
-            } catch (err) {
-                console.error("Error calling sentiment-analysis:", err);
-                sentimentAnalysisResult = {
-                    success: false,
-                    error: err instanceof Error ? err.message : "Unknown error",
-                };
-            }
+            });
         }
 
         return new Response(
@@ -437,7 +427,6 @@ serve(async (req) => {
                 success: true,
                 message: `Processed ${reviewsUpserted} reviews`,
                 reviewsProcessed: reviewsUpserted,
-                sentimentAnalysis: sentimentAnalysisResult,
             }),
             {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },

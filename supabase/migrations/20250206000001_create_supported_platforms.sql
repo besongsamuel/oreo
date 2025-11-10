@@ -25,3 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_supported_platforms_name ON supported_platforms(n
 CREATE INDEX IF NOT EXISTS idx_supported_platforms_is_active ON supported_platforms(is_active);
 
 
+
+
+
+
