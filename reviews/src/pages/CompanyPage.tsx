@@ -34,7 +34,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -219,6 +219,45 @@ export const CompanyPage = () => {
   const reviewsPerPage = 50;
   const [totalReviewsCount, setTotalReviewsCount] = useState(0);
 
+  const lastTriggeredRef = useRef<number>(0);
+  const triggerInProgressRef = useRef(false);
+
+  const triggerReviewsRefresh = async () => {
+    if (!companyId) return;
+
+    if (triggerInProgressRef.current) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastTriggeredRef.current < 60_000) {
+      return;
+    }
+
+    triggerInProgressRef.current = true;
+
+    try {
+      const { error: triggerError } = await supabase.functions.invoke(
+        "trigger-reviews-fetch",
+        {
+          body: { company_id: companyId },
+        },
+      );
+
+      if (triggerError) {
+        console.warn("trigger-reviews-fetch error:", triggerError);
+        lastTriggeredRef.current = 0;
+      } else {
+        lastTriggeredRef.current = Date.now();
+      }
+    } catch (err) {
+      console.error("Failed to trigger reviews refresh:", err);
+      lastTriggeredRef.current = 0;
+    } finally {
+      triggerInProgressRef.current = false;
+    }
+  };
+
   // Toggle for showing all topics and keywords
   const [showAllTopics, setShowAllTopics] = useState(false);
   const [showAllKeywords, setShowAllKeywords] = useState(false);
@@ -247,6 +286,8 @@ export const CompanyPage = () => {
 
     setRefreshing(true);
     try {
+      await triggerReviewsRefresh();
+
       // Fetch company details
       // For admins, don't filter by owner_id (they can see all companies)
       // For regular users, filter by owner_id
@@ -381,6 +422,8 @@ export const CompanyPage = () => {
       }
 
       try {
+        await triggerReviewsRefresh();
+
         // Fetch company details
         // For admins, don't filter by owner_id (they can see all companies)
         // For regular users, filter by owner_id
@@ -521,6 +564,8 @@ export const CompanyPage = () => {
 
       setFilterLoading(true);
       try {
+        await triggerReviewsRefresh();
+
         // Build base query for reviews
         let reviewsQuery = supabase
           .from("recent_reviews")
