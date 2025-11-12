@@ -106,9 +106,6 @@ serve(async (req) => {
     }
 
     try {
-        console.log("Request method:", req.method);
-        console.log("Request URL:", req.url);
-
         // Verify webhook authentication
         const zembraApiToken = Deno.env.get("ZEMBRA_API_TOKEN");
         const requestToken = req.headers.get("X-Zembra-Token");
@@ -151,8 +148,6 @@ serve(async (req) => {
 
         // Parse webhook payload
         const bodyText = await req.text();
-        console.log("Body length:", bodyText?.length || 0);
-        console.log("Body preview:", bodyText?.substring(0, 200));
 
         if (!bodyText || bodyText.trim().length === 0) {
             console.error("Empty request body - possible health check or ping");
@@ -306,10 +301,10 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
         }));
 
-        // Save reviews to database in batches of 200
+        // Save reviews to database in batches of 500
         let reviewsUpserted = 0;
         const errors: string[] = [];
-        const BATCH_SIZE = 200;
+        const BATCH_SIZE = 500;
 
         for (let i = 0; i < reviewsToUpsert.length; i += BATCH_SIZE) {
             const batch = reviewsToUpsert.slice(i, i + BATCH_SIZE);

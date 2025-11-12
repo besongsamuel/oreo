@@ -649,7 +649,7 @@ Deno.serve(async (req: Request) => {
         let processed = 0;
         let skipped = 0;
         let errors = 0;
-        const batchSize = 10;
+        const batchSize = 5;
 
         for (let i = 0; i < unprocessedReviews.length; i += batchSize) {
             const batch = unprocessedReviews.slice(i, i + batchSize);
@@ -714,7 +714,9 @@ Deno.serve(async (req: Request) => {
                 if (sentimentRecords.length > 0) {
                     const { error: sentimentError } = await supabaseClient
                         .from("sentiment_analysis")
-                        .insert(sentimentRecords);
+                        .upsert(sentimentRecords, {
+                            onConflict: "review_id",
+                        });
 
                     if (sentimentError) {
                         console.error(

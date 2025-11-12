@@ -73,65 +73,99 @@ interface ZembraFetchCallLog {
     status: "pending" | "success" | "error";
 }
 
+const REVIEW_BATCH_SIZE = 100;
+
 const saveReviews = async (
     supabaseClient: SupabaseClient,
     platformConnectionId: string,
     reviews: StandardReview[],
 ): Promise<SyncStats> => {
-    let reviewsNew = 0;
     const errors: string[] = [];
 
+    if (reviews.length === 0) {
+        return {
+            reviewsFetched: 0,
+            reviewsNew: 0,
+            reviewsUpdated: 0,
+        };
+    }
+
+    const uniqueReviewsMap = new Map<string, StandardReview>();
     for (const review of reviews) {
-        try {
-            const { data: existingReview, error: checkError } =
-                await supabaseClient
-                    .from("reviews")
-                    .select("id")
-                    .eq("platform_connection_id", platformConnectionId)
-                    .eq("external_id", review.externalId)
-                    .maybeSingle();
+        if (!uniqueReviewsMap.has(review.externalId)) {
+            uniqueReviewsMap.set(review.externalId, review);
+        }
+    }
 
-            if (checkError) {
-                errors.push(
-                    `Failed to check existing review ${review.externalId}: ${checkError.message}`,
-                );
-                continue;
-            }
+    const uniqueReviews = Array.from(uniqueReviewsMap.values());
+    const externalIds = uniqueReviews.map((review) => review.externalId);
 
-            if (!existingReview) {
-                const { error: insertError } = await supabaseClient
-                    .from("reviews")
-                    .insert({
-                        platform_connection_id: platformConnectionId,
-                        external_id: review.externalId,
-                        author_name: review.authorName,
-                        author_avatar_url: review.authorAvatar,
-                        rating: review.rating,
-                        title: review.title,
-                        content: review.content,
-                        published_at: review.publishedAt.toISOString(),
-                        reply_content: review.replyContent,
-                        reply_at: review.replyAt?.toISOString() ?? null,
-                        raw_data: review.rawData,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                    });
+    const { data: existingRows, error: existingError } = await supabaseClient
+        .from("reviews")
+        .select("external_id")
+        .eq("platform_connection_id", platformConnectionId)
+        .in("external_id", externalIds);
 
-                if (insertError) {
-                    errors.push(
-                        `Failed to insert review ${review.externalId}: ${insertError.message}`,
-                    );
-                } else {
-                    reviewsNew++;
-                }
-            }
-        } catch (err) {
-            const message = err instanceof Error
-                ? err.message
-                : "Unknown review insert error";
+    if (existingError) {
+        return {
+            reviewsFetched: reviews.length,
+            reviewsNew: 0,
+            reviewsUpdated: 0,
+            errorMessage:
+                `Failed to check existing reviews: ${existingError.message}`,
+        };
+    }
+
+    const existingIds = new Set(
+        (existingRows ?? []).map((row) => row.external_id),
+    );
+    const newReviews = uniqueReviews.filter((review) =>
+        !existingIds.has(review.externalId)
+    );
+
+    if (newReviews.length === 0) {
+        return {
+            reviewsFetched: reviews.length,
+            reviewsNew: 0,
+            reviewsUpdated: 0,
+        };
+    }
+
+    const timestamp = new Date().toISOString();
+    const reviewPayloads = newReviews.map((review) => ({
+        platform_connection_id: platformConnectionId,
+        external_id: review.externalId,
+        author_name: review.authorName,
+        author_avatar_url: review.authorAvatar,
+        rating: review.rating,
+        title: review.title,
+        content: review.content,
+        published_at: review.publishedAt.toISOString(),
+        reply_content: review.replyContent,
+        reply_at: review.replyAt?.toISOString() ?? null,
+        raw_data: review.rawData,
+        created_at: timestamp,
+        updated_at: timestamp,
+    }));
+
+    let reviewsNew = 0;
+
+    for (let i = 0; i < reviewPayloads.length; i += REVIEW_BATCH_SIZE) {
+        const batch = reviewPayloads.slice(i, i + REVIEW_BATCH_SIZE);
+
+        const { error: insertError } = await supabaseClient
+            .from("reviews")
+            .upsert(batch, {
+                onConflict: "platform_connection_id,external_id",
+                ignoreDuplicates: true,
+            });
+
+        if (insertError) {
             errors.push(
-                `Error processing review ${review.externalId}: ${message}`,
+                `Failed to insert review batch starting at index ${i}: ${insertError.message}`,
             );
+        } else {
+            reviewsNew += batch.length;
         }
     }
 
