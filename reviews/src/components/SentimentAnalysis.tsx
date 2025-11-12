@@ -29,8 +29,9 @@ import {
 } from "@mui/material";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface SentimentData {
@@ -80,14 +81,19 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
 }) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
+  const context = useContext(UserContext);
+  const profile = context?.profile;
+  const session = context?.session;
   const [actionPlanOpen, setActionPlanOpen] = useState(false);
   const [actionPlan, setActionPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [copied, setCopied] = useState(false);
   const [unprocessedCount, setUnprocessedCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasTriggeredRefresh, setHasTriggeredRefresh] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [refreshSuccess, setRefreshSuccess] = useState<string | null>(null);
+  const [refreshInfo, setRefreshInfo] = useState<string | null>(null);
   const [processingModalOpen, setProcessingModalOpen] = useState(false);
   const [processingSummary, setProcessingSummary] = useState<{
     processed: number;
@@ -166,11 +172,28 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const handleRefreshSentiments = async () => {
     if (!companyId) return;
 
+    if (!session?.access_token) {
+      setRefreshError(
+        t(
+          "sentimentAnalysis.sessionRequired",
+          "You must be signed in to perform sentiment analysis."
+        )
+      );
+      return;
+    }
+
     setIsRefreshing(true);
     setRefreshError(null);
     setRefreshSuccess(null);
     setProcessingSummary(null);
     setProcessingModalOpen(true);
+    setHasTriggeredRefresh(true);
+    setRefreshInfo(
+      t(
+        "sentimentAnalysis.processingStarted",
+        "We've started processing sentiments for your reviews. This may take a few minutes."
+      )
+    );
 
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -219,6 +242,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
             setUnprocessedCount(0);
           }
         }
+        setRefreshInfo(null);
       } else {
         setRefreshError(data?.error || "Failed to refresh sentiments");
       }
@@ -229,6 +253,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
       );
     } finally {
       setIsRefreshing(false);
+      setRefreshInfo(null);
     }
   };
 
@@ -582,8 +607,17 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         )}
 
         {/* Refresh Sentiments Button */}
-        {companyId && unprocessedCount > 0 && (
+        {companyId && unprocessedCount > 0 && profile?.role === "admin" && (
           <Box>
+            {refreshInfo && (
+              <Alert
+                severity="info"
+                onClose={() => setRefreshInfo(null)}
+                sx={{ mb: 2 }}
+              >
+                {refreshInfo}
+              </Alert>
+            )}
             <Button
               variant="contained"
               color="primary"
@@ -595,16 +629,20 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                 )
               }
               onClick={handleRefreshSentiments}
-              disabled={isRefreshing}
+              disabled={isRefreshing || hasTriggeredRefresh}
               fullWidth
             >
               {isRefreshing
                 ? "Processing..."
-                : unprocessedCount > 25
-                ? `Process 25 of ${unprocessedCount} unprocessed reviews`
-                : `Process ${unprocessedCount} unprocessed review${
-                    unprocessedCount > 1 ? "s" : ""
-                  }`}
+                : hasTriggeredRefresh
+                ? t(
+                    "sentimentAnalysis.processingInProgress",
+                    "Sentiment processing started. Please check back soon."
+                  )
+                : t(
+                    "sentimentAnalysis.performAnalysis",
+                    "Perform Sentiment Analysis"
+                  )}
             </Button>
           </Box>
         )}

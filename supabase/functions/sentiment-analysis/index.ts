@@ -401,7 +401,9 @@ async function processKeywords(
     if (reviewKeywordRecords.length > 0) {
         const { error } = await supabaseClient
             .from("review_keywords")
-            .insert(reviewKeywordRecords);
+            .upsert(reviewKeywordRecords, {
+                onConflict: "review_id,keyword_id",
+            });
 
         if (error) throw error;
     }
@@ -494,7 +496,9 @@ async function processTopics(
     if (reviewTopicRecords.length > 0) {
         const { error } = await supabaseClient
             .from("review_topics")
-            .insert(reviewTopicRecords);
+            .upsert(reviewTopicRecords, {
+                onConflict: "review_id,topic_id",
+            });
 
         if (error) throw error;
     }
