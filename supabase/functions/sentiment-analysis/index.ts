@@ -512,6 +512,9 @@ Deno.serve(async (req: Request) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
+    let supabaseClient: SupabaseClient | null = null;
+    let runId: string | null = null;
+
     try {
         // Verify internal function authentication using custom header
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -538,7 +541,7 @@ Deno.serve(async (req: Request) => {
         }
 
         // Initialize Supabase client with service role key
-        const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+        supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
         // Get OpenAI API key
         const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -547,7 +550,11 @@ Deno.serve(async (req: Request) => {
         }
 
         // Parse request body
-        const { company_id, retry_count = 0 } = await req.json();
+        const {
+            company_id,
+            retry_count = 0,
+            run_id,
+        } = await req.json();
         if (!company_id) {
             return new Response(
                 JSON.stringify({
@@ -563,6 +570,8 @@ Deno.serve(async (req: Request) => {
                 },
             );
         }
+
+        runId = typeof run_id === "string" ? run_id : null;
 
         console.log(
             `Starting sentiment analysis for company ${company_id} (retry ${retry_count}/50)`,
@@ -591,6 +600,44 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        if (runId) {
+            const { data: runRecord, error: runLookupError } =
+                await supabaseClient
+                    .from("sentiment_analysis_runs")
+                    .select("id")
+                    .eq("id", runId)
+                    .maybeSingle();
+
+            if (runLookupError) {
+                console.error(
+                    `Unable to load sentiment analysis run ${runId}:`,
+                    runLookupError,
+                );
+                runId = null;
+            } else if (!runRecord) {
+                console.warn(
+                    `Sentiment analysis run ${runId} not found. Progress tracking disabled for this invocation.`,
+                );
+                runId = null;
+            }
+        }
+
+        const updateRun = async (fields: Record<string, unknown>) => {
+            if (!runId) return;
+
+            const { error } = await supabaseClient!
+                .from("sentiment_analysis_runs")
+                .update(fields)
+                .eq("id", runId);
+
+            if (error) {
+                console.error(
+                    `Failed to update sentiment_analysis_runs (${runId}):`,
+                    error,
+                );
+            }
+        };
+
         // Get company owner's preferred language
         let preferredLanguage = "fr";
         const { data: ownerProfile } = await supabaseClient
@@ -611,6 +658,31 @@ Deno.serve(async (req: Request) => {
             },
         );
 
+        const totalCount = totalUnprocessedCount || 0;
+
+        if (runId) {
+            const runInitUpdate: Record<string, unknown> = {
+                total_reviews: totalCount,
+            };
+
+            if (totalCount === 0) {
+                runInitUpdate.status = "completed";
+                runInitUpdate.completed_at = new Date().toISOString();
+            } else {
+                runInitUpdate.status = "in_progress";
+            }
+
+            if (retry_count === 0) {
+                runInitUpdate.processed_reviews = 0;
+                runInitUpdate.skipped_reviews = 0;
+                runInitUpdate.failed_reviews = 0;
+                runInitUpdate.error_details = null;
+                runInitUpdate.started_at = new Date().toISOString();
+            }
+
+            await updateRun(runInitUpdate);
+        }
+
         // Get up to 100 reviews without sentiment analysis using RPC function
         const { data: unprocessedReviews, error: reviewsError } =
             await supabaseClient.rpc("get_unprocessed_reviews", {
@@ -623,6 +695,17 @@ Deno.serve(async (req: Request) => {
 
         if (!unprocessedReviews || unprocessedReviews.length === 0) {
             console.log("No unprocessed reviews found");
+            if (runId) {
+                await updateRun({
+                    status: "completed",
+                    total_reviews: totalCount,
+                    processed_reviews: 0,
+                    skipped_reviews: 0,
+                    failed_reviews: 0,
+                    completed_at: new Date().toISOString(),
+                    error_details: null,
+                });
+            }
             return new Response(
                 JSON.stringify({
                     success: true,
@@ -644,7 +727,6 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const totalCount = totalUnprocessedCount || 0;
         console.log(
             `Processing ${unprocessedReviews.length} of ${totalCount} unprocessed reviews for company ${company_id}`,
         );
@@ -654,6 +736,17 @@ Deno.serve(async (req: Request) => {
         let skipped = 0;
         let errors = 0;
         const batchSize = 5;
+
+        const updateRunProgress = async () => {
+            if (!runId) return;
+            await updateRun({
+                status: "in_progress",
+                processed_reviews: processed,
+                skipped_reviews: skipped,
+                failed_reviews: errors,
+                total_reviews: totalCount,
+            });
+        };
 
         for (let i = 0; i < unprocessedReviews.length; i += batchSize) {
             const batch = unprocessedReviews.slice(i, i + batchSize);
@@ -728,6 +821,7 @@ Deno.serve(async (req: Request) => {
                             JSON.stringify(sentimentError, null, 2),
                         );
                         errors += sentimentRecords.length;
+                        await updateRunProgress();
                         continue;
                     }
 
@@ -765,6 +859,8 @@ Deno.serve(async (req: Request) => {
                         errors++;
                     }
                 }
+
+                await updateRunProgress();
             } catch (error) {
                 // Handle 429 rate limit errors for the entire batch
                 const errorWithStatus = error as { statusCode?: number };
@@ -775,6 +871,7 @@ Deno.serve(async (req: Request) => {
                         }, skipping remaining reviews...`,
                     );
                     skipped += batch.length;
+                    await updateRunProgress();
                     break;
                 }
 
@@ -784,6 +881,7 @@ Deno.serve(async (req: Request) => {
                     error,
                 );
                 errors += batch.length;
+                await updateRunProgress();
             }
         }
 
@@ -818,6 +916,7 @@ Deno.serve(async (req: Request) => {
                         body: JSON.stringify({
                             company_id,
                             retry_count: retry_count + 1,
+                            run_id: runId,
                         }),
                     },
                 );
@@ -828,15 +927,41 @@ Deno.serve(async (req: Request) => {
                     retryData,
                 );
 
+                const aggregatedProcessed = processed +
+                    (retryData.processed || 0);
+                const aggregatedSkipped = skipped + (retryData.skipped || 0);
+                const aggregatedErrors = errors + (retryData.errors || 0);
+                const aggregatedRemaining = retryData.remaining ?? 0;
+                const aggregatedStatus = aggregatedRemaining === 0
+                    ? "completed"
+                    : "in_progress";
+
+                await updateRun({
+                    status: aggregatedStatus,
+                    processed_reviews: aggregatedProcessed,
+                    skipped_reviews: aggregatedSkipped,
+                    failed_reviews: aggregatedErrors,
+                    total_reviews: totalCount,
+                    completed_at: aggregatedStatus === "completed"
+                        ? new Date().toISOString()
+                        : null,
+                    error_details: aggregatedStatus === "completed"
+                        ? null
+                        : retryData.message ||
+                            `Remaining ${aggregatedRemaining} reviews after ${
+                                retry_count + 1
+                            } retries.`,
+                });
+
                 // Return aggregated results
                 return new Response(
                     JSON.stringify({
                         success: true,
-                        processed: processed + (retryData.processed || 0),
-                        skipped: skipped + (retryData.skipped || 0),
-                        errors: errors + (retryData.errors || 0),
+                        processed: aggregatedProcessed,
+                        skipped: aggregatedSkipped,
+                        errors: aggregatedErrors,
                         total: total + (retryData.total || 0),
-                        remaining: retryData.remaining || 0,
+                        remaining: aggregatedRemaining,
                         totalUnprocessed: totalCount,
                         retry_count: retry_count + 1,
                         message: retryData.remaining === 0
@@ -858,7 +983,33 @@ Deno.serve(async (req: Request) => {
             } catch (retryError) {
                 console.error("Error in recursive retry:", retryError);
                 // Return current results even if retry fails
+                await updateRun({
+                    status: "failed",
+                    processed_reviews: processed,
+                    skipped_reviews: skipped,
+                    failed_reviews: errors,
+                    total_reviews: totalCount,
+                    completed_at: new Date().toISOString(),
+                    error_details: retryError instanceof Error
+                        ? retryError.message
+                        : String(retryError),
+                });
             }
+        }
+
+        if (runId) {
+            const finalStatus = remaining === 0 ? "completed" : "failed";
+            await updateRun({
+                status: finalStatus,
+                processed_reviews: processed,
+                skipped_reviews: skipped,
+                failed_reviews: errors,
+                total_reviews: totalCount,
+                completed_at: new Date().toISOString(),
+                error_details: finalStatus === "completed"
+                    ? null
+                    : `Unable to process ${remaining} reviews after ${retry_count} retries.`,
+            });
         }
 
         return new Response(
@@ -885,6 +1036,24 @@ Deno.serve(async (req: Request) => {
         const errorMessage = error instanceof Error
             ? error.message
             : "Unknown error";
+
+        if (supabaseClient && runId) {
+            try {
+                await supabaseClient
+                    .from("sentiment_analysis_runs")
+                    .update({
+                        status: "failed",
+                        error_details: errorMessage,
+                        completed_at: new Date().toISOString(),
+                    })
+                    .eq("id", runId);
+            } catch (updateError) {
+                console.error(
+                    `Failed to mark sentiment analysis run ${runId} as failed:`,
+                    updateError,
+                );
+            }
+        }
 
         return new Response(
             JSON.stringify({

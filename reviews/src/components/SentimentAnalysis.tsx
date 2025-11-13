@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,7 +28,7 @@ import {
 } from "@mui/material";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
@@ -69,6 +68,20 @@ interface SentimentAnalysisProps {
   selectedTopic?: string;
 }
 
+type SentimentRunStatus = "pending" | "in_progress" | "completed" | "failed";
+
+interface SentimentAnalysisRun {
+  id: string;
+  status: SentimentRunStatus;
+  processed_reviews: number;
+  skipped_reviews: number;
+  failed_reviews: number;
+  total_reviews: number;
+  error_details: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
 export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   sentimentData,
   companyId,
@@ -90,47 +103,147 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const [copied, setCopied] = useState(false);
   const [unprocessedCount, setUnprocessedCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasTriggeredRefresh, setHasTriggeredRefresh] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [refreshSuccess, setRefreshSuccess] = useState<string | null>(null);
-  const [refreshInfo, setRefreshInfo] = useState<string | null>(null);
-  const [processingModalOpen, setProcessingModalOpen] = useState(false);
-  const [processingSummary, setProcessingSummary] = useState<{
-    processed: number;
-    skipped: number;
-    errors: number;
-    total: number;
-  } | null>(null);
+  const [latestRun, setLatestRun] = useState<SentimentAnalysisRun | null>(null);
+  const [runStatusLoading, setRunStatusLoading] = useState(false);
+  const lastRunStatusRef = useRef<SentimentRunStatus | null>(null);
 
-  // Fetch count of reviews without sentiment analysis
-  useEffect(() => {
-    const fetchUnprocessedCount = async () => {
-      if (!companyId) return;
+  const loadUnprocessedCount = useCallback(async () => {
+    if (!companyId) {
+      setUnprocessedCount(0);
+      return;
+    }
 
-      try {
-        // Use RPC function to get count (avoids URL length issues with large IN clauses)
-        const { data, error } = await supabase.rpc(
-          "get_unprocessed_reviews_count",
-          {
-            company_uuid: companyId,
-          }
-        );
-
-        if (error) {
-          console.error("Error fetching unprocessed count:", error);
-          setUnprocessedCount(0);
-          return;
+    try {
+      const { data, error } = await supabase.rpc(
+        "get_unprocessed_reviews_count",
+        {
+          company_uuid: companyId,
         }
+      );
 
-        setUnprocessedCount(data || 0);
-      } catch (error) {
+      if (error) {
         console.error("Error fetching unprocessed count:", error);
         setUnprocessedCount(0);
+        return;
       }
-    };
 
-    fetchUnprocessedCount();
-  }, [companyId, supabase, sentimentData]);
+      setUnprocessedCount(data || 0);
+    } catch (error) {
+      console.error("Error fetching unprocessed count:", error);
+      setUnprocessedCount(0);
+    }
+  }, [companyId, supabase]);
+
+  useEffect(() => {
+    loadUnprocessedCount();
+  }, [loadUnprocessedCount, sentimentData]);
+
+  const fetchLatestRun = useCallback(
+    async (withLoader = false) => {
+      if (!companyId) {
+        setLatestRun(null);
+        lastRunStatusRef.current = null;
+        return;
+      }
+
+      if (withLoader) {
+        setRunStatusLoading(true);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("sentiment_analysis_runs")
+          .select(
+            "id, status, processed_reviews, skipped_reviews, failed_reviews, total_reviews, error_details, started_at, completed_at"
+          )
+          .eq("company_id", companyId)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        setLatestRun(data ?? null);
+      } catch (error) {
+        console.error("Error fetching sentiment analysis run:", error);
+        setLatestRun(null);
+      } finally {
+        if (withLoader) {
+          setRunStatusLoading(false);
+        }
+      }
+    },
+    [companyId, supabase]
+  );
+
+  useEffect(() => {
+    fetchLatestRun(true);
+  }, [fetchLatestRun]);
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    if (
+      !latestRun ||
+      (latestRun.status !== "pending" && latestRun.status !== "in_progress")
+    ) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      fetchLatestRun();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [companyId, latestRun?.status, fetchLatestRun]);
+
+  useEffect(() => {
+    const currentStatus = latestRun?.status ?? null;
+    const previousStatus = lastRunStatusRef.current;
+
+    if (currentStatus === previousStatus) {
+      return;
+    }
+
+    lastRunStatusRef.current = currentStatus;
+
+    if (currentStatus === "completed") {
+      const processedMessage =
+        totalRunCount > 0
+          ? t("sentimentAnalysis.processingCompleteWithCounts", {
+              defaultValue:
+                "Processed {{processed}} of {{total}} reviews successfully.",
+              processed: processedCount,
+              total: totalRunCount,
+            })
+          : t("sentimentAnalysis.processingComplete", {
+              defaultValue: "Sentiment analysis completed successfully.",
+            });
+
+      setRefreshSuccess(processedMessage);
+      setRefreshError(null);
+      loadUnprocessedCount();
+    } else if (currentStatus === "failed") {
+      setRefreshError(
+        latestRun?.error_details ||
+          t(
+            "sentimentAnalysis.processingFailed",
+            "Sentiment analysis failed. Please try again."
+          )
+      );
+      setRefreshSuccess(null);
+      loadUnprocessedCount();
+    } else if (currentStatus === "pending" || currentStatus === "in_progress") {
+      setRefreshSuccess(null);
+      setRefreshError(null);
+    } else if (currentStatus === null) {
+      setRefreshSuccess(null);
+    }
+  }, [latestRun, loadUnprocessedCount, t]);
 
   const handleGenerateActionPlan = async () => {
     if (!companyId) return;
@@ -185,15 +298,6 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
     setIsRefreshing(true);
     setRefreshError(null);
     setRefreshSuccess(null);
-    setProcessingSummary(null);
-    setProcessingModalOpen(true);
-    setHasTriggeredRefresh(true);
-    setRefreshInfo(
-      t(
-        "sentimentAnalysis.processingStarted",
-        "We've started processing sentiments for your reviews. This may take a few minutes."
-      )
-    );
 
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -206,45 +310,34 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
       if (error) throw error;
 
       if (data?.success) {
-        // Set processing summary
-        setProcessingSummary({
-          processed: data.processed || 0,
-          skipped: data.skipped || 0,
-          errors: data.errors || 0,
-          total: data.total || 0,
-        });
-
-        const message =
-          data.message ||
-          `Successfully processed ${data.processed} reviews. ${
-            data.skipped > 0
-              ? `${data.skipped} skipped due to rate limits. `
-              : ""
-          }${data.errors > 0 ? `${data.errors} errors occurred.` : ""}`;
-
-        setRefreshSuccess(message);
-
-        // Update the unprocessed count with remaining reviews
-        if (data.remaining !== undefined) {
-          setUnprocessedCount(data.remaining);
-        } else {
-          // Fallback: Refresh the unprocessed count from server
-          try {
-            const { data: countData } = await supabase.rpc(
-              "get_unprocessed_reviews_count",
-              {
-                company_uuid: companyId,
-              }
-            );
-            setUnprocessedCount(countData || 0);
-          } catch (error) {
-            console.error("Error refreshing count:", error);
-            setUnprocessedCount(0);
-          }
+        if (data.run_id) {
+          setLatestRun((current) =>
+            current && current.id === data.run_id
+              ? current
+              : {
+                  id: data.run_id,
+                  status: "pending",
+                  processed_reviews: 0,
+                  skipped_reviews: 0,
+                  failed_reviews: 0,
+                  total_reviews: data.total_reviews ?? 0,
+                  error_details: null,
+                  started_at: new Date().toISOString(),
+                  completed_at: null,
+                }
+          );
+          lastRunStatusRef.current = "pending";
         }
-        setRefreshInfo(null);
+
+        await fetchLatestRun();
       } else {
-        setRefreshError(data?.error || "Failed to refresh sentiments");
+        setRefreshError(
+          data?.error ||
+            t(
+              "sentimentAnalysis.failedStart",
+              "Failed to start sentiment analysis."
+            )
+        );
       }
     } catch (error) {
       console.error("Error refreshing sentiments:", error);
@@ -253,13 +346,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
       );
     } finally {
       setIsRefreshing(false);
-      setRefreshInfo(null);
     }
-  };
-
-  const handleCloseProcessingModal = () => {
-    setProcessingModalOpen(false);
-    setProcessingSummary(null);
   };
 
   const handleCloseActionPlan = () => {
@@ -376,6 +463,31 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         return "warning";
     }
   };
+
+  const isRunActive =
+    latestRun?.status === "pending" || latestRun?.status === "in_progress";
+
+  const processedCount = latestRun?.processed_reviews ?? 0;
+  const totalRunCount = latestRun?.total_reviews ?? 0;
+
+  const runStatusMessage = isRunActive
+    ? totalRunCount > 0
+      ? t("sentimentAnalysis.runInProgressWithCounts", {
+          defaultValue:
+            "Performing Sentiment Analysis on reviews ({{processed}} / {{total}})",
+          processed: processedCount,
+          total: totalRunCount,
+        })
+      : t("sentimentAnalysis.runInProgress", {
+          defaultValue: "Performing Sentiment Analysis on reviews",
+        })
+    : null;
+
+  const showRefreshButton =
+    Boolean(companyId) &&
+    profile?.role === "admin" &&
+    unprocessedCount > 0 &&
+    !isRunActive;
 
   // Convert score from -1 to 1 range to 0 to 100 for gauge
   const gaugeValue = ((sentimentData.overallScore + 1) / 2) * 100;
@@ -606,44 +718,50 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
           </Box>
         )}
 
-        {/* Refresh Sentiments Button */}
-        {companyId && unprocessedCount > 0 && profile?.role === "admin" && (
+        {/* Refresh Sentiments */}
+        {companyId && profile?.role === "admin" && (
           <Box>
-            {refreshInfo && (
-              <Alert
-                severity="info"
-                onClose={() => setRefreshInfo(null)}
-                sx={{ mb: 2 }}
-              >
-                {refreshInfo}
+            {runStatusLoading && !latestRun && (
+              <Skeleton variant="text" width="70%" sx={{ mb: 2 }} />
+            )}
+
+            {runStatusMessage && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {runStatusMessage}
               </Alert>
             )}
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={
-                isRefreshing ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <RefreshIcon />
-                )
-              }
-              onClick={handleRefreshSentiments}
-              disabled={isRefreshing || hasTriggeredRefresh}
-              fullWidth
-            >
-              {isRefreshing
-                ? "Processing..."
-                : hasTriggeredRefresh
-                ? t(
-                    "sentimentAnalysis.processingInProgress",
-                    "Sentiment processing started. Please check back soon."
-                  )
-                : t(
-                    "sentimentAnalysis.performAnalysis",
-                    "Perform Sentiment Analysis"
+
+            {showRefreshButton && (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefreshSentiments}
+                disabled={isRefreshing}
+                fullWidth
+              >
+                {isRefreshing
+                  ? t(
+                      "sentimentAnalysis.startingAnalysis",
+                      "Starting sentiment analysis..."
+                    )
+                  : t(
+                      "sentimentAnalysis.performAnalysis",
+                      "Perform Sentiment Analysis"
+                    )}
+              </Button>
+            )}
+
+            {!showRefreshButton &&
+              !runStatusMessage &&
+              unprocessedCount === 0 && (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  {t(
+                    "sentimentAnalysis.noUnprocessedReviews",
+                    "Sentiment analysis completed."
                   )}
-            </Button>
+                </Alert>
+              )}
           </Box>
         )}
 
@@ -766,139 +884,6 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         <DialogActions>
           <Button onClick={handleCloseActionPlan}>
             {t("sentimentAnalysis.close")}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Processing Modal */}
-      <Dialog
-        open={processingModalOpen}
-        onClose={isRefreshing ? undefined : handleCloseProcessingModal}
-        maxWidth="sm"
-        fullWidth
-        disableEscapeKeyDown={isRefreshing}
-      >
-        <DialogTitle>
-          {isRefreshing ? "Processing Reviews..." : "Processing Complete"}
-        </DialogTitle>
-        <DialogContent>
-          {isRefreshing ? (
-            <Stack spacing={3} sx={{ py: 2, alignItems: "center" }}>
-              <CircularProgress size={60} />
-              <Stack spacing={1} alignItems="center">
-                <Typography variant="body1" fontWeight={600}>
-                  Analyzing reviews with AI...
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  This may take a few minutes depending on the number of
-                  reviews. Please don't close this window.
-                </Typography>
-              </Stack>
-            </Stack>
-          ) : processingSummary ? (
-            <Stack spacing={2} sx={{ py: 2 }}>
-              <Alert
-                severity={
-                  processingSummary.errors > 0
-                    ? "warning"
-                    : processingSummary.processed > 0
-                    ? "success"
-                    : "info"
-                }
-              >
-                {refreshSuccess || "Processing completed"}
-              </Alert>
-
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Processing Summary
-                </Typography>
-                <Stack spacing={1} sx={{ mt: 2 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Total Processed:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {processingSummary.total}
-                    </Typography>
-                  </Stack>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2" color="success.main">
-                      Successfully Processed:
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      color="success.main"
-                    >
-                      {processingSummary.processed}
-                    </Typography>
-                  </Stack>
-                  {processingSummary.skipped > 0 && (
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="body2" color="warning.main">
-                        Skipped (Rate Limit):
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="warning.main"
-                      >
-                        {processingSummary.skipped}
-                      </Typography>
-                    </Stack>
-                  )}
-                  {processingSummary.errors > 0 && (
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="body2" color="error.main">
-                        Failed:
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="error.main"
-                      >
-                        {processingSummary.errors}
-                      </Typography>
-                    </Stack>
-                  )}
-                </Stack>
-              </Paper>
-
-              {unprocessedCount > 0 && (
-                <Alert severity="info">
-                  {unprocessedCount} reviews remaining. Click the button again
-                  to process more.
-                </Alert>
-              )}
-            </Stack>
-          ) : refreshError ? (
-            <Alert severity="error">{refreshError}</Alert>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseProcessingModal} disabled={isRefreshing}>
-            {isRefreshing ? "Processing..." : "Close"}
           </Button>
         </DialogActions>
       </Dialog>
