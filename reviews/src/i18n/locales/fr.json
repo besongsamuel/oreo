@@ -669,7 +669,9 @@
     "deleteCompanyButton": "Supprimer",
     "deleteCompanyDeleting": "Suppression...",
     "deleteCompanyError": "Échec de la suppression de l'entreprise",
-    "deleteCompanySuccess": "Entreprise supprimée avec succès"
+    "deleteCompanySuccess": "Entreprise supprimée avec succès",
+    "hasReply": "A une réponse",
+    "replies": "Réponses"
   },
   "footer": {
     "privacyPolicy": "Politique de confidentialité",

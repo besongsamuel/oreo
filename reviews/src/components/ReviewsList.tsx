@@ -21,6 +21,19 @@ interface Review {
   sentiment: string;
   location_name: string;
   platform_name: string;
+  raw_data?: {
+    replies?: Array<{
+      id: string;
+      text: string;
+      timestamp: string;
+      author: {
+        id: string;
+        name: string;
+        photo?: string;
+        url?: string;
+      };
+    }>;
+  };
 }
 
 interface ReviewsListProps {

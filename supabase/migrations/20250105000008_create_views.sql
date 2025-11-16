@@ -82,6 +82,7 @@ SELECT
   r.author_avatar_url,
   r.published_at,
   r.language,
+  r.raw_data,
   sa.sentiment,
   sa.sentiment_score,
   l.name as location_name,
