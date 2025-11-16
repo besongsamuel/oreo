@@ -1,6 +1,7 @@
 import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
+  CompareArrows as CompareArrowsIcon,
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   Refresh as RefreshIcon,
@@ -40,6 +41,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   CompanyHeader,
   LocationComponent,
+  MonthComparisonModal,
   MonthlySummary,
   RatingDistributionChart,
   ReviewsList,
@@ -201,6 +203,7 @@ export const CompanyPage = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [monthComparisonOpen, setMonthComparisonOpen] = useState(false);
 
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
@@ -1758,7 +1761,30 @@ export const CompanyPage = () => {
           />
 
           {/* Monthly Summary */}
-          {companyId && <MonthlySummary companyId={companyId} />}
+          {companyId && (
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Box />
+                <Button
+                  startIcon={<CompareArrowsIcon />}
+                  onClick={() => setMonthComparisonOpen(true)}
+                  variant="outlined"
+                  sx={{
+                    borderRadius: "980px",
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  {t("companyPage.compareMonths", "Compare Months")}
+                </Button>
+              </Stack>
+              <MonthlySummary companyId={companyId} />
+            </Stack>
+          )}
 
           {/* Locations */}
           {companyId && (
@@ -2716,6 +2742,15 @@ export const CompanyPage = () => {
           >
             {successMessage}
           </Alert>
+        )}
+
+        {/* Month Comparison Modal */}
+        {companyId && (
+          <MonthComparisonModal
+            open={monthComparisonOpen}
+            onClose={() => setMonthComparisonOpen(false)}
+            companyId={companyId}
+          />
         )}
       </Container>
     </>

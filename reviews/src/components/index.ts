@@ -9,6 +9,7 @@ export { Footer } from "./Footer";
 export { Header } from "./Header";
 export { Layout } from "./Layout";
 export { LocationComponent } from "./LocationComponent";
+export { MonthComparisonModal } from "./MonthComparisonModal";
 export { MonthlySummary } from "./MonthlySummary";
 export { OnboardingCard } from "./OnboardingCard";
 export { PlatformSelection } from "./PlatformSelection";
