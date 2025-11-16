@@ -241,7 +241,7 @@ export const CompanyPage = () => {
         "trigger-reviews-fetch",
         {
           body: { company_id: companyId },
-        },
+        }
       );
 
       if (triggerError) {

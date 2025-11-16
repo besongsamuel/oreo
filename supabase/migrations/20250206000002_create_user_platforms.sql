@@ -23,3 +23,4 @@ CREATE INDEX IF NOT EXISTS idx_user_platforms_platform_id ON user_platforms(plat
 
 
 
+
