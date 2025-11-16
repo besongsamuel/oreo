@@ -399,6 +399,36 @@
     "upgradeToAccess": "Upgrade to Pro or Enterprise to access monthly summary features",
     "viewPricing": "View Pricing"
   },
+  "monthComparison": {
+    "title": "Month Comparison",
+    "subtitle": "Compare reviews between two consecutive months",
+    "selectMonth": "Select First Month",
+    "vs": "vs",
+    "loading": "Loading comparison data...",
+    "noData": "Select a month to compare with the next month",
+    "bothMonthsRequired": "Both months must have review data to compare",
+    "noLocations": "No locations found",
+    "noPlatformConnections": "No platform connections found",
+    "fetchError": "Failed to fetch comparison data",
+    "totalReviews": "Total Reviews",
+    "sentimentBreakdown": "Sentiment Breakdown",
+    "averageSentiment": "Average Sentiment",
+    "averageRating": "Average Rating",
+    "topTopics": "Top 3 Topics",
+    "topKeywords": "Top 3 Keywords",
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral",
+    "increase": "increase",
+    "decrease": "decrease",
+    "noChange": "no change",
+    "noTopics": "No topics found",
+    "noKeywords": "No keywords found",
+    "ratingChange": "Rating Change",
+    "reviewsPerDay": "Reviews per Day",
+    "responseRate": "Response Rate",
+    "platformDistribution": "Platform Distribution"
+  },
   "successLocation": {
     "seoTitle": "Location Created - Boresha",
     "seoDescription": "Location successfully created. You can now track reviews for this location.",
@@ -671,7 +701,8 @@
     "deleteCompanyError": "Failed to delete company",
     "deleteCompanySuccess": "Company deleted successfully",
     "hasReply": "Has Reply",
-    "replies": "Replies"
+    "replies": "Replies",
+    "compareMonths": "Compare Months"
   },
   "footer": {
     "privacyPolicy": "Privacy Policy",

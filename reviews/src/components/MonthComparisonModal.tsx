@@ -50,6 +50,9 @@ interface MonthComparisonData {
     neutralReviews: number;
     averageRating: number;
     averageSentiment: number;
+    reviewsPerDay: number;
+    responseRate: number;
+    platformDistribution: Array<{ platform: string; count: number }>;
     topTopics: Array<{ name: string; count: number }>;
     topKeywords: Array<{ text: string; count: number }>;
   };
@@ -62,6 +65,9 @@ interface MonthComparisonData {
     neutralReviews: number;
     averageRating: number;
     averageSentiment: number;
+    reviewsPerDay: number;
+    responseRate: number;
+    platformDistribution: Array<{ platform: string; count: number }>;
     topTopics: Array<{ name: string; count: number }>;
     topKeywords: Array<{ text: string; count: number }>;
   };
@@ -292,6 +298,14 @@ export const MonthComparisonModal = ({
         id,
         rating,
         published_at,
+        reply_content,
+        platform_connection_id,
+        platform_connections (
+          platform:platforms (
+            name,
+            display_name
+          )
+        ),
         sentiment_analysis (
           sentiment,
           sentiment_score
@@ -336,6 +350,39 @@ export const MonthComparisonModal = ({
         ? sentimentScores.reduce((sum, score) => sum + score, 0) /
           sentimentScores.length
         : 0;
+
+    // Calculate reviews per day
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const reviewsPerDay = totalReviews > 0 ? totalReviews / daysInMonth : 0;
+
+    // Calculate response rate
+    const reviewsWithReplies = reviewsList.filter(
+      (r: any) => r.reply_content && r.reply_content.trim() !== ""
+    ).length;
+    const responseRate =
+      totalReviews > 0 ? (reviewsWithReplies / totalReviews) * 100 : 0;
+
+    // Calculate platform distribution
+    const platformCountMap = new Map<string, number>();
+    reviewsList.forEach((review: any) => {
+      const platformConnection = review.platform_connections;
+      if (platformConnection && platformConnection.platform) {
+        const platform = Array.isArray(platformConnection.platform)
+          ? platformConnection.platform[0]
+          : platformConnection.platform;
+        const platformName =
+          platform.display_name || platform.name || "Unknown";
+        platformCountMap.set(
+          platformName,
+          (platformCountMap.get(platformName) || 0) + 1
+        );
+      }
+    });
+
+    const platformDistribution = Array.from(platformCountMap.entries())
+      .map(([platform, count]) => ({ platform, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
 
     // Fetch top topics for this month
     const reviewIds = reviewsList.map((r: any) => r.id);
@@ -414,6 +461,9 @@ export const MonthComparisonModal = ({
       neutralReviews,
       averageRating,
       averageSentiment,
+      reviewsPerDay,
+      responseRate,
+      platformDistribution,
       topTopics,
       topKeywords,
     };
@@ -790,6 +840,87 @@ export const MonthComparisonModal = ({
               </CardContent>
             </Card>
 
+            {/* Average Rating */}
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight={600}>
+                  {t("monthComparison.averageRating", "Average Rating")}
+                </Typography>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {getMonthName(comparisonData.month1.month)}{" "}
+                        {comparisonData.month1.year}
+                      </Typography>
+                      <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }} color="warning.main">
+                        {comparisonData.month1.averageRating.toFixed(2)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {t("monthlySummary.totalOutOfFive", "/ 5.0")}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {getMonthName(comparisonData.month2.month)}{" "}
+                            {comparisonData.month2.year}
+                          </Typography>
+                          <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }} color="warning.main">
+                            {comparisonData.month2.averageRating.toFixed(2)}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.5 }}
+                          >
+                            {t("monthlySummary.totalOutOfFive", "/ 5.0")}
+                          </Typography>
+                        </Box>
+                        {getChangeIcon(
+                          comparisonData.month1.averageRating,
+                          comparisonData.month2.averageRating
+                        )}
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        color={
+                          comparisonData.month2.averageRating >
+                          comparisonData.month1.averageRating
+                            ? "success.main"
+                            : comparisonData.month2.averageRating <
+                              comparisonData.month1.averageRating
+                            ? "error.main"
+                            : "text.secondary"
+                        }
+                        sx={{ mt: 1 }}
+                      >
+                        {getChangePercentage(
+                          comparisonData.month1.averageRating,
+                          comparisonData.month2.averageRating
+                        ).toFixed(1)}
+                        %{" "}
+                        {comparisonData.month2.averageRating >
+                        comparisonData.month1.averageRating
+                          ? t("monthComparison.increase", "increase")
+                          : comparisonData.month2.averageRating <
+                            comparisonData.month1.averageRating
+                          ? t("monthComparison.decrease", "decrease")
+                          : t("monthComparison.noChange", "no change")}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
             {/* Average Sentiment */}
             <Card variant="outlined">
               <CardContent>
@@ -844,6 +975,224 @@ export const MonthComparisonModal = ({
                 </Grid>
               </CardContent>
             </Card>
+
+            {/* Reviews Per Day */}
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight={600}>
+                  {t("monthComparison.reviewsPerDay", "Reviews per Day")}
+                </Typography>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {getMonthName(comparisonData.month1.month)}{" "}
+                        {comparisonData.month1.year}
+                      </Typography>
+                      <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+                        {comparisonData.month1.reviewsPerDay.toFixed(2)}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {getMonthName(comparisonData.month2.month)}{" "}
+                            {comparisonData.month2.year}
+                          </Typography>
+                          <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+                            {comparisonData.month2.reviewsPerDay.toFixed(2)}
+                          </Typography>
+                        </Box>
+                        {getChangeIcon(
+                          comparisonData.month1.reviewsPerDay,
+                          comparisonData.month2.reviewsPerDay
+                        )}
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        color={
+                          comparisonData.month2.reviewsPerDay >
+                          comparisonData.month1.reviewsPerDay
+                            ? "success.main"
+                            : comparisonData.month2.reviewsPerDay <
+                              comparisonData.month1.reviewsPerDay
+                            ? "error.main"
+                            : "text.secondary"
+                        }
+                        sx={{ mt: 1 }}
+                      >
+                        {getChangePercentage(
+                          comparisonData.month1.reviewsPerDay,
+                          comparisonData.month2.reviewsPerDay
+                        ).toFixed(1)}
+                        %{" "}
+                        {comparisonData.month2.reviewsPerDay >
+                        comparisonData.month1.reviewsPerDay
+                          ? t("monthComparison.increase", "increase")
+                          : comparisonData.month2.reviewsPerDay <
+                            comparisonData.month1.reviewsPerDay
+                          ? t("monthComparison.decrease", "decrease")
+                          : t("monthComparison.noChange", "no change")}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Response Rate */}
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight={600}>
+                  {t("monthComparison.responseRate", "Response Rate")}
+                </Typography>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {getMonthName(comparisonData.month1.month)}{" "}
+                        {comparisonData.month1.year}
+                      </Typography>
+                      <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+                        {comparisonData.month1.responseRate.toFixed(1)}%
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {getMonthName(comparisonData.month2.month)}{" "}
+                            {comparisonData.month2.year}
+                          </Typography>
+                          <Typography variant="h4" fontWeight={700} sx={{ mt: 1 }}>
+                            {comparisonData.month2.responseRate.toFixed(1)}%
+                          </Typography>
+                        </Box>
+                        {getChangeIcon(
+                          comparisonData.month1.responseRate,
+                          comparisonData.month2.responseRate
+                        )}
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        color={
+                          comparisonData.month2.responseRate >
+                          comparisonData.month1.responseRate
+                            ? "success.main"
+                            : comparisonData.month2.responseRate <
+                              comparisonData.month1.responseRate
+                            ? "error.main"
+                            : "text.secondary"
+                        }
+                        sx={{ mt: 1 }}
+                      >
+                        {getChangePercentage(
+                          comparisonData.month1.responseRate,
+                          comparisonData.month2.responseRate
+                        ).toFixed(1)}
+                        %{" "}
+                        {comparisonData.month2.responseRate >
+                        comparisonData.month1.responseRate
+                          ? t("monthComparison.increase", "increase")
+                          : comparisonData.month2.responseRate <
+                            comparisonData.month1.responseRate
+                          ? t("monthComparison.decrease", "decrease")
+                          : t("monthComparison.noChange", "no change")}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Platform Distribution */}
+            {comparisonData.month1.platformDistribution.length > 0 ||
+            comparisonData.month2.platformDistribution.length > 0 ? (
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom fontWeight={600}>
+                    {t("monthComparison.platformDistribution", "Platform Distribution")}
+                  </Typography>
+                  <Grid container spacing={3} sx={{ mt: 1 }}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                          {getMonthName(comparisonData.month1.month)}{" "}
+                          {comparisonData.month1.year}
+                        </Typography>
+                        <Stack spacing={1} sx={{ mt: 2 }}>
+                          {comparisonData.month1.platformDistribution.length > 0 ? (
+                            comparisonData.month1.platformDistribution.map(
+                              (platform, index) => (
+                                <Stack
+                                  key={index}
+                                  direction="row"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                >
+                                  <Typography variant="body2">{platform.platform}</Typography>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {platform.count}
+                                  </Typography>
+                                </Stack>
+                              )
+                            )
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {t("monthComparison.noData", "No data available")}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                          {getMonthName(comparisonData.month2.month)}{" "}
+                          {comparisonData.month2.year}
+                        </Typography>
+                        <Stack spacing={1} sx={{ mt: 2 }}>
+                          {comparisonData.month2.platformDistribution.length > 0 ? (
+                            comparisonData.month2.platformDistribution.map(
+                              (platform, index) => (
+                                <Stack
+                                  key={index}
+                                  direction="row"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                >
+                                  <Typography variant="body2">{platform.platform}</Typography>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {platform.count}
+                                  </Typography>
+                                </Stack>
+                              )
+                            )
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {t("monthComparison.noData", "No data available")}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            ) : null}
 
             {/* Top Topics */}
             <Card variant="outlined">

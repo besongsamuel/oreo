@@ -470,6 +470,36 @@
     "upgradeToAccess": "Passez à Pro ou Enterprise pour accéder aux fonctionnalités de résumé mensuel",
     "viewPricing": "Voir les tarifs"
   },
+  "monthComparison": {
+    "title": "Comparaison mensuelle",
+    "subtitle": "Comparez les avis entre deux mois consécutifs",
+    "selectMonth": "Sélectionner le premier mois",
+    "vs": "vs",
+    "loading": "Chargement des données de comparaison...",
+    "noData": "Sélectionnez un mois à comparer avec le mois suivant",
+    "bothMonthsRequired": "Les deux mois doivent avoir des données d'avis à comparer",
+    "noLocations": "Aucun emplacement trouvé",
+    "noPlatformConnections": "Aucune connexion de plateforme trouvée",
+    "fetchError": "Échec de la récupération des données de comparaison",
+    "totalReviews": "Total des avis",
+    "sentimentBreakdown": "Répartition des sentiments",
+    "averageSentiment": "Sentiment moyen",
+    "averageRating": "Note moyenne",
+    "topTopics": "Top 3 des sujets",
+    "topKeywords": "Top 3 des mots-clés",
+    "positive": "Positif",
+    "negative": "Négatif",
+    "neutral": "Neutre",
+    "increase": "augmentation",
+    "decrease": "diminution",
+    "noChange": "aucun changement",
+    "noTopics": "Aucun sujet trouvé",
+    "noKeywords": "Aucun mot-clé trouvé",
+    "ratingChange": "Changement de note",
+    "reviewsPerDay": "Avis par jour",
+    "responseRate": "Taux de réponse",
+    "platformDistribution": "Répartition par plateforme"
+  },
   "successLocation": {
     "seoTitle": "Emplacement créé - Boresha",
     "seoDescription": "Emplacement créé avec succès. Vous pouvez maintenant suivre les avis pour cet emplacement.",
@@ -671,7 +701,8 @@
     "deleteCompanyError": "Échec de la suppression de l'entreprise",
     "deleteCompanySuccess": "Entreprise supprimée avec succès",
     "hasReply": "A une réponse",
-    "replies": "Réponses"
+    "replies": "Réponses",
+    "compareMonths": "Comparer les mois"
   },
   "footer": {
     "privacyPolicy": "Politique de confidentialité",

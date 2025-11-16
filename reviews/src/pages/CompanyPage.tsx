@@ -1772,11 +1772,21 @@ export const CompanyPage = () => {
                 <Button
                   startIcon={<CompareArrowsIcon />}
                   onClick={() => setMonthComparisonOpen(true)}
-                  variant="outlined"
+                  variant="contained"
+                  color="primary"
+                  size="large"
                   sx={{
                     borderRadius: "980px",
                     textTransform: "none",
-                    fontWeight: 500,
+                    fontWeight: 600,
+                    px: 4,
+                    py: 1.5,
+                    boxShadow: 2,
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   {t("companyPage.compareMonths", "Compare Months")}
