@@ -160,7 +160,7 @@ export const CompanyPageSidebar = ({
       elevation={0}
       sx={{
         position: "sticky",
-        top: 24,
+        top: (theme) => theme.spacing(11), // 88px - accounts for header (64px) + padding (16px) + spacing (8px)
         alignSelf: "flex-start",
         width: { xs: 240, md: 280 },
         borderRadius: 2,
@@ -168,7 +168,7 @@ export const CompanyPageSidebar = ({
         borderColor: "divider",
         bgcolor: "background.paper",
         overflow: "hidden",
-        maxHeight: "calc(100vh - 48px)",
+        maxHeight: (theme) => `calc(100vh - ${theme.spacing(11)})`,
       }}
     >
       <List

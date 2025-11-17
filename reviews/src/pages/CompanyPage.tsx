@@ -1952,33 +1952,21 @@ export const CompanyPage = () => {
                     />
                   )}
 
-                  {/* Rating Distribution and Timeline Charts */}
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "repeat(2, 1fr)",
-                      },
-                      gap: { xs: 2, sm: 3 },
-                    }}
-                  >
-                    {/* Rating Distribution Chart */}
-                    {company.total_reviews > 0 && (
-                      <RatingDistributionChart
-                        ratings={ratingDistribution}
-                        totalReviews={company.total_reviews}
-                        onRatingClick={(rating) =>
-                          setSelectedRating(rating.toString())
-                        }
-                      />
-                    )}
+                  {/* Rating Distribution Chart */}
+                  {company.total_reviews > 0 && (
+                    <RatingDistributionChart
+                      ratings={ratingDistribution}
+                      totalReviews={company.total_reviews}
+                      onRatingClick={(rating) =>
+                        setSelectedRating(rating.toString())
+                      }
+                    />
+                  )}
 
-                    {/* Timeline Chart */}
-                    {timelineData.length > 0 && (
-                      <ReviewsTimelineChart data={timelineData} />
-                    )}
-                  </Box>
+                  {/* Timeline Chart */}
+                  {timelineData.length > 0 && (
+                    <ReviewsTimelineChart data={timelineData} />
+                  )}
                 </Stack>
               )}
 
