@@ -769,6 +769,30 @@ Deno.serve(async (req: Request) => {
                     `Received ${batchResults.length} analysis results`,
                 );
 
+                // Fetch platform_location_id for all reviews in batch
+                const platformConnectionIds = [
+                    ...new Set(
+                        batch.map((r: ProcessedReview) =>
+                            r.platform_connection_id
+                        ),
+                    ),
+                ];
+                const { data: platformConnections } = await supabaseClient
+                    .from("platform_connections")
+                    .select("id, platform_location_id")
+                    .in("id", platformConnectionIds);
+
+                // Create map for quick lookup
+                const platformLocationIdMap = new Map<string, string>();
+                platformConnections?.forEach((pc) => {
+                    if (pc.platform_location_id) {
+                        platformLocationIdMap.set(
+                            pc.id,
+                            pc.platform_location_id,
+                        );
+                    }
+                });
+
                 // Prepare all sentiment records for batch insert
                 const sentimentRecords = [];
                 const validResults: Array<{
@@ -790,10 +814,24 @@ Deno.serve(async (req: Request) => {
                         continue;
                     }
 
+                    // Get platform_location_id for this review
+                    const platformLocationId = platformLocationIdMap.get(
+                        review.platform_connection_id,
+                    );
+
+                    if (!platformLocationId) {
+                        console.warn(
+                            `Platform location ID not found for platform_connection_id: ${review.platform_connection_id}`,
+                        );
+                        errors++;
+                        continue;
+                    }
+
                     const analysisResult = batchResult.analysis;
 
                     sentimentRecords.push({
                         review_id: review.id,
+                        platform_location_id: platformLocationId,
                         sentiment: analysisResult.sentiment || "neutral",
                         sentiment_score: analysisResult.score
                             ? (analysisResult.score - 50) / 50

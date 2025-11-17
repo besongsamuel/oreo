@@ -1,11 +1,5 @@
 import { FilterList as FilterListIcon } from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { ReviewComponent } from "./ReviewComponent";
 import { ReviewCardSkeleton } from "./SkeletonLoaders";
@@ -63,9 +57,11 @@ export const ReviewsList = ({
 }: ReviewsListProps) => {
   const { t } = useTranslation();
 
-  const hasActiveFilters = selectedKeyword !== "all" || selectedRating !== "all";
-  const startIndex = (currentPage - 1) * 50 + 1;
-  const endIndex = Math.min(currentPage * 50, totalCount);
+  const hasActiveFilters =
+    selectedKeyword !== "all" || selectedRating !== "all";
+  const reviewsPerPage = 30;
+  const startIndex = (currentPage - 1) * reviewsPerPage + 1;
+  const endIndex = Math.min(currentPage * reviewsPerPage, totalCount);
 
   if (loading) {
     return (
@@ -145,11 +141,7 @@ export const ReviewsList = ({
           <Typography variant="h6" color="text.secondary" gutterBottom>
             {t("companyPage.noReviewsMatch")}
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mb: 3 }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {t("companyPage.noReviewsMatchDescription")}
           </Typography>
           {hasActiveFilters && (
@@ -214,4 +206,3 @@ export const ReviewsList = ({
     </Paper>
   );
 };
-

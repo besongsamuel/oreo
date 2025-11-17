@@ -8,6 +8,7 @@ DECLARE
   v_company_id UUID;
   v_location_id UUID;
   v_platform_connection_id UUID;
+  v_platform_location_id TEXT;
   v_review_id UUID;
   v_keyword_id UUID;
   v_platform_google UUID;
@@ -38,8 +39,9 @@ BEGIN
   -- Platform connections and reviews for each location
   FOR v_location_id IN SELECT id FROM locations WHERE company_id = v_company_id LOOP
     -- Google connection
+    v_platform_location_id := 'google_loc_' || gen_random_uuid()::text;
     INSERT INTO platform_connections (location_id, platform_id, platform_location_id, platform_url, last_sync_at)
-    VALUES (v_location_id, v_platform_google, 'google_loc_' || gen_random_uuid()::text, 'https://google.com/maps', NOW() - INTERVAL '2 hours')
+    VALUES (v_location_id, v_platform_google, v_platform_location_id, 'https://google.com/maps', NOW() - INTERVAL '2 hours')
     RETURNING id INTO v_platform_connection_id;
     
     -- Generate 5 reviews for this location
@@ -65,9 +67,10 @@ BEGIN
       RETURNING id INTO v_review_id;
       
       -- Add sentiment analysis
-      INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+      INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
       VALUES (
         v_review_id,
+        v_platform_location_id,
         'positive',
         0.85 + (random() * 0.15),
         0.90 + (random() * 0.10),
@@ -85,8 +88,9 @@ BEGIN
   VALUES (v_company_id, 'Main Store', '789 Tech Ave', 'Austin', 'TX', 'USA', '78701')
   RETURNING id INTO v_location_id;
   
+  v_platform_location_id := 'google_loc_' || gen_random_uuid()::text;
   INSERT INTO platform_connections (location_id, platform_id, platform_location_id, platform_url, last_sync_at)
-  VALUES (v_location_id, v_platform_google, 'google_loc_' || gen_random_uuid()::text, 'https://google.com/maps', NOW() - INTERVAL '1 hour')
+  VALUES (v_location_id, v_platform_google, v_platform_location_id, 'https://google.com/maps', NOW() - INTERVAL '1 hour')
   RETURNING id INTO v_platform_connection_id;
   
   FOR v_review_counter IN 1..8 LOOP
@@ -113,9 +117,10 @@ BEGIN
     )
     RETURNING id INTO v_review_id;
     
-    INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+    INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
     VALUES (
       v_review_id,
+      v_platform_location_id,
       'positive',
       0.75 + (random() * 0.20),
       0.85 + (random() * 0.10),
@@ -141,8 +146,9 @@ BEGIN
     )
     RETURNING id INTO v_location_id;
     
+    v_platform_location_id := 'yelp_loc_' || gen_random_uuid()::text;
     INSERT INTO platform_connections (location_id, platform_id, platform_location_id, platform_url, last_sync_at)
-    VALUES (v_location_id, v_platform_yelp, 'yelp_loc_' || gen_random_uuid()::text, 'https://yelp.com', NOW() - INTERVAL '3 hours')
+    VALUES (v_location_id, v_platform_yelp, v_platform_location_id, 'https://yelp.com', NOW() - INTERVAL '3 hours')
     RETURNING id INTO v_platform_connection_id;
     
     FOR v_review_counter IN 1..6 LOOP
@@ -167,9 +173,10 @@ BEGIN
       )
       RETURNING id INTO v_review_id;
       
-      INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+      INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
       VALUES (
         v_review_id,
+        v_platform_location_id,
         'positive',
         0.88 + (random() * 0.12),
         0.92 + (random() * 0.08),
@@ -196,8 +203,9 @@ BEGIN
     )
     RETURNING id INTO v_location_id;
     
+    v_platform_location_id := 'google_loc_' || gen_random_uuid()::text;
     INSERT INTO platform_connections (location_id, platform_id, platform_location_id, platform_url, last_sync_at)
-    VALUES (v_location_id, v_platform_google, 'google_loc_' || gen_random_uuid()::text, 'https://google.com/maps', NOW() - INTERVAL '4 hours')
+    VALUES (v_location_id, v_platform_google, v_platform_location_id, 'https://google.com/maps', NOW() - INTERVAL '4 hours')
     RETURNING id INTO v_platform_connection_id;
     
     FOR v_review_counter IN 1..7 LOOP
@@ -223,9 +231,10 @@ BEGIN
       )
       RETURNING id INTO v_review_id;
       
-      INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+      INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
       VALUES (
         v_review_id,
+        v_platform_location_id,
         'positive',
         0.80 + (random() * 0.15),
         0.88 + (random() * 0.10),
@@ -246,8 +255,9 @@ BEGIN
   RETURNING id INTO v_location_id;
   
   FOR v_location_id IN SELECT id FROM locations WHERE company_id = v_company_id LOOP
+    v_platform_location_id := 'google_loc_' || gen_random_uuid()::text;
     INSERT INTO platform_connections (location_id, platform_id, platform_location_id, platform_url, last_sync_at)
-    VALUES (v_location_id, v_platform_google, 'google_loc_' || gen_random_uuid()::text, 'https://google.com/maps', NOW() - INTERVAL '2 hours')
+    VALUES (v_location_id, v_platform_google, v_platform_location_id, 'https://google.com/maps', NOW() - INTERVAL '2 hours')
     RETURNING id INTO v_platform_connection_id;
     
     FOR v_review_counter IN 1..5 LOOP
@@ -271,9 +281,10 @@ BEGIN
       )
       RETURNING id INTO v_review_id;
       
-      INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+      INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
       VALUES (
         v_review_id,
+        v_platform_location_id,
         'positive',
         0.90 + (random() * 0.10),
         0.93 + (random() * 0.07),

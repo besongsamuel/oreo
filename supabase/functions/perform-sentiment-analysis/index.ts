@@ -135,13 +135,18 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Processing review ${review.id} from webhook...`);
 
-    // Get company owner's preferred language
+    // Get company owner's preferred language and platform_location_id
     let preferredLanguage = "fr"; // default to French
+    let platformLocationId: string | null = null;
     const { data: locationData } = await supabaseClient
       .from("platform_connections")
-      .select("location_id")
+      .select("location_id, platform_location_id")
       .eq("id", review.platform_connection_id)
       .single();
+
+    if (locationData?.platform_location_id) {
+      platformLocationId = locationData.platform_location_id;
+    }
 
     if (locationData?.location_id) {
       const { data: location } = await supabaseClient
@@ -208,10 +213,17 @@ Deno.serve(async (req: Request) => {
     );
 
     // Insert sentiment analysis
+    if (!platformLocationId) {
+      throw new Error(
+        `Platform location ID not found for platform_connection_id: ${review.platform_connection_id}`,
+      );
+    }
+
     const { error: sentimentError } = await supabaseClient
       .from("sentiment_analysis")
       .insert({
         review_id: review.id,
+        platform_location_id: platformLocationId,
         sentiment: analysisResult.sentiment,
         sentiment_score: (analysisResult.score - 50) / 50, // Convert to -1.0 to 1.0
         emotions: analysisResult.emotions

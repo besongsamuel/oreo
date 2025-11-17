@@ -112,18 +112,18 @@ BEGIN
   RETURNING id INTO r10_id;
 
   -- Create sentiment analysis
-  INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence)
+  INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence)
   VALUES 
-    (r1_id, 'positive', 0.92, 0.95),
-    (r2_id, 'positive', 0.75, 0.88),
-    (r3_id, 'positive', 0.95, 0.98),
-    (r4_id, 'positive', 0.65, 0.82),
-    (r5_id, 'positive', 0.88, 0.92),
-    (r6_id, 'negative', -0.68, 0.85),
-    (r7_id, 'positive', 0.90, 0.94),
-    (r8_id, 'positive', 0.82, 0.90),
-    (r9_id, 'neutral', 0.15, 0.70),
-    (r10_id, 'positive', 0.94, 0.96);
+    (r1_id, 'GOOGLE_LOC_1', 'positive', 0.92, 0.95),
+    (r2_id, 'GOOGLE_LOC_1', 'positive', 0.75, 0.88),
+    (r3_id, 'GOOGLE_LOC_1', 'positive', 0.95, 0.98),
+    (r4_id, 'YELP_LOC_1', 'positive', 0.65, 0.82),
+    (r5_id, 'YELP_LOC_1', 'positive', 0.88, 0.92),
+    (r6_id, 'YELP_LOC_1', 'negative', -0.68, 0.85),
+    (r7_id, 'GOOGLE_LOC_2', 'positive', 0.90, 0.94),
+    (r8_id, 'GOOGLE_LOC_2', 'positive', 0.82, 0.90),
+    (r9_id, 'GOOGLE_LOC_2', 'neutral', 0.15, 0.70),
+    (r10_id, 'GOOGLE_LOC_2', 'positive', 0.94, 0.96);
 
   -- Create keywords
   INSERT INTO keywords (text, normalized_text, category)

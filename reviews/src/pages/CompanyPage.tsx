@@ -35,7 +35,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -86,16 +86,45 @@ interface Location {
   average_rating: number;
 }
 
-interface Review {
+interface EnrichedReview {
   id: string;
   rating: number;
   title: string;
   content: string;
   author_name: string;
+  author_avatar_url?: string;
   published_at: string;
   sentiment: string;
   location_name: string;
   platform_name: string;
+  raw_data?: {
+    replies?: Array<{
+      id: string;
+      text: string;
+      timestamp: string;
+      author: {
+        id: string;
+        name: string;
+        photo?: string;
+        url?: string;
+      };
+    }>;
+  };
+  keywords: string[];
+  topics: Array<{
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+  }>;
+  sentiment_analysis: {
+    sentiment: string;
+    sentiment_score: number;
+    emotions?: any;
+  } | null;
+  has_comments: boolean;
+  reviewer_gender?: string;
+  reviewer_age_range?: string;
 }
 
 interface Keyword {
@@ -138,7 +167,7 @@ interface Topic {
   id: string;
   name: string;
   category: string;
-  description: string;
+  description?: string;
   occurrence_count: number;
 }
 
@@ -159,20 +188,13 @@ export const CompanyPage = () => {
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [companyOwnerId, setCompanyOwnerId] = useState<string | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [allReviews, setAllReviews] = useState<Review[]>([]); // All reviews for charts
+  const [enrichedReviews, setEnrichedReviews] = useState<EnrichedReview[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [keywordAnalysis, setKeywordAnalysis] = useState<KeywordAnalysis[]>([]);
   const [sentimentData, setSentimentData] = useState<SentimentData | null>(
     null
   );
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [reviewKeywordsMap, setReviewKeywordsMap] = useState<
-    Record<string, string[]>
-  >({});
-  const [reviewTopicsMap, setReviewTopicsMap] = useState<
-    Record<string, string[]>
-  >({});
   const [locationConnections, setLocationConnections] = useState<
     Record<
       string,
@@ -206,24 +228,49 @@ export const CompanyPage = () => {
   const [monthComparisonOpen, setMonthComparisonOpen] = useState(false);
 
   // Page-level filters (apply to all data)
+  // Set default start date to 1 year ago
+  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
   const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterStartDate, setFilterStartDate] = useState<string>(oneYearAgo);
   const [filterEndDate, setFilterEndDate] = useState<string>("");
 
-  // Review-specific filters
+  // Review-specific filters (client-side)
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
   const [selectedRating, setSelectedRating] = useState<string>("all");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
+  const [selectedCommentsFilter, setSelectedCommentsFilter] = useState<
+    "all" | "with" | "without"
+  >("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [filterLoading, setFilterLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
 
-  // Pagination for reviews
+  // Pagination for reviews (client-side)
   const [currentPage, setCurrentPage] = useState(1);
-  const reviewsPerPage = 50;
-  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
+  const reviewsPerPage = 30;
 
   const lastTriggeredRef = useRef<number>(0);
   const triggerInProgressRef = useRef(false);
+
+  // Paginated fetch utility function
+  const fetchAllPaginated = async <T,>(queryBuilder: any): Promise<T[]> => {
+    let all: T[] = [];
+    let from = 0;
+    const size = 1000;
+
+    while (true) {
+      const { data, error } = await queryBuilder.range(from, from + size - 1);
+
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+
+      all = all.concat(data);
+      from += size;
+    }
+
+    return all;
+  };
 
   const triggerReviewsRefresh = async () => {
     if (!companyId) return;
@@ -282,6 +329,208 @@ export const CompanyPage = () => {
       negative: number;
     }>
   >([]);
+
+  // Load all review data in parallel with pagination
+  const loadAllReviewData = async () => {
+    if (!companyId) return;
+
+    setDataLoading(true);
+    try {
+      // Get locations for this company
+      const { data: locationsData } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("company_id", companyId);
+
+      if (!locationsData || locationsData.length === 0) {
+        setEnrichedReviews([]);
+        setDataLoading(false);
+        return;
+      }
+
+      // Apply location filter
+      let filteredLocationIds = locationsData.map((loc) => loc.id);
+      if (filterLocation !== "all") {
+        const filteredLocs = locationsData.filter(
+          (loc) => loc.name === filterLocation
+        );
+        filteredLocationIds = filteredLocs.map((loc) => loc.id);
+      }
+
+      if (filteredLocationIds.length === 0) {
+        setEnrichedReviews([]);
+        setDataLoading(false);
+        return;
+      }
+
+      // Get platform connection IDs
+      const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select(
+          "id, location_id, platform_id, locations!inner(name), platforms!inner(display_name)"
+        )
+        .in("location_id", filteredLocationIds);
+
+      if (!platformConnections || platformConnections.length === 0) {
+        setEnrichedReviews([]);
+        setDataLoading(false);
+        return;
+      }
+
+      const platformConnectionIds = platformConnections.map((pc) => pc.id);
+
+      // Build queries with server-side filters (location and date)
+      let reviewsQuery = supabase
+        .from("reviews")
+        .select(
+          `
+          *,
+          platform_connections!inner(
+            locations!inner(name),
+            platforms(display_name)
+          )
+        `
+        )
+        .in("platform_connection_id", platformConnectionIds);
+
+      if (filterStartDate) {
+        reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
+      }
+      if (filterEndDate) {
+        reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
+      }
+
+      // Fetch all data in parallel
+      const [reviewsData, keywordsData, topicsData, sentimentData] =
+        await Promise.all([
+          // Reviews
+          fetchAllPaginated<any>(
+            reviewsQuery.order("published_at", { ascending: false })
+          ),
+          // Keywords
+          fetchAllPaginated<any>(
+            supabase
+              .from("review_keywords")
+              .select(
+                `
+                review_id,
+                keywords(text, category)
+              `
+              )
+              .in("platform_connection_id", platformConnectionIds)
+          ),
+          // Topics
+          fetchAllPaginated<any>(
+            supabase
+              .from("review_topics")
+              .select(
+                `
+                review_id,
+                topics(id, name, category, description)
+              `
+              )
+              .in("platform_connection_id", platformConnectionIds)
+          ),
+          // Sentiment - get platform_location_ids from platform_connections
+          (async () => {
+            const { data: platformConnectionsData } = await supabase
+              .from("platform_connections")
+              .select("platform_location_id")
+              .in("id", platformConnectionIds);
+            const platformLocationIds =
+              platformConnectionsData
+                ?.map((pc) => pc.platform_location_id)
+                .filter(Boolean) || [];
+            if (platformLocationIds.length === 0) return [];
+            return fetchAllPaginated<any>(
+              supabase
+                .from("sentiment_analysis")
+                .select("*")
+                .in("platform_location_id", platformLocationIds)
+            );
+          })(),
+        ]);
+
+      // Aggregate data into enriched reviews
+      const enrichedReviewsMap = new Map<string, EnrichedReview>();
+
+      // Process reviews
+      reviewsData.forEach((review: any) => {
+        const locationName = review.platform_connections?.locations?.name || "";
+        const platformName =
+          review.platform_connections?.platforms?.display_name || "";
+
+        enrichedReviewsMap.set(review.id, {
+          id: review.id,
+          rating: review.rating,
+          title: review.title || "",
+          content: review.content || "",
+          author_name: review.author_name || "",
+          author_avatar_url: review.author_avatar_url,
+          published_at: review.published_at,
+          sentiment: "",
+          location_name: locationName,
+          platform_name: platformName,
+          raw_data: review.raw_data,
+          keywords: [],
+          topics: [],
+          sentiment_analysis: null,
+          has_comments:
+            review.raw_data?.replies && review.raw_data.replies.length > 0,
+          reviewer_gender: review.reviewer_gender,
+          reviewer_age_range: review.reviewer_age_range,
+        });
+      });
+
+      // Add keywords
+      keywordsData.forEach((rk: any) => {
+        const review = enrichedReviewsMap.get(rk.review_id);
+        if (review && rk.keywords) {
+          review.keywords.push(rk.keywords.text);
+        }
+      });
+
+      // Add topics
+      topicsData.forEach((rt: any) => {
+        const review = enrichedReviewsMap.get(rt.review_id);
+        if (review && rt.topics) {
+          review.topics.push({
+            id: rt.topics.id,
+            name: rt.topics.name,
+            category: rt.topics.category || "neutral",
+            description: rt.topics.description,
+          });
+        }
+      });
+
+      // Add sentiment analysis
+      sentimentData.forEach((sa: any) => {
+        const review = enrichedReviewsMap.get(sa.review_id);
+        if (review) {
+          review.sentiment_analysis = {
+            sentiment: sa.sentiment,
+            sentiment_score: sa.sentiment_score,
+            emotions: sa.emotions,
+          };
+          review.sentiment = sa.sentiment;
+        }
+      });
+
+      // Convert to array and sort by published_at
+      const enrichedReviewsArray = Array.from(enrichedReviewsMap.values()).sort(
+        (a, b) =>
+          new Date(b.published_at).getTime() -
+          new Date(a.published_at).getTime()
+      );
+
+      setEnrichedReviews(enrichedReviewsArray);
+    } catch (error) {
+      console.error("Error loading review data:", error);
+      setEnrichedReviews([]);
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
   // Refresh function
   const refreshPageData = async () => {
@@ -550,6 +799,9 @@ export const CompanyPage = () => {
 
           setLocationConnections(connectionsMap);
         }
+
+        // Load all review data
+        await loadAllReviewData();
       } catch (error) {
         console.error("Error fetching initial company data:", error);
       } finally {
@@ -558,751 +810,323 @@ export const CompanyPage = () => {
     };
 
     fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, profile, companyId, navigate]);
 
-  // Filtered data loading - runs when filters change
+  // Load review data when server-side filters change (location, date)
   useEffect(() => {
-    const fetchFilteredData = async () => {
-      if (!companyId || loading) return;
-
-      setFilterLoading(true);
-      try {
-        await triggerReviewsRefresh();
-
-        // Build base query for reviews
-        let reviewsQuery = supabase
-          .from("recent_reviews")
-          .select("*")
-          .eq("company_id", companyId);
-
-        let countQuery = supabase
-          .from("recent_reviews")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", companyId);
-
-        // Apply location filter
-        if (filterLocation !== "all") {
-          reviewsQuery = reviewsQuery.eq("location_name", filterLocation);
-          countQuery = countQuery.eq("location_name", filterLocation);
-        }
-
-        // Apply date range filters
-        if (filterStartDate) {
-          reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
-          countQuery = countQuery.gte("published_at", filterStartDate);
-        }
-        if (filterEndDate) {
-          reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
-          countQuery = countQuery.lte("published_at", filterEndDate);
-        }
-
-        // Apply rating filter
-        if (selectedRating !== "all") {
-          const ratingNum = parseInt(selectedRating);
-          reviewsQuery = reviewsQuery
-            .gte("rating", ratingNum)
-            .lt("rating", ratingNum + 1);
-          countQuery = countQuery
-            .gte("rating", ratingNum)
-            .lt("rating", ratingNum + 1);
-        }
-
-        // Apply keyword filter - requires fetching review IDs that have the keyword
-        if (selectedKeyword !== "all") {
-          // First, get all review IDs that match this keyword
-          const { data: keywordReviews } = await supabase
-            .from("review_keywords")
-            .select("review_id, keywords!inner(text)")
-            .ilike("keywords.text", selectedKeyword);
-
-          const reviewIds =
-            keywordReviews?.map((rk: any) => rk.review_id) || [];
-
-          if (reviewIds.length > 0) {
-            reviewsQuery = reviewsQuery.in("id", reviewIds);
-            countQuery = countQuery.in("id", reviewIds);
-          } else {
-            // No reviews match this keyword, return empty results
-            setReviews([]);
-            setTotalReviewsCount(0);
-            setAllReviews([]);
-            return;
-          }
-        }
-
-        // Get total count for pagination
-        const { count, error: countError } = await countQuery;
-
-        if (countError) {
-          console.error("Error counting reviews:", countError);
-          setTotalReviewsCount(0);
-        } else {
-          setTotalReviewsCount(count || 0);
-        }
-
-        // Calculate pagination offset
-        const offset = (currentPage - 1) * reviewsPerPage;
-
-        // Apply server-side pagination
-        reviewsQuery = reviewsQuery
-          .order("published_at", { ascending: false })
-          .range(offset, offset + reviewsPerPage - 1);
-
-        const { data: reviewsData, error: reviewsError } = await reviewsQuery;
-
-        if (reviewsError) {
-          console.error("Error fetching reviews:", reviewsError);
-          setReviews([]);
-        } else {
-          setReviews(reviewsData || []);
-        }
-
-        // Fetch all reviews for charts (ignore recent filter)
-        const { data: allReviewsData } = await supabase
-          .from("recent_reviews")
-          .select("*")
-          .eq("company_id", companyId);
-
-        if (allReviewsData) {
-          setAllReviews(allReviewsData);
-        }
-
-        // Fetch sentiment analysis data with filters
-        const { data: locationsData } = await supabase
-          .from("locations")
-          .select("id, name")
-          .eq("company_id", companyId);
-
-        let filteredLocationIds = (locationsData || []).map(
-          (loc: any) => loc.id
-        );
-
-        // Apply location filter
-        if (filterLocation !== "all") {
-          const filteredLocs = (locationsData || []).filter(
-            (loc: any) => loc.name === filterLocation
-          );
-          filteredLocationIds = filteredLocs.map((loc: any) => loc.id);
-        }
-
-        if (filteredLocationIds.length === 0) {
-          setSentimentData(null);
-        } else {
-          const { data: platformConnections } = await supabase
-            .from("platform_connections")
-            .select("id")
-            .in("location_id", filteredLocationIds);
-
-          const platformConnectionIds =
-            platformConnections?.map((pc) => pc.id) || [];
-
-          if (platformConnectionIds.length > 0) {
-            // Build sentiment query with filters
-            let sentimentQuery = supabase
-              .from("reviews")
-              .select(
-                `
-              id,
-              rating,
-              reviewer_gender,
-              reviewer_age_range,
-              platform_connection_id,
-              published_at,
-              sentiment_analysis (
-                sentiment,
-                sentiment_score,
-                emotions
-              )
-            `
-              )
-              .in("platform_connection_id", platformConnectionIds);
-
-            // Apply date filters
-            if (filterStartDate) {
-              sentimentQuery = sentimentQuery.gte(
-                "published_at",
-                filterStartDate
-              );
-            }
-            if (filterEndDate) {
-              sentimentQuery = sentimentQuery.lte(
-                "published_at",
-                filterEndDate
-              );
-            }
-
-            const { data: sentimentResults, error: sentimentError } =
-              await sentimentQuery;
-
-            if (!sentimentError && sentimentResults) {
-              // Apply additional filters (keyword, rating, topic) to sentiment results
-              let filteredSentimentResults = sentimentResults;
-
-              // Filter by keyword
-              if (selectedKeyword !== "all") {
-                filteredSentimentResults = filteredSentimentResults.filter(
-                  (r: any) => {
-                    const reviewKeywords = reviewKeywordsMap[r.id] || [];
-                    const selectedKeywordLower = selectedKeyword.toLowerCase();
-                    return reviewKeywords.some(
-                      (k) => k.toLowerCase() === selectedKeywordLower
-                    );
-                  }
-                );
-              }
-
-              // Filter by rating
-              if (selectedRating !== "all") {
-                filteredSentimentResults = filteredSentimentResults.filter(
-                  (r: any) => {
-                    const rating = r.rating;
-                    switch (selectedRating) {
-                      case "5":
-                        return rating >= 5;
-                      case "4":
-                        return rating >= 4 && rating < 5;
-                      case "3":
-                        return rating >= 3 && rating < 4;
-                      case "2":
-                        return rating >= 2 && rating < 3;
-                      case "1":
-                        return rating >= 1 && rating < 2;
-                      default:
-                        return true;
-                    }
-                  }
-                );
-              }
-
-              // Filter by topic
-              if (selectedTopic !== "all") {
-                filteredSentimentResults = filteredSentimentResults.filter(
-                  (r: any) => {
-                    const reviewTopics = reviewTopicsMap[r.id] || [];
-                    const selectedTopicLower = selectedTopic.toLowerCase();
-                    return reviewTopics.some(
-                      (t) => t.toLowerCase() === selectedTopicLower
-                    );
-                  }
-                );
-              }
-
-              // Calculate overall sentiment
-              const sentiments = filteredSentimentResults
-                .filter(
-                  (r: any) =>
-                    r.sentiment_analysis &&
-                    typeof r.sentiment_analysis === "object" &&
-                    r.sentiment_analysis.sentiment_score !== 0 // Ignore sentiments with score of 0
-                )
-                .map((r: any) => ({
-                  sentiment: r.sentiment_analysis.sentiment,
-                  score: r.sentiment_analysis.sentiment_score,
-                  emotions: r.sentiment_analysis.emotions || {},
-                  gender: r.reviewer_gender,
-                  ageRange: r.reviewer_age_range,
-                }));
-
-              const totalReviewsWithSentiment = sentiments.length;
-
-              if (totalReviewsWithSentiment > 0) {
-                const positiveCount = sentiments.filter(
-                  (s: any) => s.sentiment === "positive"
-                ).length;
-                const neutralCount = sentiments.filter(
-                  (s: any) => s.sentiment === "neutral"
-                ).length;
-                const negativeCount = sentiments.filter(
-                  (s: any) => s.sentiment === "negative"
-                ).length;
-
-                const avgScore =
-                  sentiments.reduce(
-                    (sum: number, s: any) => sum + (s.score || 0),
-                    0
-                  ) / totalReviewsWithSentiment;
-
-                const overallSentiment =
-                  avgScore >= 0.3
-                    ? "positive"
-                    : avgScore <= -0.3
-                    ? "negative"
-                    : "neutral";
-
-                // Group by age range
-                const ageGroupMap = new Map<
-                  string,
-                  { scores: number[]; count: number }
-                >();
-                sentiments.forEach((s: any) => {
-                  if (s.ageRange && s.ageRange !== "unknown") {
-                    const current = ageGroupMap.get(s.ageRange) || {
-                      scores: [],
-                      count: 0,
-                    };
-                    current.scores.push(s.score || 0);
-                    current.count++;
-                    ageGroupMap.set(s.ageRange, current);
-                  }
-                });
-
-                const byAgeGroup = Array.from(ageGroupMap.entries())
-                  .map(([ageRange, data]) => ({
-                    ageRange,
-                    avgScore:
-                      data.scores.reduce((a, b) => a + b, 0) /
-                      data.scores.length,
-                    count: data.count,
-                  }))
-                  .sort((a, b) => {
-                    const order = [
-                      "18-24",
-                      "25-34",
-                      "35-44",
-                      "45-54",
-                      "55-64",
-                      "65+",
-                    ];
-                    return (
-                      order.indexOf(a.ageRange) - order.indexOf(b.ageRange)
-                    );
-                  });
-
-                // Group by gender
-                const genderMap = new Map<
-                  string,
-                  { scores: number[]; count: number }
-                >();
-                sentiments.forEach((s: any) => {
-                  if (s.gender && s.gender !== "unknown") {
-                    const current = genderMap.get(s.gender) || {
-                      scores: [],
-                      count: 0,
-                    };
-                    current.scores.push(s.score || 0);
-                    current.count++;
-                    genderMap.set(s.gender, current);
-                  }
-                });
-
-                const byGender = Array.from(genderMap.entries()).map(
-                  ([gender, data]) => ({
-                    gender,
-                    avgScore:
-                      data.scores.reduce((a, b) => a + b, 0) /
-                      data.scores.length,
-                    count: data.count,
-                  })
-                );
-
-                // Aggregate emotions from emoticons
-                const emotionCounts = new Map<string, number>();
-                sentiments.forEach((s: any) => {
-                  // Handle emotions as JSONB object
-                  if (s.emotions) {
-                    try {
-                      // Parse emotions if it's a string, otherwise use as object
-                      let emotionsData = s.emotions;
-                      if (typeof s.emotions === "string") {
-                        emotionsData = JSON.parse(s.emotions);
-                      }
-
-                      // Check if emoticons array exists
-                      if (
-                        emotionsData &&
-                        Array.isArray(emotionsData.emoticons)
-                      ) {
-                        emotionsData.emoticons.forEach((emoji: string) => {
-                          emotionCounts.set(
-                            emoji,
-                            (emotionCounts.get(emoji) || 0) + 1
-                          );
-                        });
-                      }
-                    } catch (error) {
-                      console.error("Error parsing emotions:", error);
-                    }
-                  }
-                });
-
-                const emotionAggregate = Array.from(emotionCounts.entries())
-                  .map(([emoji, count]) => ({
-                    emoji,
-                    count,
-                    percentage: (count / totalReviewsWithSentiment) * 100,
-                  }))
-                  .sort((a, b) => b.count - a.count);
-
-                setSentimentData({
-                  overallScore: avgScore,
-                  overallSentiment,
-                  totalReviews: totalReviewsWithSentiment,
-                  positiveCount,
-                  neutralCount,
-                  negativeCount,
-                  byAgeGroup,
-                  byGender,
-                  emotions: emotionAggregate,
-                });
-              } else {
-                setSentimentData(null);
-              }
-            } else {
-              console.error("Error fetching sentiment data:", sentimentError);
-            }
-          } else {
-            setSentimentData(null);
-          }
-        }
-
-        // Fetch keywords for this company's reviews using platform_connection_id
-        let keywordLocationIds = (locationsData || []).map(
-          (loc: any) => loc.id
-        );
-        if (filterLocation !== "all") {
-          const filteredLocs = (locationsData || []).filter(
-            (loc: any) => loc.name === filterLocation
-          );
-          keywordLocationIds = filteredLocs.map((loc: any) => loc.id);
-        }
-
-        // Get platform_connection IDs directly (much more efficient than getting all review IDs)
-        const platformConnectionIds: string[] = [];
-        if (keywordLocationIds.length > 0) {
-          const { data: pcData } = await supabase
-            .from("platform_connections")
-            .select("id")
-            .in("location_id", keywordLocationIds);
-
-          platformConnectionIds.push(...(pcData?.map((pc) => pc.id) || []));
-        }
-
-        if (platformConnectionIds.length > 0) {
-          // Query review_keywords directly by platform_connection_id (avoids URL length limits)
-          const { data: reviewKeywordsData } = await supabase
-            .from("review_keywords")
-            .select(
-              `
-              review_id,
-              keywords (
-                text,
-                category
-              )
-            `
-            )
-            .in("platform_connection_id", platformConnectionIds);
-
-          if (reviewKeywordsData && reviewKeywordsData.length > 0) {
-            // Build review keywords map and count occurrences
-            const keywordsMap: Record<string, string[]> = {};
-            const keywordCountMap = new Map<
-              string,
-              { keyword_text: string; category: string; count: number }
-            >();
-
-            // Group by review_id to build the map
-            const reviewKeywordsGrouped: Record<string, any[]> = {};
-            reviewKeywordsData.forEach((rk: any) => {
-              if (!reviewKeywordsGrouped[rk.review_id]) {
-                reviewKeywordsGrouped[rk.review_id] = [];
-              }
-              reviewKeywordsGrouped[rk.review_id].push(rk);
-            });
-
-            // Build keywords map and count
-            Object.entries(reviewKeywordsGrouped).forEach(
-              ([reviewId, reviewKeywords]) => {
-                keywordsMap[reviewId] = reviewKeywords
-                  .filter((rk: any) => rk.keywords)
-                  .map((rk: any) => rk.keywords.text.toLowerCase());
-
-                // Count keyword occurrences
-                reviewKeywords.forEach((rk: any) => {
-                  if (rk.keywords) {
-                    const key = rk.keywords.text;
-                    const existing = keywordCountMap.get(key);
-                    if (existing) {
-                      existing.count++;
-                    } else {
-                      keywordCountMap.set(key, {
-                        keyword_text: rk.keywords.text,
-                        category: rk.keywords.category || "other",
-                        count: 1,
-                      });
-                    }
-                  }
-                });
-              }
-            );
-
-            setReviewKeywordsMap(keywordsMap);
-
-            // Convert to array and sort by count
-            const keywordsArray = Array.from(keywordCountMap.values())
-              .map((k) => ({
-                keyword_text: k.keyword_text,
-                category: k.category,
-                occurrence_count: k.count,
-              }))
-              .sort((a, b) => b.occurrence_count - a.occurrence_count)
-              .slice(0, 10);
-
-            setKeywords(keywordsArray);
-            analyzeKeywords(keywordsArray);
-          } else {
-            setKeywords([]);
-            setReviewKeywordsMap({});
-          }
-
-          // Query review_topics directly by platform_connection_id (avoids URL length limits)
-          const { data: reviewTopicsData } = await supabase
-            .from("review_topics")
-            .select(
-              `
-              review_id,
-              topics (
-                id,
-                name,
-                category,
-                description
-              )
-            `
-            )
-            .in("platform_connection_id", platformConnectionIds);
-
-          if (reviewTopicsData && reviewTopicsData.length > 0) {
-            // Build review topics map and count occurrences
-            const topicsMap: Record<string, string[]> = {};
-            const topicCountMap = new Map<
-              string,
-              {
-                id: string;
-                name: string;
-                category: string;
-                description: string;
-                count: number;
-              }
-            >();
-
-            // Group by review_id to build the map
-            const reviewTopicsGrouped: Record<string, any[]> = {};
-            reviewTopicsData.forEach((rt: any) => {
-              if (!reviewTopicsGrouped[rt.review_id]) {
-                reviewTopicsGrouped[rt.review_id] = [];
-              }
-              reviewTopicsGrouped[rt.review_id].push(rt);
-            });
-
-            // Build topics map and count
-            Object.entries(reviewTopicsGrouped).forEach(
-              ([reviewId, reviewTopics]) => {
-                topicsMap[reviewId] = reviewTopics
-                  .filter((rt: any) => rt.topics)
-                  .map((rt: any) => rt.topics.name.toLowerCase());
-
-                // Count topic occurrences
-                reviewTopics.forEach((rt: any) => {
-                  if (rt.topics) {
-                    const topicId = rt.topics.id;
-                    const topicName = rt.topics.name;
-                    const existing = topicCountMap.get(topicName);
-                    if (existing) {
-                      existing.count++;
-                    } else {
-                      topicCountMap.set(topicName, {
-                        id: topicId,
-                        name: rt.topics.name,
-                        category: rt.topics.category || "neutral",
-                        description: rt.topics.description || "",
-                        count: 1,
-                      });
-                    }
-                  }
-                });
-              }
-            );
-
-            setReviewTopicsMap(topicsMap);
-
-            // Convert to array and sort by count
-            const topicsArray = Array.from(topicCountMap.values())
-              .map((t) => ({
-                id: t.id,
-                name: t.name,
-                category: t.category,
-                description: t.description,
-                occurrence_count: t.count,
-              }))
-              .sort((a, b) => b.occurrence_count - a.occurrence_count)
-              .slice(0, 6);
-
-            setTopics(topicsArray);
-          } else {
-            setTopics([]);
-            setReviewTopicsMap({});
-          }
-        } else {
-          // No reviews found, set empty keywords
-          setKeywords([]);
-        }
-      } catch (error) {
-        console.error("Error fetching filtered data:", error);
-      } finally {
-        setFilterLoading(false);
-      }
-    };
-
-    fetchFilteredData();
+    if (!loading && companyId) {
+      loadAllReviewData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterLocation, filterStartDate, filterEndDate, companyId, loading]);
+
+  // Client-side filtering
+  const filteredReviews = useMemo(() => {
+    let filtered = enrichedReviews;
+
+    // Apply client-side filters
+    if (selectedKeyword !== "all") {
+      const selectedKeywordLower = selectedKeyword.toLowerCase();
+      filtered = filtered.filter((review) =>
+        review.keywords.some((k) => k.toLowerCase() === selectedKeywordLower)
+      );
+    }
+
+    if (selectedRating !== "all") {
+      filtered = filtered.filter((review) => {
+        switch (selectedRating) {
+          case "5":
+            return review.rating >= 5;
+          case "4":
+            return review.rating >= 4 && review.rating < 5;
+          case "3":
+            return review.rating >= 3 && review.rating < 4;
+          case "2":
+            return review.rating >= 2 && review.rating < 3;
+          case "1":
+            return review.rating >= 1 && review.rating < 2;
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (selectedTopic !== "all") {
+      const selectedTopicLower = selectedTopic.toLowerCase();
+      filtered = filtered.filter((review) =>
+        review.topics.some((t) => t.name.toLowerCase() === selectedTopicLower)
+      );
+    }
+
+    if (selectedCommentsFilter === "with") {
+      filtered = filtered.filter((review) => review.has_comments);
+    } else if (selectedCommentsFilter === "without") {
+      filtered = filtered.filter((review) => !review.has_comments);
+    }
+
+    return filtered;
   }, [
-    companyId,
-    filterLocation,
-    filterStartDate,
-    filterEndDate,
+    enrichedReviews,
     selectedKeyword,
     selectedRating,
     selectedTopic,
-    loading,
-    currentPage,
+    selectedCommentsFilter,
   ]);
 
-  // Calculate chart data from reviews
+  // Client-side calculations - runs when filtered reviews change
   useEffect(() => {
-    const calculateChartData = async () => {
-      // Filter reviews based on ALL active filters for charts (location, date, keyword, rating, topic)
-      let filteredForCharts = allReviews.length > 0 ? allReviews : reviews;
+    if (filteredReviews.length === 0) {
+      setKeywords([]);
+      setTopics([]);
+      setSentimentData(null);
+      setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
+      setTimelineData([]);
+      return;
+    }
 
-      // Apply location filter
-      if (filterLocation !== "all") {
-        filteredForCharts = filteredForCharts.filter(
-          (review: any) => review.location_name === filterLocation
-        );
-      }
-
-      // Apply date range filters
-      if (filterStartDate) {
-        filteredForCharts = filteredForCharts.filter(
-          (review: any) =>
-            new Date(review.published_at) >= new Date(filterStartDate)
-        );
-      }
-      if (filterEndDate) {
-        filteredForCharts = filteredForCharts.filter(
-          (review: any) =>
-            new Date(review.published_at) <= new Date(filterEndDate)
-        );
-      }
-
-      // Apply keyword filter
-      if (selectedKeyword !== "all") {
-        filteredForCharts = filteredForCharts.filter((review: any) => {
-          const reviewKeywords = reviewKeywordsMap[review.id] || [];
-          const selectedKeywordLower = selectedKeyword.toLowerCase();
-          return reviewKeywords.some(
-            (k) => k.toLowerCase() === selectedKeywordLower
-          );
-        });
-      }
-
-      // Apply rating filter
-      if (selectedRating !== "all") {
-        filteredForCharts = filteredForCharts.filter((review: any) => {
-          const rating = review.rating;
-          switch (selectedRating) {
-            case "5":
-              return rating >= 5;
-            case "4":
-              return rating >= 4 && rating < 5;
-            case "3":
-              return rating >= 3 && rating < 4;
-            case "2":
-              return rating >= 2 && rating < 3;
-            case "1":
-              return rating >= 1 && rating < 2;
-            default:
-              return true;
-          }
-        });
-      }
-
-      // Apply topic filter
-      if (selectedTopic !== "all") {
-        filteredForCharts = filteredForCharts.filter((review: any) => {
-          const reviewTopics = reviewTopicsMap[review.id] || [];
-          const selectedTopicLower = selectedTopic.toLowerCase();
-          return reviewTopics.some(
-            (t) => t.toLowerCase() === selectedTopicLower
-          );
-        });
-      }
-
-      if (filteredForCharts.length === 0) {
-        setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
-        setTimelineData([]);
-        return;
-      }
-
-      // Calculate rating distribution from filtered reviews
-      const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      filteredForCharts.forEach((review) => {
-        const rating = Math.floor(review.rating);
-        if (rating >= 1 && rating <= 5) {
-          ratingCounts[rating as keyof typeof ratingCounts]++;
+    // Calculate keywords from filtered reviews
+    const keywordCountMap = new Map<
+      string,
+      { keyword_text: string; category: string; occurrence_count: number }
+    >();
+    filteredReviews.forEach((review) => {
+      review.keywords.forEach((keywordText) => {
+        const existing = keywordCountMap.get(keywordText);
+        if (existing) {
+          existing.occurrence_count++;
+        } else {
+          keywordCountMap.set(keywordText, {
+            keyword_text: keywordText,
+            category: "other", // Default category
+            occurrence_count: 1,
+          });
         }
       });
-      setRatingDistribution(ratingCounts);
+    });
 
-      // Calculate timeline data (group by week) from all reviews
-      const timelineMap = new Map<
+    const keywordsArray = Array.from(keywordCountMap.values())
+      .sort((a, b) => b.occurrence_count - a.occurrence_count)
+      .slice(0, 20);
+    setKeywords(keywordsArray);
+    analyzeKeywords(keywordsArray);
+
+    // Calculate topics from filtered reviews
+    const topicCountMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        category: string;
+        description?: string;
+        occurrence_count: number;
+      }
+    >();
+    filteredReviews.forEach((review) => {
+      review.topics.forEach((topic) => {
+        const existing = topicCountMap.get(topic.name);
+        if (existing) {
+          existing.occurrence_count++;
+        } else {
+          topicCountMap.set(topic.name, {
+            id: topic.id,
+            name: topic.name,
+            category: topic.category,
+            description: topic.description || "",
+            occurrence_count: 1,
+          });
+        }
+      });
+    });
+
+    const topicsArray = Array.from(topicCountMap.values())
+      .sort((a, b) => b.occurrence_count - a.occurrence_count)
+      .slice(0, 6);
+    setTopics(topicsArray);
+
+    // Calculate sentiment data from filtered reviews
+    const reviewsWithSentiment = filteredReviews.filter(
+      (r) => r.sentiment_analysis && r.sentiment_analysis.sentiment_score !== 0
+    );
+
+    if (reviewsWithSentiment.length > 0) {
+      const sentiments = reviewsWithSentiment.map((r) => ({
+        sentiment: r.sentiment_analysis!.sentiment,
+        score: r.sentiment_analysis!.sentiment_score,
+        emotions: r.sentiment_analysis!.emotions || {},
+        gender: r.reviewer_gender,
+        ageRange: r.reviewer_age_range,
+      }));
+
+      const positiveCount = sentiments.filter(
+        (s) => s.sentiment === "positive"
+      ).length;
+      const neutralCount = sentiments.filter(
+        (s) => s.sentiment === "neutral"
+      ).length;
+      const negativeCount = sentiments.filter(
+        (s) => s.sentiment === "negative"
+      ).length;
+
+      const avgScore =
+        sentiments.reduce((sum, s) => sum + (s.score || 0), 0) /
+        sentiments.length;
+
+      const overallSentiment =
+        avgScore >= 0.3
+          ? "positive"
+          : avgScore <= -0.3
+          ? "negative"
+          : "neutral";
+
+      // Group by age range
+      const ageGroupMap = new Map<
         string,
-        { count: number; sumRating: number; positive: number; negative: number }
+        { scores: number[]; count: number }
       >();
-
-      filteredForCharts.forEach((review) => {
-        const date = new Date(review.published_at);
-        // Get start of week (Monday)
-        const weekStart = new Date(date);
-        weekStart.setDate(date.getDate() - date.getDay() + 1);
-        const weekKey = weekStart.toISOString().split("T")[0];
-
-        const existing = timelineMap.get(weekKey) || {
-          count: 0,
-          sumRating: 0,
-          positive: 0,
-          negative: 0,
-        };
-        existing.count++;
-        existing.sumRating += review.rating;
-        if (review.sentiment === "positive") existing.positive++;
-        if (review.sentiment === "negative") existing.negative++;
-        timelineMap.set(weekKey, existing);
+      sentiments.forEach((s) => {
+        if (s.ageRange && s.ageRange !== "unknown") {
+          const current = ageGroupMap.get(s.ageRange) || {
+            scores: [],
+            count: 0,
+          };
+          current.scores.push(s.score || 0);
+          current.count++;
+          ageGroupMap.set(s.ageRange, current);
+        }
       });
 
-      const timeline = Array.from(timelineMap.entries())
-        .map(([date, data]) => ({
-          date,
-          count: Math.floor(data.count), // Remove decimals
-          avgRating: data.sumRating / data.count,
-          positive: data.positive,
-          negative: data.negative,
+      const byAgeGroup = Array.from(ageGroupMap.entries())
+        .map(([ageRange, data]) => ({
+          ageRange,
+          avgScore: data.scores.reduce((a, b) => a + b, 0) / data.scores.length,
+          count: data.count,
         }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+        .sort((a, b) => {
+          const order = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+          return order.indexOf(a.ageRange) - order.indexOf(b.ageRange);
+        });
 
-      setTimelineData(timeline);
-    };
+      // Group by gender
+      const genderMap = new Map<string, { scores: number[]; count: number }>();
+      sentiments.forEach((s) => {
+        if (s.gender && s.gender !== "unknown") {
+          const current = genderMap.get(s.gender) || {
+            scores: [],
+            count: 0,
+          };
+          current.scores.push(s.score || 0);
+          current.count++;
+          genderMap.set(s.gender, current);
+        }
+      });
 
-    calculateChartData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    reviews,
-    allReviews,
-    filterLocation,
-    filterStartDate,
-    filterEndDate,
-    selectedKeyword,
-    selectedRating,
-    selectedTopic,
-  ]);
+      const byGender = Array.from(genderMap.entries()).map(
+        ([gender, data]) => ({
+          gender,
+          avgScore: data.scores.reduce((a, b) => a + b, 0) / data.scores.length,
+          count: data.count,
+        })
+      );
+
+      // Aggregate emotions
+      const emotionCounts = new Map<string, number>();
+      sentiments.forEach((s) => {
+        if (s.emotions) {
+          try {
+            let emotionsData = s.emotions;
+            if (typeof s.emotions === "string") {
+              emotionsData = JSON.parse(s.emotions);
+            }
+
+            if (emotionsData && Array.isArray(emotionsData.emoticons)) {
+              emotionsData.emoticons.forEach((emoji: string) => {
+                emotionCounts.set(emoji, (emotionCounts.get(emoji) || 0) + 1);
+              });
+            }
+          } catch (error) {
+            console.error("Error parsing emotions:", error);
+          }
+        }
+      });
+
+      const emotionAggregate = Array.from(emotionCounts.entries())
+        .map(([emoji, count]) => ({
+          emoji,
+          count,
+          percentage: (count / sentiments.length) * 100,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      setSentimentData({
+        overallScore: avgScore,
+        overallSentiment,
+        totalReviews: sentiments.length,
+        positiveCount,
+        neutralCount,
+        negativeCount,
+        byAgeGroup,
+        byGender,
+        emotions: emotionAggregate,
+      });
+    } else {
+      setSentimentData(null);
+    }
+
+    // Calculate chart data
+    if (filteredReviews.length === 0) {
+      setRatingDistribution({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
+      setTimelineData([]);
+      return;
+    }
+
+    // Rating distribution
+    const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    filteredReviews.forEach((review) => {
+      const rating = Math.floor(review.rating);
+      if (rating >= 1 && rating <= 5) {
+        ratingCounts[rating as keyof typeof ratingCounts]++;
+      }
+    });
+    setRatingDistribution(ratingCounts);
+
+    // Timeline data
+    const timelineMap = new Map<
+      string,
+      { count: number; sumRating: number; positive: number; negative: number }
+    >();
+
+    filteredReviews.forEach((review) => {
+      const date = new Date(review.published_at);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay() + 1);
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      const existing = timelineMap.get(weekKey) || {
+        count: 0,
+        sumRating: 0,
+        positive: 0,
+        negative: 0,
+      };
+      existing.count++;
+      existing.sumRating += review.rating;
+      if (review.sentiment === "positive") existing.positive++;
+      if (review.sentiment === "negative") existing.negative++;
+      timelineMap.set(weekKey, existing);
+    });
+
+    const timeline = Array.from(timelineMap.entries())
+      .map(([date, data]) => ({
+        date,
+        count: Math.floor(data.count),
+        avgRating: data.sumRating / data.count,
+        positive: data.positive,
+        negative: data.negative,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    setTimelineData(timeline);
+  }, [filteredReviews]);
 
   // Check for fetch_reviews_platform query parameter and trigger platform connection
   useEffect(() => {
@@ -1473,39 +1297,8 @@ export const CompanyPage = () => {
         );
       }
 
-      // Refresh reviews data
-      try {
-        // Fetch reviews for this company with current filters
-        let reviewsQuery = supabase
-          .from("recent_reviews")
-          .select("*")
-          .eq("company_id", companyId);
-
-        // Apply location filter
-        if (filterLocation !== "all") {
-          reviewsQuery = reviewsQuery.eq("location_name", filterLocation);
-        }
-
-        // Apply date range filters
-        if (filterStartDate) {
-          reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
-        }
-        if (filterEndDate) {
-          reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
-        }
-
-        const { data: reviewsData, error: reviewsError } = await reviewsQuery
-          .order("published_at", { ascending: false })
-          .limit(50);
-
-        if (reviewsError) {
-          console.error("Error refreshing reviews:", reviewsError);
-        } else {
-          setReviews(reviewsData || []);
-        }
-      } catch (err) {
-        console.error("Error refreshing reviews data:", err);
-      }
+      // Refresh all review data
+      await loadAllReviewData();
     } catch (error) {
       console.error("Error refreshing data after platform connection:", error);
     }
@@ -1555,13 +1348,19 @@ export const CompanyPage = () => {
     setSelectedPlatform("");
   };
 
-  // Calculate total pages from server-side count
-  const totalPages = Math.ceil(totalReviewsCount / reviewsPerPage);
+  // Paginated reviews
+  const paginatedReviews = useMemo(() => {
+    const startIndex = (currentPage - 1) * reviewsPerPage;
+    const endIndex = startIndex + reviewsPerPage;
+    return filteredReviews.slice(startIndex, endIndex);
+  }, [filteredReviews, currentPage, reviewsPerPage]);
+
+  const totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedKeyword, selectedRating, selectedTopic]);
+  }, [selectedKeyword, selectedRating, selectedTopic, selectedCommentsFilter]);
 
   // Get unique locations from all locations (not just filtered reviews)
   const uniqueLocations = locations.map((loc) => loc.name).sort();
@@ -1573,15 +1372,17 @@ export const CompanyPage = () => {
     setSelectedKeyword("all");
     setSelectedRating("all");
     setSelectedTopic("all");
+    setSelectedCommentsFilter("all");
   };
 
   const handleClearAllFilters = () => {
     setFilterLocation("all");
-    setFilterStartDate("");
+    setFilterStartDate(oneYearAgo);
     setFilterEndDate("");
     setSelectedKeyword("all");
     setSelectedRating("all");
     setSelectedTopic("all");
+    setSelectedCommentsFilter("all");
   };
 
   const handleDeleteCompany = async () => {
@@ -1804,51 +1605,8 @@ export const CompanyPage = () => {
               companyId={companyId}
               companyName={company?.name || ""}
               onReviewsFetched={() => {
-                // Refresh reviews data after fetching
-                const refreshReviews = async () => {
-                  try {
-                    let reviewsQuery = supabase
-                      .from("recent_reviews")
-                      .select("*")
-                      .eq("company_id", companyId);
-
-                    // Apply location filter
-                    if (filterLocation !== "all") {
-                      reviewsQuery = reviewsQuery.eq(
-                        "location_name",
-                        filterLocation
-                      );
-                    }
-
-                    // Apply date range filters
-                    if (filterStartDate) {
-                      reviewsQuery = reviewsQuery.gte(
-                        "published_at",
-                        filterStartDate
-                      );
-                    }
-                    if (filterEndDate) {
-                      reviewsQuery = reviewsQuery.lte(
-                        "published_at",
-                        filterEndDate
-                      );
-                    }
-
-                    const { data: reviewsData, error: reviewsError } =
-                      await reviewsQuery
-                        .order("published_at", { ascending: false })
-                        .limit(50);
-
-                    if (reviewsError) {
-                      console.error("Error refreshing reviews:", reviewsError);
-                    } else {
-                      setReviews(reviewsData || []);
-                    }
-                  } catch (err) {
-                    console.error("Error refreshing reviews data:", err);
-                  }
-                };
-                refreshReviews();
+                // Refresh all review data after fetching
+                loadAllReviewData();
               }}
               onConnectionCreated={async () => {
                 // Refresh location connections after platform connection
@@ -1900,7 +1658,8 @@ export const CompanyPage = () => {
                   filterEndDate ||
                   selectedKeyword !== "all" ||
                   selectedRating !== "all" ||
-                  selectedTopic !== "all") && (
+                  selectedTopic !== "all" ||
+                  selectedCommentsFilter !== "all") && (
                   <Button
                     variant="text"
                     size="small"
@@ -2049,13 +1808,65 @@ export const CompanyPage = () => {
                 </FormControl>
               </Box>
 
+              {/* Comments Filter Section */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  {t("companyPage.filterByComments", "Filter by Comments")}
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Chip
+                    label={t("companyPage.allReviews", "All Reviews")}
+                    color="primary"
+                    variant={
+                      selectedCommentsFilter === "all" ? "filled" : "outlined"
+                    }
+                    onClick={() => setSelectedCommentsFilter("all")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.withComments", "With Comments")}
+                    color="primary"
+                    variant={
+                      selectedCommentsFilter === "with" ? "filled" : "outlined"
+                    }
+                    onClick={() => setSelectedCommentsFilter("with")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.withoutComments", "Without Comments")}
+                    color="primary"
+                    variant={
+                      selectedCommentsFilter === "without"
+                        ? "filled"
+                        : "outlined"
+                    }
+                    onClick={() => setSelectedCommentsFilter("without")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                </Stack>
+              </Box>
+
               {/* Active Filters Display */}
               {(filterLocation !== "all" ||
                 filterStartDate ||
                 filterEndDate ||
                 selectedKeyword !== "all" ||
                 selectedRating !== "all" ||
-                selectedTopic !== "all") && (
+                selectedTopic !== "all" ||
+                selectedCommentsFilter !== "all") && (
                 <Stack
                   direction="row"
                   spacing={1}
@@ -2122,6 +1933,18 @@ export const CompanyPage = () => {
                       size="small"
                       variant="outlined"
                       onDelete={() => setSelectedTopic("all")}
+                    />
+                  )}
+                  {selectedCommentsFilter !== "all" && (
+                    <Chip
+                      label={
+                        selectedCommentsFilter === "with"
+                          ? t("companyPage.withComments", "With Comments")
+                          : t("companyPage.withoutComments", "Without Comments")
+                      }
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setSelectedCommentsFilter("all")}
                     />
                   )}
                 </Stack>
@@ -2398,7 +2221,7 @@ export const CompanyPage = () => {
           )}
 
           {/* Trending Keywords */}
-          {(filterLoading || keywords.length > 0) && (
+          {(dataLoading || keywords.length > 0) && (
             <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
               <Stack
                 direction="row"
@@ -2418,7 +2241,7 @@ export const CompanyPage = () => {
                     {t("companyPage.trendingKeywordsDescription")}
                   </Typography>
                 </Box>
-                {!filterLoading && keywords.length > 10 && (
+                {!dataLoading && keywords.length > 10 && (
                   <Button
                     variant="text"
                     size="small"
@@ -2435,7 +2258,7 @@ export const CompanyPage = () => {
                 )}
               </Stack>
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {filterLoading ? (
+                {dataLoading ? (
                   <>
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <KeywordChipSkeleton key={i} />
@@ -2474,12 +2297,12 @@ export const CompanyPage = () => {
 
           {/* Reviews */}
           <ReviewsList
-            reviews={reviews}
-            totalCount={totalReviewsCount}
+            reviews={paginatedReviews}
+            totalCount={filteredReviews.length}
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
-            loading={filterLoading}
+            loading={dataLoading}
             selectedKeyword={selectedKeyword}
             selectedRating={selectedRating}
             onClearFilters={handleClearFilters}

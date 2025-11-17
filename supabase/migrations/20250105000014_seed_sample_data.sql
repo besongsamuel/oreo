@@ -165,18 +165,18 @@ BEGIN
   RETURNING id INTO review10_id;
 
   -- Create sentiment analysis for reviews
-  INSERT INTO sentiment_analysis (review_id, sentiment, sentiment_score, confidence, emotions)
+  INSERT INTO sentiment_analysis (review_id, platform_location_id, sentiment, sentiment_score, confidence, emotions)
   VALUES 
-    (review1_id, 'positive', 0.92, 0.95, '{"joy": 0.85, "trust": 0.75, "anticipation": 0.60}'::jsonb),
-    (review2_id, 'positive', 0.75, 0.88, '{"trust": 0.70, "joy": 0.55}'::jsonb),
-    (review3_id, 'positive', 0.95, 0.98, '{"joy": 0.90, "trust": 0.80}'::jsonb),
-    (review4_id, 'positive', 0.65, 0.82, '{"joy": 0.60, "trust": 0.50, "sadness": 0.15}'::jsonb),
-    (review5_id, 'positive', 0.88, 0.92, '{"joy": 0.80, "trust": 0.75, "anticipation": 0.65}'::jsonb),
-    (review6_id, 'negative', -0.68, 0.85, '{"anger": 0.55, "disgust": 0.45, "sadness": 0.40}'::jsonb),
-    (review7_id, 'positive', 0.90, 0.94, '{"joy": 0.82, "trust": 0.78}'::jsonb),
-    (review8_id, 'positive', 0.82, 0.90, '{"joy": 0.75, "surprise": 0.60}'::jsonb),
-    (review9_id, 'neutral', 0.15, 0.70, '{"trust": 0.40, "sadness": 0.25, "joy": 0.35}'::jsonb),
-    (review10_id, 'positive', 0.94, 0.96, '{"joy": 0.88, "trust": 0.85}'::jsonb);
+    (review1_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcA', 'positive', 0.92, 0.95, '{"joy": 0.85, "trust": 0.75, "anticipation": 0.60}'::jsonb),
+    (review2_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcA', 'positive', 0.75, 0.88, '{"trust": 0.70, "joy": 0.55}'::jsonb),
+    (review3_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcA', 'positive', 0.95, 0.98, '{"joy": 0.90, "trust": 0.80}'::jsonb),
+    (review4_id, 'artisan-cafe-sf-downtown', 'positive', 0.65, 0.82, '{"joy": 0.60, "trust": 0.50, "sadness": 0.15}'::jsonb),
+    (review5_id, 'artisan-cafe-sf-downtown', 'positive', 0.88, 0.92, '{"joy": 0.80, "trust": 0.75, "anticipation": 0.65}'::jsonb),
+    (review6_id, 'artisan-cafe-sf-downtown', 'negative', -0.68, 0.85, '{"anger": 0.55, "disgust": 0.45, "sadness": 0.40}'::jsonb),
+    (review7_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcB', 'positive', 0.90, 0.94, '{"joy": 0.82, "trust": 0.78}'::jsonb),
+    (review8_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcB', 'positive', 0.82, 0.90, '{"joy": 0.75, "surprise": 0.60}'::jsonb),
+    (review9_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcB', 'neutral', 0.15, 0.70, '{"trust": 0.40, "sadness": 0.25, "joy": 0.35}'::jsonb),
+    (review10_id, 'CHIJd8BlQ2BZwokRAFUEcm_qrcB', 'positive', 0.94, 0.96, '{"joy": 0.88, "trust": 0.85}'::jsonb);
 
   -- Create keywords (insert all at once, then retrieve IDs)
   INSERT INTO keywords (text, normalized_text, category)
