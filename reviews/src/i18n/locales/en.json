@@ -730,6 +730,9 @@
     "deleteCompanySuccess": "Company deleted successfully",
     "hasReply": "Has Reply",
     "replies": "Replies",
+    "filterByReplies": "Filter by Replies",
+    "withReplies": "With Replies",
+    "withoutReplies": "Without Replies",
     "compareMonths": "Compare Months",
     "sidebar": {
       "overview": "Overview",

@@ -665,7 +665,7 @@
     "clearAll": "Tout effacer",
     "allLocations": "Tous les emplacements",
     "dateRange": "Plage de dates",
-    "ytd": "YTD",
+    "ytd": "Annuel (à date)",
     "last3Months": "3 derniers mois",
     "last6Months": "6 derniers mois",
     "last12Months": "12 derniers mois",
@@ -730,6 +730,9 @@
     "deleteCompanySuccess": "Entreprise supprimée avec succès",
     "hasReply": "A une réponse",
     "replies": "Réponses",
+    "filterByReplies": "Filtrer par réponses",
+    "withReplies": "Avec réponses",
+    "withoutReplies": "Sans réponses",
     "compareMonths": "Comparer les mois",
     "sidebar": {
       "overview": "Vue d'ensemble",

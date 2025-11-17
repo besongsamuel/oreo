@@ -53,14 +53,14 @@ export const CompanyPageSidebar = ({
       icon: <OverviewIcon />,
     },
     {
-      id: "reviews",
-      labelKey: "companyPage.sidebar.reviews",
-      icon: <ReviewsIcon />,
-    },
-    {
       id: "analytics",
       labelKey: "companyPage.sidebar.analytics",
       icon: <AnalyticsIcon />,
+    },
+    {
+      id: "reviews",
+      labelKey: "companyPage.sidebar.reviews",
+      icon: <ReviewsIcon />,
     },
     {
       id: "locations",

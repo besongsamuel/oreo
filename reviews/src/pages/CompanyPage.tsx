@@ -1703,403 +1703,475 @@ export const CompanyPage = () => {
           <Paper
             elevation={0}
             sx={{
-              p: 4,
               bgcolor: "grey.50",
               border: 1,
               borderColor: "divider",
+              borderRadius: 2,
             }}
           >
-            <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
+            <Accordion
+              defaultExpanded={false}
+              sx={{
+                boxShadow: "none",
+                bgcolor: "transparent",
+                "&:before": {
+                  display: "none",
+                },
+                "&.Mui-expanded": {
+                  margin: 0,
+                },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  px: 3,
+                  py: 2,
+                  "& .MuiAccordionSummary-content": {
+                    margin: 0,
+                    alignItems: "center",
+                  },
+                }}
               >
-                <Box>
-                  <Typography variant="h6" gutterBottom fontWeight={500}>
-                    {t("companyPage.dataFilters")}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("companyPage.dataFiltersDescription")}
-                  </Typography>
-                </Box>
-                {(filterLocation.length > 0 ||
-                  dateFilterPreset ||
-                  selectedKeyword !== "all" ||
-                  selectedRating !== "all" ||
-                  selectedTopic !== "all" ||
-                  selectedCommentsFilter !== "all") && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={handleClearAllFilters}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 500,
-                    }}
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ width: "100%", pr: 2 }}
+                >
+                  <Box>
+                    <Typography variant="h6" fontWeight={500}>
+                      {t("companyPage.dataFilters")}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t("companyPage.dataFiltersDescription")}
+                    </Typography>
+                  </Box>
+                  {/* Show applied filters when collapsed */}
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    gap={1}
+                    sx={{ flex: 1, justifyContent: "flex-end" }}
                   >
-                    {t("companyPage.clearAll")}
-                  </Button>
-                )}
-              </Stack>
-
-              {/* Date Range Filters - Full Width at Top */}
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                >
-                  {t("companyPage.dateRange", "Date Range")}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Chip
-                    label={t("companyPage.ytd", "YTD")}
-                    color="primary"
-                    variant={dateFilterPreset === "ytd" ? "filled" : "outlined"}
-                    onClick={() => applyDateFilterPreset("ytd")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.last3Months", "Last 3 Months")}
-                    color="primary"
-                    variant={
-                      dateFilterPreset === "3months" ? "filled" : "outlined"
-                    }
-                    onClick={() => applyDateFilterPreset("3months")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.last6Months", "Last 6 Months")}
-                    color="primary"
-                    variant={
-                      dateFilterPreset === "6months" ? "filled" : "outlined"
-                    }
-                    onClick={() => applyDateFilterPreset("6months")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.last12Months", "Last 12 Months")}
-                    color="primary"
-                    variant={
-                      dateFilterPreset === "12months" ? "filled" : "outlined"
-                    }
-                    onClick={() => applyDateFilterPreset("12months")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.custom", "Custom")}
-                    color="primary"
-                    variant={
-                      dateFilterPreset === "custom" ? "filled" : "outlined"
-                    }
-                    onClick={() => applyDateFilterPreset("custom")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                </Stack>
-              </Box>
-
-              {/* Location Filter - Chips on own line */}
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                >
-                  {t("companyPage.locations", "Locations")}
-                </Typography>
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {/* Show "All Locations" chip only if there are multiple locations */}
-                  {uniqueLocations.length > 1 && (
-                    <Chip
-                      label={t("companyPage.allLocations", "All Locations")}
-                      onClick={() => handleLocationToggle("all")}
-                      color={
-                        filterLocation.length === 0 ? "primary" : "default"
-                      }
-                      variant={
-                        filterLocation.length === 0 ? "filled" : "outlined"
-                      }
-                      sx={{
-                        cursor: "pointer",
-                        transition: "all 0.2s ease-in-out",
-                        fontWeight: 500,
-                      }}
-                    />
-                  )}
-                  {uniqueLocations.map((location) => {
-                    const isSelected = filterLocation.includes(location);
-                    return (
+                    {filterLocation.length > 0 &&
+                      filterLocation.map((location) => (
+                        <Chip
+                          key={location}
+                          label={location}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          onDelete={(e) => {
+                            e.stopPropagation();
+                            handleLocationToggle(location);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ))}
+                    {dateFilterPreset && (
                       <Chip
-                        key={location}
-                        label={location}
-                        onClick={() => handleLocationToggle(location)}
-                        color={isSelected ? "primary" : "default"}
-                        variant={isSelected ? "filled" : "outlined"}
+                        label={
+                          dateFilterPreset === "ytd"
+                            ? t("companyPage.ytd", "YTD")
+                            : dateFilterPreset === "3months"
+                            ? t("companyPage.last3Months", "Last 3 Months")
+                            : dateFilterPreset === "6months"
+                            ? t("companyPage.last6Months", "Last 6 Months")
+                            : dateFilterPreset === "12months"
+                            ? t("companyPage.last12Months", "Last 12 Months")
+                            : dateFilterPreset === "custom"
+                            ? `${new Date(
+                                filterStartDate
+                              ).toLocaleDateString()} - ${new Date(
+                                filterEndDate
+                              ).toLocaleDateString()}`
+                            : ""
+                        }
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={(e) => {
+                          e.stopPropagation();
+                          setDateFilterPreset(null);
+                          setFilterStartDate("");
+                          setFilterEndDate("");
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    {selectedKeyword !== "all" && (
+                      <Chip
+                        label={t("companyPage.keywordLabel", {
+                          keyword: selectedKeyword,
+                        })}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={(e) => {
+                          e.stopPropagation();
+                          setSelectedKeyword("all");
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    {selectedRating !== "all" && (
+                      <Chip
+                        label={t("companyPage.starsLabel", {
+                          rating: selectedRating,
+                          stars: t("companyPage.stars"),
+                        })}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={(e) => {
+                          e.stopPropagation();
+                          setSelectedRating("all");
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    {selectedTopic !== "all" && (
+                      <Chip
+                        label={t("companyPage.topicLabel", {
+                          topic: selectedTopic,
+                        })}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={(e) => {
+                          e.stopPropagation();
+                          setSelectedTopic("all");
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    {selectedCommentsFilter !== "all" && (
+                      <Chip
+                        label={
+                          selectedCommentsFilter === "with"
+                            ? t("companyPage.withReplies", "With Replies")
+                            : t("companyPage.withoutReplies", "Without Replies")
+                        }
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={(e) => {
+                          e.stopPropagation();
+                          setSelectedCommentsFilter("all");
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                  </Stack>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: 3, pb: 3, pt: 0 }}>
+                <Stack spacing={2}>
+                  {/* Date Range Filters - Full Width at Top */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {t("companyPage.dateRange", "Date Range")}
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      <Chip
+                        label={t("companyPage.ytd", "YTD")}
+                        color="primary"
+                        variant={
+                          dateFilterPreset === "ytd" ? "filled" : "outlined"
+                        }
+                        onClick={() => applyDateFilterPreset("ytd")}
                         sx={{
                           cursor: "pointer",
-                          transition: "all 0.2s ease-in-out",
                           fontWeight: 500,
                         }}
                       />
-                    );
-                  })}
-                </Stack>
-              </Box>
+                      <Chip
+                        label={t("companyPage.last3Months", "Last 3 Months")}
+                        color="primary"
+                        variant={
+                          dateFilterPreset === "3months" ? "filled" : "outlined"
+                        }
+                        onClick={() => applyDateFilterPreset("3months")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={t("companyPage.last6Months", "Last 6 Months")}
+                        color="primary"
+                        variant={
+                          dateFilterPreset === "6months" ? "filled" : "outlined"
+                        }
+                        onClick={() => applyDateFilterPreset("6months")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={t("companyPage.last12Months", "Last 12 Months")}
+                        color="primary"
+                        variant={
+                          dateFilterPreset === "12months"
+                            ? "filled"
+                            : "outlined"
+                        }
+                        onClick={() => applyDateFilterPreset("12months")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={t("companyPage.custom", "Custom")}
+                        color="primary"
+                        variant={
+                          dateFilterPreset === "custom" ? "filled" : "outlined"
+                        }
+                        onClick={() => applyDateFilterPreset("custom")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                    </Stack>
+                  </Box>
 
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    sm: "repeat(2, 1fr)",
-                    md: "repeat(3, 1fr)",
-                  },
-                  gap: 2,
-                }}
-              >
-                {/* Keyword Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="keyword-filter-label">
-                    {t("companyPage.keyword")}
-                  </InputLabel>
-                  <Select
-                    labelId="keyword-filter-label"
-                    value={selectedKeyword}
-                    label={t("companyPage.keyword")}
-                    onChange={(e) => setSelectedKeyword(e.target.value)}
-                    sx={{ bgcolor: "background.paper" }}
+                  {/* Location Filter - Chips on own line */}
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {t("companyPage.locations", "Locations")}
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                      {/* Show "All Locations" chip only if there are multiple locations */}
+                      {uniqueLocations.length > 1 && (
+                        <Chip
+                          label={t("companyPage.allLocations", "All Locations")}
+                          onClick={() => handleLocationToggle("all")}
+                          color={
+                            filterLocation.length === 0 ? "primary" : "default"
+                          }
+                          variant={
+                            filterLocation.length === 0 ? "filled" : "outlined"
+                          }
+                          sx={{
+                            cursor: "pointer",
+                            transition: "all 0.2s ease-in-out",
+                            fontWeight: 500,
+                          }}
+                        />
+                      )}
+                      {uniqueLocations.map((location) => {
+                        const isSelected = filterLocation.includes(location);
+                        return (
+                          <Chip
+                            key={location}
+                            label={location}
+                            onClick={() => handleLocationToggle(location)}
+                            color={isSelected ? "primary" : "default"}
+                            variant={isSelected ? "filled" : "outlined"}
+                            sx={{
+                              cursor: "pointer",
+                              transition: "all 0.2s ease-in-out",
+                              fontWeight: 500,
+                            }}
+                          />
+                        );
+                      })}
+                    </Stack>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
+                        md: "repeat(3, 1fr)",
+                      },
+                      gap: 2,
+                    }}
                   >
-                    <MenuItem value="all">
-                      {t("companyPage.allKeywords")}
-                    </MenuItem>
-                    {topKeywordsForFilter.map((keyword) => (
-                      <MenuItem
-                        key={keyword.keyword_text}
-                        value={keyword.keyword_text}
+                    {/* Keyword Filter */}
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="keyword-filter-label">
+                        {t("companyPage.keyword")}
+                      </InputLabel>
+                      <Select
+                        labelId="keyword-filter-label"
+                        value={selectedKeyword}
+                        label={t("companyPage.keyword")}
+                        onChange={(e) => setSelectedKeyword(e.target.value)}
+                        sx={{ bgcolor: "background.paper" }}
                       >
-                        {keyword.keyword_text} ({keyword.occurrence_count})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                        <MenuItem value="all">
+                          {t("companyPage.allKeywords")}
+                        </MenuItem>
+                        {topKeywordsForFilter.map((keyword) => (
+                          <MenuItem
+                            key={keyword.keyword_text}
+                            value={keyword.keyword_text}
+                          >
+                            {keyword.keyword_text} ({keyword.occurrence_count})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-                {/* Rating Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="rating-filter-label">
-                    {t("companyPage.rating")}
-                  </InputLabel>
-                  <Select
-                    labelId="rating-filter-label"
-                    value={selectedRating}
-                    label={t("companyPage.rating")}
-                    onChange={(e) => setSelectedRating(e.target.value)}
-                    sx={{ bgcolor: "background.paper" }}
-                  >
-                    <MenuItem value="all">
-                      {t("companyPage.allRatings")}
-                    </MenuItem>
-                    <MenuItem value="5">5 {t("companyPage.stars")}</MenuItem>
-                    <MenuItem value="4">4 {t("companyPage.stars")}</MenuItem>
-                    <MenuItem value="3">3 {t("companyPage.stars")}</MenuItem>
-                    <MenuItem value="2">2 {t("companyPage.stars")}</MenuItem>
-                    <MenuItem value="1">1 {t("companyPage.star")}</MenuItem>
-                  </Select>
-                </FormControl>
+                    {/* Rating Filter */}
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="rating-filter-label">
+                        {t("companyPage.rating")}
+                      </InputLabel>
+                      <Select
+                        labelId="rating-filter-label"
+                        value={selectedRating}
+                        label={t("companyPage.rating")}
+                        onChange={(e) => setSelectedRating(e.target.value)}
+                        sx={{ bgcolor: "background.paper" }}
+                      >
+                        <MenuItem value="all">
+                          {t("companyPage.allRatings")}
+                        </MenuItem>
+                        <MenuItem value="5">
+                          5 {t("companyPage.stars")}
+                        </MenuItem>
+                        <MenuItem value="4">
+                          4 {t("companyPage.stars")}
+                        </MenuItem>
+                        <MenuItem value="3">
+                          3 {t("companyPage.stars")}
+                        </MenuItem>
+                        <MenuItem value="2">
+                          2 {t("companyPage.stars")}
+                        </MenuItem>
+                        <MenuItem value="1">1 {t("companyPage.star")}</MenuItem>
+                      </Select>
+                    </FormControl>
 
-                {/* Topic Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="topic-filter-label">
-                    {t("companyPage.topic")}
-                  </InputLabel>
-                  <Select
-                    labelId="topic-filter-label"
-                    value={selectedTopic}
-                    label={t("companyPage.topic")}
-                    onChange={(e) => setSelectedTopic(e.target.value)}
-                    sx={{ bgcolor: "background.paper" }}
-                  >
-                    <MenuItem value="all">
-                      {t("companyPage.allTopics")}
-                    </MenuItem>
-                    {topics.map((topic) => (
-                      <MenuItem key={topic.id} value={topic.name}>
-                        {topic.name} ({topic.occurrence_count})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
+                    {/* Topic Filter */}
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="topic-filter-label">
+                        {t("companyPage.topic")}
+                      </InputLabel>
+                      <Select
+                        labelId="topic-filter-label"
+                        value={selectedTopic}
+                        label={t("companyPage.topic")}
+                        onChange={(e) => setSelectedTopic(e.target.value)}
+                        sx={{ bgcolor: "background.paper" }}
+                      >
+                        <MenuItem value="all">
+                          {t("companyPage.allTopics")}
+                        </MenuItem>
+                        {topics.map((topic) => (
+                          <MenuItem key={topic.id} value={topic.name}>
+                            {topic.name} ({topic.occurrence_count})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
-              {/* Comments Filter Section */}
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                >
-                  {t("companyPage.filterByComments", "Filter by Comments")}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Chip
-                    label={t("companyPage.allReviews", "All Reviews")}
-                    color="primary"
-                    variant={
-                      selectedCommentsFilter === "all" ? "filled" : "outlined"
-                    }
-                    onClick={() => setSelectedCommentsFilter("all")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.withComments", "With Comments")}
-                    color="primary"
-                    variant={
-                      selectedCommentsFilter === "with" ? "filled" : "outlined"
-                    }
-                    onClick={() => setSelectedCommentsFilter("with")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                  <Chip
-                    label={t("companyPage.withoutComments", "Without Comments")}
-                    color="primary"
-                    variant={
-                      selectedCommentsFilter === "without"
-                        ? "filled"
-                        : "outlined"
-                    }
-                    onClick={() => setSelectedCommentsFilter("without")}
-                    sx={{
-                      cursor: "pointer",
-                      fontWeight: 500,
-                    }}
-                  />
-                </Stack>
-              </Box>
+                  {/* Comments Filter Section */}
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {t("companyPage.filterByReplies", "Filter by Replies")}
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      <Chip
+                        label={t("companyPage.allReviews", "All Reviews")}
+                        color="primary"
+                        variant={
+                          selectedCommentsFilter === "all"
+                            ? "filled"
+                            : "outlined"
+                        }
+                        onClick={() => setSelectedCommentsFilter("all")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={t("companyPage.withReplies", "With Replies")}
+                        color="primary"
+                        variant={
+                          selectedCommentsFilter === "with"
+                            ? "filled"
+                            : "outlined"
+                        }
+                        onClick={() => setSelectedCommentsFilter("with")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={t(
+                          "companyPage.withoutReplies",
+                          "Without Replies"
+                        )}
+                        color="primary"
+                        variant={
+                          selectedCommentsFilter === "without"
+                            ? "filled"
+                            : "outlined"
+                        }
+                        onClick={() => setSelectedCommentsFilter("without")}
+                        sx={{
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      />
+                    </Stack>
+                  </Box>
 
-              {/* Active Filters Display */}
-              {(filterLocation.length > 0 ||
-                dateFilterPreset ||
-                selectedKeyword !== "all" ||
-                selectedRating !== "all" ||
-                selectedTopic !== "all" ||
-                selectedCommentsFilter !== "all") && (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  flexWrap="wrap"
-                  alignItems="center"
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mr: 0.5 }}
-                  >
-                    {t("companyPage.active")}
-                  </Typography>
-                  {filterLocation.map((location) => (
-                    <Chip
-                      key={location}
-                      label={location}
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => handleLocationToggle(location)}
-                    />
-                  ))}
-                  {dateFilterPreset && (
-                    <Chip
-                      label={
-                        dateFilterPreset === "ytd"
-                          ? t("companyPage.ytd", "YTD")
-                          : dateFilterPreset === "3months"
-                          ? t("companyPage.last3Months", "Last 3 Months")
-                          : dateFilterPreset === "6months"
-                          ? t("companyPage.last6Months", "Last 6 Months")
-                          : dateFilterPreset === "12months"
-                          ? t("companyPage.last12Months", "Last 12 Months")
-                          : dateFilterPreset === "custom"
-                          ? `${new Date(
-                              filterStartDate
-                            ).toLocaleDateString()} - ${new Date(
-                              filterEndDate
-                            ).toLocaleDateString()}`
-                          : ""
-                      }
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => {
-                        setDateFilterPreset(null);
-                        setFilterStartDate("");
-                        setFilterEndDate("");
+                  {/* Clear All Button - Bottom Right */}
+                  {(filterLocation.length > 0 ||
+                    dateFilterPreset ||
+                    selectedKeyword !== "all" ||
+                    selectedRating !== "all" ||
+                    selectedTopic !== "all" ||
+                    selectedCommentsFilter !== "all") && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        mt: 2,
                       }}
-                    />
-                  )}
-                  {selectedKeyword !== "all" && (
-                    <Chip
-                      label={t("companyPage.keywordLabel", {
-                        keyword: selectedKeyword,
-                      })}
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => setSelectedKeyword("all")}
-                    />
-                  )}
-                  {selectedRating !== "all" && (
-                    <Chip
-                      label={t("companyPage.starsLabel", {
-                        rating: selectedRating,
-                        stars: t("companyPage.stars"),
-                      })}
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => setSelectedRating("all")}
-                    />
-                  )}
-                  {selectedTopic !== "all" && (
-                    <Chip
-                      label={t("companyPage.topicLabel", {
-                        topic: selectedTopic,
-                      })}
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => setSelectedTopic("all")}
-                    />
-                  )}
-                  {selectedCommentsFilter !== "all" && (
-                    <Chip
-                      label={
-                        selectedCommentsFilter === "with"
-                          ? t("companyPage.withComments", "With Comments")
-                          : t("companyPage.withoutComments", "Without Comments")
-                      }
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => setSelectedCommentsFilter("all")}
-                    />
+                    >
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={handleClearAllFilters}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {t("companyPage.clearAll")}
+                      </Button>
+                    </Box>
                   )}
                 </Stack>
-              )}
-            </Stack>
+              </AccordionDetails>
+            </Accordion>
           </Paper>
 
           {/* Sidebar and Content Area */}
