@@ -228,12 +228,8 @@ export const CompanyPage = () => {
   const [monthComparisonOpen, setMonthComparisonOpen] = useState(false);
 
   // Page-level filters (apply to all data)
-  // Set default start date to 1 year ago
-  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
   const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [filterStartDate, setFilterStartDate] = useState<string>(oneYearAgo);
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
 
   // Review-specific filters (client-side)
@@ -1377,7 +1373,7 @@ export const CompanyPage = () => {
 
   const handleClearAllFilters = () => {
     setFilterLocation("all");
-    setFilterStartDate(oneYearAgo);
+    setFilterStartDate("");
     setFilterEndDate("");
     setSelectedKeyword("all");
     setSelectedRating("all");
