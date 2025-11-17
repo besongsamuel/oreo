@@ -765,6 +765,50 @@ export const PlatformConnectionDialog = ({
               </Card>
             </Box>
           )}
+
+          {/* Review Limit Notification */}
+          {verifiedListing && selectedLocation && selectedPlatformName && (
+            <Box>
+              {(() => {
+                const hasUnlimitedReviews =
+                  context?.hasFeature?.("unlimited_reviews") || false;
+                const maxReviewsLimit =
+                  context?.getPlanLimit?.("max_reviews_per_sync") || null;
+                const twoYearsAgoYear = new Date().getFullYear() - 2;
+
+                if (hasUnlimitedReviews) {
+                  return (
+                    <Alert severity="info">
+                      {t("platform.reviewsDateLimit", {
+                        defaultValue:
+                          "Reviews will be pulled from January 1, {{year}} onwards",
+                        year: twoYearsAgoYear,
+                      })}
+                    </Alert>
+                  );
+                } else if (maxReviewsLimit === 25) {
+                  return (
+                    <Alert severity="info">
+                      {t("platform.reviewsLimitFree", {
+                        defaultValue:
+                          "Only the last 25 reviews will be pulled (free plan limit)",
+                      })}
+                    </Alert>
+                  );
+                } else {
+                  return (
+                    <Alert severity="info">
+                      {t("platform.reviewsDateLimit", {
+                        defaultValue:
+                          "Reviews will be pulled from January 1, {{year}} onwards",
+                        year: twoYearsAgoYear,
+                      })}
+                    </Alert>
+                  );
+                }
+              })()}
+            </Box>
+          )}
         </Stack>
       </DialogContent>
 

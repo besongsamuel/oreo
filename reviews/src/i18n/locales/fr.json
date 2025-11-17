@@ -5,6 +5,7 @@
     "success": "Succès",
     "save": "Enregistrer",
     "cancel": "Annuler",
+    "apply": "Appliquer",
     "edit": "Modifier",
     "delete": "Supprimer",
     "search": "Rechercher",
@@ -323,7 +324,9 @@
     "connectPlatformToLocation": "Connecter une plateforme à l'emplacement",
     "selectPlatform": "Sélectionner une plateforme",
     "jobCreatedMessage": "Un travail a été créé pour récupérer vos avis. Les avis seront disponibles sous peu.",
-    "slugAlreadyExists": "Cet identifiant d'emplacement de plateforme existe déjà dans le système. Si cette page vous appartient, veuillez contacter tech@boresha.ca pour obtenir de l'aide."
+    "slugAlreadyExists": "Cet identifiant d'emplacement de plateforme existe déjà dans le système. Si cette page vous appartient, veuillez contacter tech@boresha.ca pour obtenir de l'aide.",
+    "reviewsDateLimit": "Les avis seront récupérés à partir du 1er janvier {{year}}",
+    "reviewsLimitFree": "Seuls les 25 derniers avis seront récupérés (limite du plan gratuit)"
   },
   "profile": {
     "title": "Paramètres du profil",
@@ -661,6 +664,13 @@
     "dataFiltersDescription": "Filtrez toutes les données de cette page par emplacement, date, mot-clé, note et sujet",
     "clearAll": "Tout effacer",
     "allLocations": "Tous les emplacements",
+    "dateRange": "Plage de dates",
+    "ytd": "YTD",
+    "last3Months": "3 derniers mois",
+    "last6Months": "6 derniers mois",
+    "last12Months": "12 derniers mois",
+    "custom": "Personnalisé",
+    "customDateRange": "Plage de dates personnalisée",
     "fromDate": "Date de début",
     "toDate": "Date de fin",
     "keyword": "Mot-clé",

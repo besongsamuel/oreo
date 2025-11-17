@@ -5,6 +5,7 @@
     "success": "Success",
     "save": "Save",
     "cancel": "Cancel",
+    "apply": "Apply",
     "edit": "Edit",
     "delete": "Delete",
     "search": "Search",
@@ -569,7 +570,9 @@
     "connectPlatformToLocation": "Connect Platform to Location",
     "selectPlatform": "Select a Platform",
     "jobCreatedMessage": "A job has been created to get your reviews. Reviews will be available shortly.",
-    "slugAlreadyExists": "This platform location ID already exists in the system. If this page belongs to you, please contact tech@boresha.ca for assistance."
+    "slugAlreadyExists": "This platform location ID already exists in the system. If this page belongs to you, please contact tech@boresha.ca for assistance.",
+    "reviewsDateLimit": "Reviews will be pulled from January 1, {{year}} onwards",
+    "reviewsLimitFree": "Only the last 25 reviews will be pulled (free plan limit)"
   },
   "pricing": {
     "title": "Pricing",
@@ -661,6 +664,13 @@
     "dataFiltersDescription": "Filter all data on this page by location, date, keyword, rating, and topic",
     "clearAll": "Clear all",
     "allLocations": "All Locations",
+    "dateRange": "Date Range",
+    "ytd": "YTD",
+    "last3Months": "Last 3 Months",
+    "last6Months": "Last 6 Months",
+    "last12Months": "Last 12 Months",
+    "custom": "Custom",
+    "customDateRange": "Custom Date Range",
     "fromDate": "From Date",
     "toDate": "To Date",
     "keyword": "Keyword",

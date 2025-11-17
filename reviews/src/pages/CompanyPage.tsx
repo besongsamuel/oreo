@@ -235,10 +235,23 @@ export const CompanyPage = () => {
   const [activeSection, setActiveSection] =
     useState<CompanyPageSection>("overview");
 
+  // Calculate default date filter preset based on current month
+  const getDefaultDatePreset = (): "ytd" | "3months" => {
+    const currentMonth = new Date().getMonth(); // 0-11 (0 = January, 11 = December)
+    // If after April (month > 3), use YTD, otherwise use 3 months
+    return currentMonth > 3 ? "ytd" : "3months";
+  };
+
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
   const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
+  const [dateFilterPreset, setDateFilterPreset] = useState<
+    "ytd" | "3months" | "6months" | "12months" | "custom" | null
+  >(getDefaultDatePreset());
+  const [customDateModalOpen, setCustomDateModalOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
 
   // Review-specific filters (client-side)
   const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
@@ -256,6 +269,62 @@ export const CompanyPage = () => {
 
   const lastTriggeredRef = useRef<number>(0);
   const triggerInProgressRef = useRef(false);
+
+  // Helper function to get start of month N months ago
+  const getStartOfMonthMonthsAgo = (monthsAgo: number): string => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - monthsAgo);
+    date.setDate(1);
+    date.setHours(0, 0, 0, 0);
+    return date.toISOString().split("T")[0];
+  };
+
+  // Helper function to apply date filter preset
+  const applyDateFilterPreset = (
+    preset: "ytd" | "3months" | "6months" | "12months" | "custom" | null
+  ) => {
+    const today = new Date().toISOString().split("T")[0];
+    let startDate = "";
+
+    switch (preset) {
+      case "ytd":
+        startDate = `${new Date().getFullYear()}-01-01`;
+        break;
+      case "3months":
+        startDate = getStartOfMonthMonthsAgo(3);
+        break;
+      case "6months":
+        startDate = getStartOfMonthMonthsAgo(6);
+        break;
+      case "12months":
+        startDate = getStartOfMonthMonthsAgo(12);
+        break;
+      case "custom":
+        // Initialize custom dates with current filter dates or empty
+        setCustomStartDate(filterStartDate || "");
+        setCustomEndDate(filterEndDate || "");
+        setCustomDateModalOpen(true);
+        return;
+      case null:
+        setFilterStartDate("");
+        setFilterEndDate("");
+        setDateFilterPreset(null);
+        return;
+    }
+
+    setFilterStartDate(startDate);
+    setFilterEndDate(today);
+    setDateFilterPreset(preset);
+  };
+
+  // Initialize default date filter on mount
+  useEffect(() => {
+    const defaultPreset = getDefaultDatePreset();
+    if (dateFilterPreset === defaultPreset && !filterStartDate) {
+      applyDateFilterPreset(defaultPreset);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Paginated fetch utility function
   const fetchAllPaginated = async <T,>(queryBuilder: any): Promise<T[]> => {
@@ -1395,10 +1464,20 @@ export const CompanyPage = () => {
     setFilterLocation("all");
     setFilterStartDate("");
     setFilterEndDate("");
+    setDateFilterPreset(null);
     setSelectedKeyword("all");
     setSelectedRating("all");
     setSelectedTopic("all");
     setSelectedCommentsFilter("all");
+  };
+
+  const handleCustomDateApply = () => {
+    if (customStartDate && customEndDate) {
+      setFilterStartDate(customStartDate);
+      setFilterEndDate(customEndDate);
+      setDateFilterPreset("custom");
+      setCustomDateModalOpen(false);
+    }
   };
 
   const handleDeleteCompany = async () => {
@@ -1619,8 +1698,7 @@ export const CompanyPage = () => {
                   </Typography>
                 </Box>
                 {(filterLocation !== "all" ||
-                  filterStartDate ||
-                  filterEndDate ||
+                  dateFilterPreset ||
                   selectedKeyword !== "all" ||
                   selectedRating !== "all" ||
                   selectedTopic !== "all" ||
@@ -1638,6 +1716,77 @@ export const CompanyPage = () => {
                   </Button>
                 )}
               </Stack>
+
+              {/* Date Range Filters - Full Width at Top */}
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  {t("companyPage.dateRange", "Date Range")}
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Chip
+                    label={t("companyPage.ytd", "YTD")}
+                    color="primary"
+                    variant={dateFilterPreset === "ytd" ? "filled" : "outlined"}
+                    onClick={() => applyDateFilterPreset("ytd")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.last3Months", "Last 3 Months")}
+                    color="primary"
+                    variant={
+                      dateFilterPreset === "3months" ? "filled" : "outlined"
+                    }
+                    onClick={() => applyDateFilterPreset("3months")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.last6Months", "Last 6 Months")}
+                    color="primary"
+                    variant={
+                      dateFilterPreset === "6months" ? "filled" : "outlined"
+                    }
+                    onClick={() => applyDateFilterPreset("6months")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.last12Months", "Last 12 Months")}
+                    color="primary"
+                    variant={
+                      dateFilterPreset === "12months" ? "filled" : "outlined"
+                    }
+                    onClick={() => applyDateFilterPreset("12months")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip
+                    label={t("companyPage.custom", "Custom")}
+                    color="primary"
+                    variant={
+                      dateFilterPreset === "custom" ? "filled" : "outlined"
+                    }
+                    onClick={() => applyDateFilterPreset("custom")}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  />
+                </Stack>
+              </Box>
 
               <Box
                 sx={{
@@ -1673,32 +1822,6 @@ export const CompanyPage = () => {
                     ))}
                   </Select>
                 </FormControl>
-
-                {/* Start Date Filter */}
-                <TextField
-                  label={t("companyPage.fromDate")}
-                  type="date"
-                  size="small"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  sx={{ bgcolor: "background.paper" }}
-                />
-
-                {/* End Date Filter */}
-                <TextField
-                  label={t("companyPage.toDate")}
-                  type="date"
-                  size="small"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  sx={{ bgcolor: "background.paper" }}
-                />
 
                 {/* Keyword Filter */}
                 <FormControl fullWidth size="small">
@@ -1826,8 +1949,7 @@ export const CompanyPage = () => {
 
               {/* Active Filters Display */}
               {(filterLocation !== "all" ||
-                filterStartDate ||
-                filterEndDate ||
+                dateFilterPreset ||
                 selectedKeyword !== "all" ||
                 selectedRating !== "all" ||
                 selectedTopic !== "all" ||
@@ -1853,20 +1975,32 @@ export const CompanyPage = () => {
                       onDelete={() => setFilterLocation("all")}
                     />
                   )}
-                  {filterStartDate && (
+                  {dateFilterPreset && (
                     <Chip
-                      label={new Date(filterStartDate).toLocaleDateString()}
+                      label={
+                        dateFilterPreset === "ytd"
+                          ? t("companyPage.ytd", "YTD")
+                          : dateFilterPreset === "3months"
+                          ? t("companyPage.last3Months", "Last 3 Months")
+                          : dateFilterPreset === "6months"
+                          ? t("companyPage.last6Months", "Last 6 Months")
+                          : dateFilterPreset === "12months"
+                          ? t("companyPage.last12Months", "Last 12 Months")
+                          : dateFilterPreset === "custom"
+                          ? `${new Date(
+                              filterStartDate
+                            ).toLocaleDateString()} - ${new Date(
+                              filterEndDate
+                            ).toLocaleDateString()}`
+                          : ""
+                      }
                       size="small"
                       variant="outlined"
-                      onDelete={() => setFilterStartDate("")}
-                    />
-                  )}
-                  {filterEndDate && (
-                    <Chip
-                      label={new Date(filterEndDate).toLocaleDateString()}
-                      size="small"
-                      variant="outlined"
-                      onDelete={() => setFilterEndDate("")}
+                      onDelete={() => {
+                        setDateFilterPreset(null);
+                        setFilterStartDate("");
+                        setFilterEndDate("");
+                      }}
                     />
                   )}
                   {selectedKeyword !== "all" && (
@@ -2750,6 +2884,54 @@ export const CompanyPage = () => {
             {successMessage}
           </Alert>
         )}
+
+        {/* Custom Date Picker Modal */}
+        <Dialog
+          open={customDateModalOpen}
+          onClose={() => setCustomDateModalOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {t("companyPage.customDateRange", "Custom Date Range")}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <TextField
+                label={t("companyPage.fromDate")}
+                type="date"
+                fullWidth
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                label={t("companyPage.toDate")}
+                type="date"
+                fullWidth
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button onClick={() => setCustomDateModalOpen(false)}>
+              {t("common.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={handleCustomDateApply}
+              variant="contained"
+              disabled={!customStartDate || !customEndDate}
+            >
+              {t("common.apply", "Apply")}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Month Comparison Modal */}
         {companyId && (

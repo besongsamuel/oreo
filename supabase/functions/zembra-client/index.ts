@@ -114,6 +114,16 @@ serve(async (req) => {
             baseUrl.searchParams.set("postedAfter", unixTimestamp);
         }
 
+        // Add dateLimit for create-review-job (January 1st of two years ago)
+        if (mode === "create-review-job") {
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+            twoYearsAgo.setMonth(0, 1); // January (month 0), day 1
+            twoYearsAgo.setHours(0, 0, 0, 0);
+            const dateLimit = twoYearsAgo.getTime();
+            baseUrl.searchParams.set("dateLimit", dateLimit.toString());
+        }
+
         const headers = {
             Accept: "application/json",
             Authorization: `Bearer ${zembraApiToken}`,
