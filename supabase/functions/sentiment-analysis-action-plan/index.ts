@@ -3,12 +3,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 interface ActionPlanRequest {
     companyId: string;
-    filterLocation?: string;
     filterStartDate?: string;
     filterEndDate?: string;
-    selectedKeyword?: string;
-    selectedRating?: string;
-    selectedTopic?: string;
+    selectedSentiment?: string;
 }
 
 interface ActionPlanResponse {
@@ -63,13 +60,57 @@ Deno.serve(async (req: Request) => {
         const requestBody: ActionPlanRequest = await req.json();
         const {
             companyId,
-            filterLocation,
             filterStartDate,
             filterEndDate,
-            selectedKeyword,
-            selectedRating,
-            selectedTopic,
+            selectedSentiment,
         } = requestBody;
+
+        // Validate date range (max 3 months)
+        if (filterStartDate && filterEndDate) {
+            const start = new Date(filterStartDate);
+            const end = new Date(filterEndDate);
+            const diffMonths =
+                (end.getFullYear() - start.getFullYear()) * 12 +
+                (end.getMonth() - start.getMonth());
+            if (diffMonths > 3) {
+                return new Response(
+                    JSON.stringify({
+                        success: false,
+                        error: "Date range cannot exceed 3 months",
+                    } as ActionPlanResponse),
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "POST, OPTIONS",
+                            "Access-Control-Allow-Headers":
+                                "authorization, x-client-info, apikey, content-type",
+                        },
+                        status: 400,
+                    },
+                );
+            }
+        }
+
+        // Validate required filters
+        if (!filterStartDate || !filterEndDate || !selectedSentiment) {
+            return new Response(
+                JSON.stringify({
+                    success: false,
+                    error: "filterStartDate, filterEndDate, and selectedSentiment are required",
+                } as ActionPlanResponse),
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
+                    status: 400,
+                },
+            );
+        }
 
         // Fetch locations for the company
         const { data: locationsData, error: locationsError } =
@@ -103,14 +144,8 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Filter locations if needed
-        let locationIds = locationsData.map((loc) => loc.id);
-        if (filterLocation && filterLocation !== "all") {
-            const filteredLocs = locationsData.filter(
-                (loc) => loc.name === filterLocation,
-            );
-            locationIds = filteredLocs.map((loc) => loc.id);
-        }
+        // Get all location IDs (no location filtering for action plan)
+        const locationIds = locationsData.map((loc) => loc.id);
 
         // Get platform connections for these locations
         const { data: platformConnections, error: pcError } =
@@ -147,30 +182,14 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Fetch reviews
-        let reviewsQuery = supabaseClient
+        // First, get review IDs that match the date range and platform connections
+        const { data: reviewsData, error: reviewsError } = await supabaseClient
             .from("reviews")
-            .select(
-                `
-        id,
-        content,
-        rating,
-        title,
-        published_at
-      `,
-            )
+            .select("id, content, rating, title, published_at")
             .in("platform_connection_id", platformConnectionIds)
-            .limit(100);
-
-        // Apply date filters
-        if (filterStartDate) {
-            reviewsQuery = reviewsQuery.gte("published_at", filterStartDate);
-        }
-        if (filterEndDate) {
-            reviewsQuery = reviewsQuery.lte("published_at", filterEndDate);
-        }
-
-        const { data: reviewsData, error: reviewsError } = await reviewsQuery;
+            .gte("published_at", filterStartDate!)
+            .lte("published_at", filterEndDate!)
+            .limit(1000);
 
         if (reviewsError) {
             throw new Error(`Failed to fetch reviews: ${reviewsError.message}`);
@@ -180,7 +199,7 @@ Deno.serve(async (req: Request) => {
             return new Response(
                 JSON.stringify({
                     success: false,
-                    error: "No reviews found matching the filters",
+                    error: "No reviews found matching the date range",
                 } as ActionPlanResponse),
                 {
                     headers: {
@@ -195,29 +214,28 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Filter reviews by keyword and topic (client-side filtering)
-        let filteredReviews = reviewsData as Review[];
-        if (selectedKeyword && selectedKeyword !== "all") {
-            filteredReviews = filteredReviews.filter((review) => {
-                const content = `${review.content || ""} ${review.title || ""}`
-                    .toLowerCase();
-                return content.includes(selectedKeyword.toLowerCase());
-            });
+        // Get sentiment analysis for these reviews
+        const reviewIds = reviewsData.map((r) => r.id);
+        const { data: sentimentData, error: sentimentError } =
+            await supabaseClient
+                .from("sentiment_analysis")
+                .select("review_id, sentiment")
+                .in("review_id", reviewIds)
+                .eq("sentiment", selectedSentiment!);
+
+        if (sentimentError) {
+            throw new Error(
+                `Failed to fetch sentiment analysis: ${sentimentError.message}`,
+            );
         }
 
-        if (selectedTopic && selectedTopic !== "all") {
-            filteredReviews = filteredReviews.filter((review) => {
-                const content = `${review.content || ""} ${review.title || ""}`
-                    .toLowerCase();
-                return content.includes(selectedTopic.toLowerCase());
-            });
-        }
-
-        if (selectedRating && selectedRating !== "all") {
-            filteredReviews = filteredReviews.filter((review) => {
-                return Math.floor(review.rating) === Number(selectedRating);
-            });
-        }
+        // Filter reviews by sentiment
+        const sentimentReviewIds = new Set(
+            sentimentData?.map((s) => s.review_id) || [],
+        );
+        const filteredReviews = reviewsData.filter((r) =>
+            sentimentReviewIds.has(r.id),
+        ) as Review[];
 
         if (filteredReviews.length === 0) {
             return new Response(

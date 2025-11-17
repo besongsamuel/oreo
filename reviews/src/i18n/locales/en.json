@@ -357,6 +357,23 @@
       "topic": "Topic:"
     }
   },
+  "actionPlanFilter": {
+    "title": "Filter Reviews for Action Plan",
+    "dateRange": "Date Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "sentiment": "Sentiment",
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral",
+    "cancel": "Cancel",
+    "generate": "Generate Action Plan",
+    "generating": "Generating...",
+    "pleaseSelectDateRange": "Please select a date range",
+    "pleaseSelectSentiment": "Please select a sentiment",
+    "dateRangeExceedsThreeMonths": "Date range cannot exceed 3 months",
+    "startDateAfterEndDate": "Start date must be before end date"
+  },
   "monthlySummary": {
     "title": "Monthly Summary",
     "subtitle": "AI-generated insights from customer reviews",

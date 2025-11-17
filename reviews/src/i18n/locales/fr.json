@@ -428,6 +428,23 @@
       "topic": "Sujet :"
     }
   },
+  "actionPlanFilter": {
+    "title": "Filtrer les avis pour le plan d'action",
+    "dateRange": "Plage de dates",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "sentiment": "Sentiment",
+    "positive": "Positif",
+    "negative": "Négatif",
+    "neutral": "Neutre",
+    "cancel": "Annuler",
+    "generate": "Générer le plan d'action",
+    "generating": "Génération...",
+    "pleaseSelectDateRange": "Veuillez sélectionner une plage de dates",
+    "pleaseSelectSentiment": "Veuillez sélectionner un sentiment",
+    "dateRangeExceedsThreeMonths": "La plage de dates ne peut pas dépasser 3 mois",
+    "startDateAfterEndDate": "La date de début doit être antérieure à la date de fin"
+  },
   "monthlySummary": {
     "title": "Résumé mensuel",
     "subtitle": "Insights générés par IA à partir des avis clients",

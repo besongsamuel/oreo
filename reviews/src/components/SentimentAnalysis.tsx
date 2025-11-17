@@ -32,6 +32,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserContext } from "../context/UserContext";
 import { useSupabase } from "../hooks/useSupabase";
+import { ActionPlanFilterModal } from "./ActionPlanFilterModal";
 
 interface SentimentData {
   overallScore: number;
@@ -101,6 +102,12 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const [actionPlan, setActionPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [activeActionPlanFilters, setActiveActionPlanFilters] = useState<{
+    filterStartDate?: string;
+    filterEndDate?: string;
+    selectedSentiment?: string;
+  } | null>(null);
   const [unprocessedCount, setUnprocessedCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
@@ -245,9 +252,20 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
     }
   }, [latestRun, loadUnprocessedCount, t]);
 
-  const handleGenerateActionPlan = async () => {
+  const handleGenerateActionPlan = () => {
+    if (!companyId) return;
+    setFilterModalOpen(true);
+  };
+
+  const handleFilterConfirm = async (filters: {
+    filterStartDate: string;
+    filterEndDate: string;
+    selectedSentiment: string;
+  }) => {
     if (!companyId) return;
 
+    setActiveActionPlanFilters(filters);
+    setFilterModalOpen(false);
     setLoadingPlan(true);
     setActionPlanOpen(true);
 
@@ -257,12 +275,9 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
         {
           body: {
             companyId,
-            filterLocation,
-            filterStartDate,
-            filterEndDate,
-            selectedKeyword,
-            selectedRating,
-            selectedTopic,
+            filterStartDate: filters.filterStartDate,
+            filterEndDate: filters.filterEndDate,
+            selectedSentiment: filters.selectedSentiment,
           },
         }
       );
@@ -353,6 +368,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
     setActionPlanOpen(false);
     setActionPlan(null);
     setCopied(false);
+    setActiveActionPlanFilters(null);
   };
 
   const handleCopyActionPlan = async () => {
@@ -382,41 +398,30 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
 
   const getActiveFilters = () => {
     const filters = [];
-    if (filterLocation && filterLocation !== "all") {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.location")} ${filterLocation}`
-      );
-    }
-    if (filterStartDate) {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.from")} ${new Date(
-          filterStartDate
-        ).toLocaleDateString()}`
-      );
-    }
-    if (filterEndDate) {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.to")} ${new Date(
-          filterEndDate
-        ).toLocaleDateString()}`
-      );
-    }
-    if (selectedKeyword && selectedKeyword !== "all") {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.keyword")} ${selectedKeyword}`
-      );
-    }
-    if (selectedRating && selectedRating !== "all") {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.rating")} ${selectedRating} ${t(
-          "sentimentAnalysis.filterLabels.stars"
-        )}`
-      );
-    }
-    if (selectedTopic && selectedTopic !== "all") {
-      filters.push(
-        `${t("sentimentAnalysis.filterLabels.topic")} ${selectedTopic}`
-      );
+    if (activeActionPlanFilters) {
+      if (activeActionPlanFilters.filterStartDate) {
+        filters.push(
+          `${t("sentimentAnalysis.filterLabels.from")} ${new Date(
+            activeActionPlanFilters.filterStartDate
+          ).toLocaleDateString()}`
+        );
+      }
+      if (activeActionPlanFilters.filterEndDate) {
+        filters.push(
+          `${t("sentimentAnalysis.filterLabels.to")} ${new Date(
+            activeActionPlanFilters.filterEndDate
+          ).toLocaleDateString()}`
+        );
+      }
+      if (activeActionPlanFilters.selectedSentiment) {
+        const sentimentLabel =
+          activeActionPlanFilters.selectedSentiment === "positive"
+            ? t("actionPlanFilter.positive")
+            : activeActionPlanFilters.selectedSentiment === "negative"
+            ? t("actionPlanFilter.negative")
+            : t("actionPlanFilter.neutral");
+        filters.push(`${t("actionPlanFilter.sentiment")}: ${sentimentLabel}`);
+      }
     }
     return filters;
   };
@@ -887,6 +892,14 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Action Plan Filter Modal */}
+      <ActionPlanFilterModal
+        open={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        onGenerate={handleFilterConfirm}
+        loading={loadingPlan}
+      />
     </Paper>
   );
 };
