@@ -362,6 +362,7 @@
     "dateRange": "Date Range",
     "startDate": "Start Date",
     "endDate": "End Date",
+    "dateRangeNote": "Maximum date range: 3 months",
     "sentiment": "Sentiment",
     "positive": "Positive",
     "negative": "Negative",

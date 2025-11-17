@@ -13,11 +13,15 @@ import {
   Alert,
   Stack,
   Box,
+  Typography,
+  Divider,
+  Paper,
 } from "@mui/material";
 import {
   SentimentSatisfiedAlt as PositiveIcon,
   SentimentNeutral as NeutralIcon,
   SentimentDissatisfied as NegativeIcon,
+  InfoOutlined as InfoIcon,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -145,13 +149,43 @@ export const ActionPlanFilterModal: React.FC<ActionPlanFilterModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t("actionPlanFilter.title")}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 1 }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          pb: 2,
+          pt: 3,
+          px: 3,
+        }}
+      >
+        <Typography variant="h6" fontWeight={600}>
+          {t("actionPlanFilter.title")}
+        </Typography>
+      </DialogTitle>
+      <Divider />
+      <DialogContent sx={{ px: 3, py: 3 }}>
+        <Stack spacing={4}>
           {/* Date Range Picker */}
           <Box>
-            <FormLabel component="legend" sx={{ mb: 1 }}>
+            <FormLabel
+              component="legend"
+              sx={{
+                mb: 2,
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                color: "text.primary",
+              }}
+            >
               {t("actionPlanFilter.dateRange")}
             </FormLabel>
             <Stack direction="row" spacing={2}>
@@ -165,6 +199,11 @@ export const ActionPlanFilterModal: React.FC<ActionPlanFilterModalProps> = ({
                 }}
                 fullWidth
                 error={!!dateError && !!startDate}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
               />
               <TextField
                 label={t("actionPlanFilter.endDate")}
@@ -176,18 +215,68 @@ export const ActionPlanFilterModal: React.FC<ActionPlanFilterModalProps> = ({
                 }}
                 fullWidth
                 error={!!dateError && !!endDate}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
               />
             </Stack>
+            {/* Info Note */}
+            <Box
+              sx={{
+                mt: 1.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 1,
+                borderRadius: 2,
+                bgcolor: "action.hover",
+              }}
+            >
+              <InfoIcon
+                sx={{
+                  fontSize: 18,
+                  color: "text.secondary",
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {t("actionPlanFilter.dateRangeNote")}
+              </Typography>
+            </Box>
             {dateError && (
-              <Alert severity="error" sx={{ mt: 1 }}>
+              <Alert
+                severity="error"
+                sx={{
+                  mt: 1.5,
+                  borderRadius: 2,
+                }}
+              >
                 {dateError}
               </Alert>
             )}
           </Box>
 
+          <Divider />
+
           {/* Sentiment Selection */}
           <FormControl component="fieldset">
-            <FormLabel component="legend">
+            <FormLabel
+              component="legend"
+              sx={{
+                mb: 2,
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                color: "text.primary",
+              }}
+            >
               {t("actionPlanFilter.sentiment")}
             </FormLabel>
             <RadioGroup
@@ -198,49 +287,184 @@ export const ActionPlanFilterModal: React.FC<ActionPlanFilterModalProps> = ({
                   setDateError("");
                 }
               }}
+              sx={{
+                gap: 1,
+              }}
             >
-              <FormControlLabel
-                value="positive"
-                control={<Radio />}
-                label={
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <PositiveIcon sx={{ color: "success.main" }} />
-                    <span>{t("actionPlanFilter.positive")}</span>
-                  </Stack>
-                }
-              />
-              <FormControlLabel
-                value="negative"
-                control={<Radio />}
-                label={
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <NegativeIcon sx={{ color: "error.main" }} />
-                    <span>{t("actionPlanFilter.negative")}</span>
-                  </Stack>
-                }
-              />
-              <FormControlLabel
-                value="neutral"
-                control={<Radio />}
-                label={
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <NeutralIcon sx={{ color: "warning.main" }} />
-                    <span>{t("actionPlanFilter.neutral")}</span>
-                  </Stack>
-                }
-              />
+              <Paper
+                elevation={selectedSentiment === "positive" ? 2 : 0}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  border:
+                    selectedSentiment === "positive"
+                      ? "2px solid"
+                      : "1px solid",
+                  borderColor:
+                    selectedSentiment === "positive"
+                      ? "success.main"
+                      : "divider",
+                  bgcolor:
+                    selectedSentiment === "positive"
+                      ? "action.selected"
+                      : "background.paper",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "success.main",
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <FormControlLabel
+                  value="positive"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <PositiveIcon
+                        sx={{
+                          color: "success.main",
+                          fontSize: 24,
+                        }}
+                      />
+                      <Typography fontWeight={500}>
+                        {t("actionPlanFilter.positive")}
+                      </Typography>
+                    </Stack>
+                  }
+                  sx={{
+                    m: 0,
+                    width: "100%",
+                  }}
+                />
+              </Paper>
+              <Paper
+                elevation={selectedSentiment === "negative" ? 2 : 0}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  border:
+                    selectedSentiment === "negative"
+                      ? "2px solid"
+                      : "1px solid",
+                  borderColor:
+                    selectedSentiment === "negative"
+                      ? "error.main"
+                      : "divider",
+                  bgcolor:
+                    selectedSentiment === "negative"
+                      ? "action.selected"
+                      : "background.paper",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "error.main",
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <FormControlLabel
+                  value="negative"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <NegativeIcon
+                        sx={{
+                          color: "error.main",
+                          fontSize: 24,
+                        }}
+                      />
+                      <Typography fontWeight={500}>
+                        {t("actionPlanFilter.negative")}
+                      </Typography>
+                    </Stack>
+                  }
+                  sx={{
+                    m: 0,
+                    width: "100%",
+                  }}
+                />
+              </Paper>
+              <Paper
+                elevation={selectedSentiment === "neutral" ? 2 : 0}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  border:
+                    selectedSentiment === "neutral" ? "2px solid" : "1px solid",
+                  borderColor:
+                    selectedSentiment === "neutral"
+                      ? "warning.main"
+                      : "divider",
+                  bgcolor:
+                    selectedSentiment === "neutral"
+                      ? "action.selected"
+                      : "background.paper",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "warning.main",
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <FormControlLabel
+                  value="neutral"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <NeutralIcon
+                        sx={{
+                          color: "warning.main",
+                          fontSize: 24,
+                        }}
+                      />
+                      <Typography fontWeight={500}>
+                        {t("actionPlanFilter.neutral")}
+                      </Typography>
+                    </Stack>
+                  }
+                  sx={{
+                    m: 0,
+                    width: "100%",
+                  }}
+                />
+              </Paper>
             </RadioGroup>
           </FormControl>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+      <Divider />
+      <DialogActions
+        sx={{
+          px: 3,
+          py: 2.5,
+          gap: 1.5,
+        }}
+      >
+        <Button
+          onClick={onClose}
+          disabled={loading}
+          sx={{
+            borderRadius: 6,
+            px: 3,
+            textTransform: "none",
+            fontWeight: 500,
+          }}
+        >
           {t("actionPlanFilter.cancel")}
         </Button>
         <Button
           onClick={handleGenerate}
           variant="contained"
           disabled={!isFormValid() || loading}
+          sx={{
+            borderRadius: 6,
+            px: 3,
+            textTransform: "none",
+            fontWeight: 500,
+            boxShadow: "none",
+            "&:hover": {
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            },
+          }}
         >
           {loading
             ? t("actionPlanFilter.generating")

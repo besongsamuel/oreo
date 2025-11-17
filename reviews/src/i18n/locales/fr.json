@@ -433,6 +433,7 @@
     "dateRange": "Plage de dates",
     "startDate": "Date de début",
     "endDate": "Date de fin",
+    "dateRangeNote": "Plage de dates maximale : 3 mois",
     "sentiment": "Sentiment",
     "positive": "Positif",
     "negative": "Négatif",
