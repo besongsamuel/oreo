@@ -1,7 +1,6 @@
 import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
-  CompareArrows as CompareArrowsIcon,
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   Refresh as RefreshIcon,
@@ -40,6 +39,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CompanyHeader,
+  CompanyPageSection,
+  CompanyPageSidebar,
   LocationComponent,
   MonthComparisonModal,
   MonthlySummary,
@@ -110,7 +111,11 @@ interface EnrichedReview {
       };
     }>;
   };
-  keywords: string[];
+  keywords: Array<{
+    id: string;
+    text: string;
+    category: string;
+  }>;
   topics: Array<{
     id: string;
     name: string;
@@ -128,6 +133,7 @@ interface EnrichedReview {
 }
 
 interface Keyword {
+  id: string;
   keyword_text: string;
   category: string;
   occurrence_count: number;
@@ -226,6 +232,8 @@ export const CompanyPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [monthComparisonOpen, setMonthComparisonOpen] = useState(false);
+  const [activeSection, setActiveSection] =
+    useState<CompanyPageSection>("overview");
 
   // Page-level filters (apply to all data)
   const [filterLocation, setFilterLocation] = useState<string>("all");
@@ -410,7 +418,7 @@ export const CompanyPage = () => {
               .select(
                 `
                 review_id,
-                keywords(text, category)
+                keywords(id, text, category)
               `
               )
               .in("platform_connection_id", platformConnectionIds)
@@ -482,7 +490,11 @@ export const CompanyPage = () => {
       keywordsData.forEach((rk: any) => {
         const review = enrichedReviewsMap.get(rk.review_id);
         if (review && rk.keywords) {
-          review.keywords.push(rk.keywords.text);
+          review.keywords.push({
+            id: rk.keywords.id,
+            text: rk.keywords.text,
+            category: rk.keywords.category || "other",
+          });
         }
       });
 
@@ -825,7 +837,9 @@ export const CompanyPage = () => {
     if (selectedKeyword !== "all") {
       const selectedKeywordLower = selectedKeyword.toLowerCase();
       filtered = filtered.filter((review) =>
-        review.keywords.some((k) => k.toLowerCase() === selectedKeywordLower)
+        review.keywords.some(
+          (k) => k.text.toLowerCase() === selectedKeywordLower
+        )
       );
     }
 
@@ -884,17 +898,23 @@ export const CompanyPage = () => {
     // Calculate keywords from filtered reviews
     const keywordCountMap = new Map<
       string,
-      { keyword_text: string; category: string; occurrence_count: number }
+      {
+        id: string;
+        keyword_text: string;
+        category: string;
+        occurrence_count: number;
+      }
     >();
     filteredReviews.forEach((review) => {
-      review.keywords.forEach((keywordText) => {
-        const existing = keywordCountMap.get(keywordText);
+      review.keywords.forEach((keyword) => {
+        const existing = keywordCountMap.get(keyword.id);
         if (existing) {
           existing.occurrence_count++;
         } else {
-          keywordCountMap.set(keywordText, {
-            keyword_text: keywordText,
-            category: "other", // Default category
+          keywordCountMap.set(keyword.id, {
+            id: keyword.id,
+            keyword_text: keyword.text,
+            category: keyword.category || "other",
             occurrence_count: 1,
           });
         }
@@ -1521,32 +1541,14 @@ export const CompanyPage = () => {
               </Box>
             </Button>
 
-            <Stack direction="row" spacing={2}>
-              {/* Transfer Ownership Button - Show only if admin and owns company */}
-              {profile?.role === "admin" &&
-                companyOwnerId === profile.id &&
-                companyId && (
-                  <Button
-                    startIcon={<SwapHorizIcon />}
-                    onClick={() =>
-                      navigate(`/companies/${companyId}/transfer-ownership`)
-                    }
-                    variant="outlined"
-                    color="primary"
-                  >
-                    {t("companyPage.transferOwnership", "Transfer Ownership")}
-                  </Button>
-                )}
-
-              <Button
-                startIcon={<RefreshIcon />}
-                onClick={refreshPageData}
-                disabled={refreshing}
-                variant="outlined"
-              >
-                {t("companyPage.refresh")}
-              </Button>
-            </Stack>
+            <Button
+              startIcon={<RefreshIcon />}
+              onClick={refreshPageData}
+              disabled={refreshing}
+              variant="outlined"
+            >
+              {t("companyPage.refresh")}
+            </Button>
           </Stack>
 
           {/* Company Header */}
@@ -1557,73 +1559,40 @@ export const CompanyPage = () => {
             }}
           />
 
-          {/* Monthly Summary */}
-          {companyId && (
-            <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Box />
-                <Button
-                  startIcon={<CompareArrowsIcon />}
-                  onClick={() => setMonthComparisonOpen(true)}
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  sx={{
-                    borderRadius: "980px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 4,
-                    py: 1.5,
-                    boxShadow: 2,
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                >
-                  {t("companyPage.compareMonths", "Compare Months")}
-                </Button>
-              </Stack>
-              <MonthlySummary companyId={companyId} />
-            </Stack>
-          )}
-
-          {/* Locations */}
-          {companyId && (
-            <LocationComponent
-              locations={locations}
-              locationConnections={locationConnections}
-              companyId={companyId}
-              companyName={company?.name || ""}
-              onReviewsFetched={() => {
-                // Refresh all review data after fetching
-                loadAllReviewData();
-              }}
-              onConnectionCreated={async () => {
-                // Refresh location connections after platform connection
-                try {
-                  const reviewsService = new ReviewsService(supabase);
-                  const connectionsMap: Record<string, any[]> = {};
-
-                  for (const location of locations) {
-                    const connections = await reviewsService
-                      .getLocationPlatformConnections(location.id)
-                      .catch(() => []);
-                    connectionsMap[location.id] = connections || [];
-                  }
-
-                  setLocationConnections(connectionsMap);
-                } catch (err) {
-                  console.error("Error refreshing location connections:", err);
-                }
-              }}
+          {/* Stats Overview */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(4, 1fr)",
+              },
+              gap: { xs: 2, sm: 3 },
+            }}
+          >
+            <StatCardWithTrend
+              title={t("companyPage.totalReviews")}
+              value={company.total_reviews}
+              color="primary.main"
             />
-          )}
+            <StatCardWithTrend
+              title={t("companyPage.averageRating")}
+              value={`${company.average_rating.toFixed(1)}`}
+              icon={<StarIcon />}
+              color="warning.main"
+            />
+            <StatCardWithTrend
+              title={t("companyPage.positiveReviews")}
+              value={company.positive_reviews}
+              color="success.main"
+            />
+            <StatCardWithTrend
+              title={t("companyPage.negativeReviews")}
+              value={company.negative_reviews}
+              color="error.main"
+            />
+          </Box>
 
           {/* Unified Filters */}
           <Paper
@@ -1948,415 +1917,636 @@ export const CompanyPage = () => {
             </Stack>
           </Paper>
 
-          {/* Stats Overview */}
+          {/* Sidebar and Content Area */}
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(4, 1fr)",
-              },
-              gap: { xs: 2, sm: 3 },
+              display: "flex",
+              gap: { xs: 0, md: 3 },
+              alignItems: "flex-start",
+              flexDirection: { xs: "column", md: "row" },
             }}
           >
-            <StatCardWithTrend
-              title={t("companyPage.totalReviews")}
-              value={company.total_reviews}
-              color="primary.main"
+            {/* Sidebar Navigation */}
+            <CompanyPageSidebar
+              activeSection={activeSection}
+              onSectionChange={setActiveSection}
+              isAdmin={profile?.role === "admin"}
             />
-            <StatCardWithTrend
-              title={t("companyPage.averageRating")}
-              value={`${company.average_rating.toFixed(1)}`}
-              icon={<StarIcon />}
-              color="warning.main"
-            />
-            <StatCardWithTrend
-              title={t("companyPage.positiveReviews")}
-              value={company.positive_reviews}
-              color="success.main"
-            />
-            <StatCardWithTrend
-              title={t("companyPage.negativeReviews")}
-              value={company.negative_reviews}
-              color="error.main"
-            />
-          </Box>
 
-          {/* Sentiment Analysis */}
-          {sentimentData && companyId && (
-            <Box sx={{ mt: { xs: 2, sm: 0 } }}>
-              <SentimentAnalysis
-                sentimentData={sentimentData}
-                companyId={companyId}
-                filterLocation={filterLocation}
-                filterStartDate={filterStartDate}
-                filterEndDate={filterEndDate}
-                selectedKeyword={selectedKeyword}
-                selectedRating={selectedRating}
-                selectedTopic={selectedTopic}
-              />
-            </Box>
-          )}
-
-          {/* Rating Distribution and Timeline Charts */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(2, 1fr)",
-              },
-              gap: { xs: 2, sm: 3 },
-            }}
-          >
-            {/* Rating Distribution Chart */}
-            {company.total_reviews > 0 && (
-              <RatingDistributionChart
-                ratings={ratingDistribution}
-                totalReviews={company.total_reviews}
-                onRatingClick={(rating) => setSelectedRating(rating.toString())}
-              />
-            )}
-
-            {/* Timeline Chart */}
-            {timelineData.length > 0 && (
-              <ReviewsTimelineChart data={timelineData} />
-            )}
-          </Box>
-
-          {/* Topics Section */}
-          {topics.length > 0 && (
-            <Accordion defaultExpanded>
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  "& .MuiAccordionSummary-content": {
-                    alignItems: "center",
-                  },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ width: "100%", pr: 2 }}
-                >
-                  <Box>
-                    <Typography variant="h6" fontWeight={600}>
-                      {t("companyPage.topics")}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("companyPage.topicsDescription")}
-                    </Typography>
-                  </Box>
-                  {topics.length > 6 && (
-                    <Button
-                      variant="text"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowAllTopics(!showAllTopics);
-                      }}
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {showAllTopics
-                        ? t("companyPage.showLess")
-                        : t("companyPage.showAll", { count: topics.length })}
-                    </Button>
-                  )}
-                </Stack>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, 1fr)",
-                      md: "repeat(3, 1fr)",
-                    },
-                    gap: 2,
-                  }}
-                >
-                  {(showAllTopics ? topics : topics.slice(0, 6)).map(
-                    (topic) => {
-                      const isSelected = selectedTopic === topic.name;
-                      return (
-                        <Card
-                          key={topic.id}
-                          variant="outlined"
-                          onClick={() =>
-                            setSelectedTopic(isSelected ? "all" : topic.name)
-                          }
-                          sx={{
-                            transition: "all 0.2s ease-in-out",
-                            cursor: "pointer",
-                            border: isSelected ? 2 : 1,
-                            borderColor: isSelected
-                              ? "primary.main"
-                              : "divider",
-                            "&:hover": {
-                              boxShadow: 2,
-                              transform: "translateY(-2px)",
-                            },
-                          }}
-                        >
-                          <CardContent>
-                            <Stack spacing={1}>
-                              <Stack
-                                direction="row"
-                                justifyContent="space-between"
-                                alignItems="flex-start"
-                              >
-                                <Box>
-                                  <Typography
-                                    variant="subtitle1"
-                                    fontWeight={600}
-                                  >
-                                    {topic.name}
-                                  </Typography>
-                                  <Chip
-                                    label={topic.category}
-                                    size="small"
-                                    color={
-                                      topic.category === "satisfaction"
-                                        ? "success"
-                                        : topic.category === "dissatisfaction"
-                                        ? "error"
-                                        : "default"
-                                    }
-                                    sx={{ mt: 0.5 }}
-                                  />
-                                </Box>
-                              </Stack>
-                              {topic.description && (
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {topic.description}
-                                </Typography>
-                              )}
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                              >
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {t("companyPage.mentionedIn")}
-                                </Typography>
-                                <Typography variant="body2" fontWeight={600}>
-                                  {topic.occurrence_count}{" "}
-                                  {topic.occurrence_count === 1
-                                    ? t("companyPage.review")
-                                    : t("companyPage.reviews")}
-                                </Typography>
-                              </Stack>
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      );
-                    }
-                  )}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          )}
-
-          {/* Keyword Analysis */}
-          {keywordAnalysis.length > 0 && (
-            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-              <Typography variant="h6" gutterBottom>
-                {t("companyPage.keywordAnalysisByCategory")}
-              </Typography>
-              <Stack spacing={3} sx={{ mt: 3 }}>
-                {keywordAnalysis.map((analysis) => (
-                  <Box key={analysis.category}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      mb={1}
-                    >
-                      <Typography
-                        variant="body1"
-                        fontWeight={600}
-                        textTransform="capitalize"
-                      >
-                        {analysis.category}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {analysis.count} {t("companyPage.mentions")} (
-                        {analysis.percentage.toFixed(1)}%)
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={analysis.percentage}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "rgba(0, 0, 0, 0.08)",
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 4,
-                          backgroundColor: "primary.main",
-                        },
-                      }}
-                    />
-                  </Box>
-                ))}
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Trending Keywords */}
-          {(dataLoading || keywords.length > 0) && (
-            <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 1 }}
-              >
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    {t("companyPage.trendingKeywords")}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    {t("companyPage.trendingKeywordsDescription")}
-                  </Typography>
-                </Box>
-                {!dataLoading && keywords.length > 10 && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => setShowAllKeywords(!showAllKeywords)}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {showAllKeywords
-                      ? t("companyPage.showLess")
-                      : t("companyPage.showAll", { count: keywords.length })}
-                  </Button>
-                )}
-              </Stack>
-              <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 3 }}>
-                {dataLoading ? (
-                  <>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                      <KeywordChipSkeleton key={i} />
-                    ))}
-                  </>
-                ) : (
-                  (showAllKeywords ? keywords : keywords.slice(0, 10)).map(
-                    (keyword, index) => {
-                      const isSelected =
-                        selectedKeyword === keyword.keyword_text;
-                      return (
-                        <Chip
-                          key={index}
-                          label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
-                          color="primary"
-                          variant={isSelected ? "filled" : "outlined"}
-                          onClick={() =>
-                            setSelectedKeyword(
-                              isSelected ? "all" : keyword.keyword_text
-                            )
-                          }
-                          sx={{
-                            fontWeight: 500,
-                            fontSize: "0.95rem",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease-in-out",
-                          }}
-                        />
-                      );
-                    }
-                  )
-                )}
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Reviews */}
-          <ReviewsList
-            reviews={paginatedReviews}
-            totalCount={filteredReviews.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            loading={dataLoading}
-            selectedKeyword={selectedKeyword}
-            selectedRating={selectedRating}
-            onClearFilters={handleClearFilters}
-            getSentimentColor={getSentimentColor}
-          />
-
-          {/* Delete Company Section - Admin Only */}
-          {profile?.role === "admin" && (
+            {/* Main Content Area */}
             <Box
               sx={{
-                mt: 4,
-                pt: 4,
-                borderTop: "1px solid",
-                borderColor: "divider",
-                display: "flex",
-                justifyContent: "center",
+                flex: 1,
+                width: "100%",
+                minWidth: 0,
+                pb: { xs: 10, md: 0 }, // Space for mobile bottom nav
               }}
             >
-              <Stack
-                spacing={2}
-                sx={{
-                  alignItems: "center",
-                  textAlign: "center",
-                  maxWidth: 600,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  color="error"
-                  fontWeight={600}
-                  sx={{ mb: 1 }}
-                >
-                  {t("companyPage.deleteCompany", "Delete Company")}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t(
-                    "companyPage.deleteCompanyWarning",
-                    "Permanently delete this company and all associated data. This action cannot be undone."
+              {activeSection === "overview" && (
+                <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+                  {/* Monthly Summary */}
+                  {companyId && (
+                    <MonthlySummary
+                      companyId={companyId}
+                      onCompareMonths={() => setMonthComparisonOpen(true)}
+                    />
                   )}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setDeleteDialogOpen(true)}
-                  sx={{
-                    borderRadius: "980px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 3,
-                    py: 1.5,
+
+                  {/* Rating Distribution and Timeline Charts */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        md: "repeat(2, 1fr)",
+                      },
+                      gap: { xs: 2, sm: 3 },
+                    }}
+                  >
+                    {/* Rating Distribution Chart */}
+                    {company.total_reviews > 0 && (
+                      <RatingDistributionChart
+                        ratings={ratingDistribution}
+                        totalReviews={company.total_reviews}
+                        onRatingClick={(rating) =>
+                          setSelectedRating(rating.toString())
+                        }
+                      />
+                    )}
+
+                    {/* Timeline Chart */}
+                    {timelineData.length > 0 && (
+                      <ReviewsTimelineChart data={timelineData} />
+                    )}
+                  </Box>
+                </Stack>
+              )}
+
+              {activeSection === "reviews" && (
+                <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+                  {/* Topics Section */}
+                  {topics.length > 0 && (
+                    <Accordion defaultExpanded>
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        sx={{
+                          "& .MuiAccordionSummary-content": {
+                            alignItems: "center",
+                          },
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          sx={{ width: "100%", pr: 2 }}
+                        >
+                          <Box>
+                            <Typography variant="h6" fontWeight={600}>
+                              {t("companyPage.topics")}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {t("companyPage.topicsDescription")}
+                            </Typography>
+                          </Box>
+                          {topics.length > 6 && (
+                            <Button
+                              variant="text"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAllTopics(!showAllTopics);
+                              }}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {showAllTopics
+                                ? t("companyPage.showLess")
+                                : t("companyPage.showAll", {
+                                    count: topics.length,
+                                  })}
+                            </Button>
+                          )}
+                        </Stack>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: {
+                              xs: "1fr",
+                              sm: "repeat(2, 1fr)",
+                              md: "repeat(3, 1fr)",
+                            },
+                            gap: 2,
+                          }}
+                        >
+                          {(showAllTopics ? topics : topics.slice(0, 6)).map(
+                            (topic) => {
+                              const isSelected = selectedTopic === topic.name;
+                              return (
+                                <Card
+                                  key={topic.id}
+                                  variant="outlined"
+                                  onClick={() =>
+                                    setSelectedTopic(
+                                      isSelected ? "all" : topic.name
+                                    )
+                                  }
+                                  sx={{
+                                    transition: "all 0.2s ease-in-out",
+                                    cursor: "pointer",
+                                    border: isSelected ? 2 : 1,
+                                    borderColor: isSelected
+                                      ? "primary.main"
+                                      : "divider",
+                                    "&:hover": {
+                                      boxShadow: 2,
+                                      transform: "translateY(-2px)",
+                                    },
+                                  }}
+                                >
+                                  <CardContent>
+                                    <Stack spacing={1}>
+                                      <Stack
+                                        direction="row"
+                                        justifyContent="space-between"
+                                        alignItems="flex-start"
+                                      >
+                                        <Box>
+                                          <Typography
+                                            variant="subtitle1"
+                                            fontWeight={600}
+                                          >
+                                            {topic.name}
+                                          </Typography>
+                                          <Chip
+                                            label={topic.category}
+                                            size="small"
+                                            color={
+                                              topic.category === "satisfaction"
+                                                ? "success"
+                                                : topic.category ===
+                                                  "dissatisfaction"
+                                                ? "error"
+                                                : "default"
+                                            }
+                                            sx={{ mt: 0.5 }}
+                                          />
+                                        </Box>
+                                      </Stack>
+                                      {topic.description && (
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {topic.description}
+                                        </Typography>
+                                      )}
+                                      <Stack
+                                        direction="row"
+                                        spacing={1}
+                                        alignItems="center"
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {t("companyPage.mentionedIn")}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          fontWeight={600}
+                                        >
+                                          {topic.occurrence_count}{" "}
+                                          {topic.occurrence_count === 1
+                                            ? t("companyPage.review")
+                                            : t("companyPage.reviews")}
+                                        </Typography>
+                                      </Stack>
+                                    </Stack>
+                                  </CardContent>
+                                </Card>
+                              );
+                            }
+                          )}
+                        </Box>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
+
+                  {/* Trending Keywords */}
+                  {(dataLoading || keywords.length > 0) && (
+                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        sx={{ mb: 1 }}
+                      >
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {t("companyPage.trendingKeywords")}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                          >
+                            {t("companyPage.trendingKeywordsDescription")}
+                          </Typography>
+                        </Box>
+                        {!dataLoading && keywords.length > 10 && (
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => setShowAllKeywords(!showAllKeywords)}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {showAllKeywords
+                              ? t("companyPage.showLess")
+                              : t("companyPage.showAll", {
+                                  count: keywords.length,
+                                })}
+                          </Button>
+                        )}
+                      </Stack>
+                      <Stack
+                        direction="row"
+                        flexWrap="wrap"
+                        gap={1.5}
+                        sx={{ mt: 3 }}
+                      >
+                        {dataLoading ? (
+                          <>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                              <KeywordChipSkeleton key={i} />
+                            ))}
+                          </>
+                        ) : (
+                          (showAllKeywords
+                            ? keywords
+                            : keywords.slice(0, 10)
+                          ).map((keyword, index) => {
+                            const isSelected =
+                              selectedKeyword === keyword.keyword_text;
+                            return (
+                              <Chip
+                                key={index}
+                                label={`${keyword.keyword_text} (${keyword.occurrence_count})`}
+                                color="primary"
+                                variant={isSelected ? "filled" : "outlined"}
+                                onClick={() =>
+                                  setSelectedKeyword(
+                                    isSelected ? "all" : keyword.keyword_text
+                                  )
+                                }
+                                sx={{
+                                  fontWeight: 500,
+                                  fontSize: "0.95rem",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              />
+                            );
+                          })
+                        )}
+                      </Stack>
+                    </Paper>
+                  )}
+
+                  {/* Reviews */}
+                  <ReviewsList
+                    reviews={paginatedReviews}
+                    totalCount={filteredReviews.length}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    loading={dataLoading}
+                    selectedKeyword={selectedKeyword}
+                    selectedRating={selectedRating}
+                    onClearFilters={handleClearFilters}
+                    getSentimentColor={getSentimentColor}
+                  />
+                </Stack>
+              )}
+
+              {activeSection === "analytics" && (
+                <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+                  {/* Sentiment Analysis */}
+                  {sentimentData && companyId && (
+                    <Box>
+                      <SentimentAnalysis
+                        sentimentData={sentimentData}
+                        companyId={companyId}
+                        filterLocation={filterLocation}
+                        filterStartDate={filterStartDate}
+                        filterEndDate={filterEndDate}
+                        selectedKeyword={selectedKeyword}
+                        selectedRating={selectedRating}
+                        selectedTopic={selectedTopic}
+                      />
+                    </Box>
+                  )}
+
+                  {/* Keyword Analysis */}
+                  {keywordAnalysis.length > 0 && (
+                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                      <Typography variant="h6" gutterBottom>
+                        {t("companyPage.keywordAnalysisByCategory")}
+                      </Typography>
+                      <Stack spacing={3} sx={{ mt: 3 }}>
+                        {keywordAnalysis.map((analysis) => (
+                          <Box key={analysis.category}>
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="center"
+                              mb={1}
+                            >
+                              <Typography
+                                variant="body1"
+                                fontWeight={600}
+                                textTransform="capitalize"
+                              >
+                                {analysis.category}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {analysis.count} {t("companyPage.mentions")} (
+                                {analysis.percentage.toFixed(1)}%)
+                              </Typography>
+                            </Stack>
+                            <LinearProgress
+                              variant="determinate"
+                              value={analysis.percentage}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                "& .MuiLinearProgress-bar": {
+                                  borderRadius: 4,
+                                  backgroundColor: "primary.main",
+                                },
+                              }}
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Paper>
+                  )}
+
+                  {/* Topics Section (detailed view) */}
+                  {topics.length > 0 && (
+                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                      <Typography variant="h6" gutterBottom>
+                        {t("companyPage.topics")}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                      >
+                        {t("companyPage.topicsDescription")}
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(2, 1fr)",
+                            md: "repeat(3, 1fr)",
+                          },
+                          gap: 2,
+                        }}
+                      >
+                        {topics.map((topic) => {
+                          const isSelected = selectedTopic === topic.name;
+                          return (
+                            <Card
+                              key={topic.id}
+                              variant="outlined"
+                              onClick={() =>
+                                setSelectedTopic(
+                                  isSelected ? "all" : topic.name
+                                )
+                              }
+                              sx={{
+                                transition: "all 0.2s ease-in-out",
+                                cursor: "pointer",
+                                border: isSelected ? 2 : 1,
+                                borderColor: isSelected
+                                  ? "primary.main"
+                                  : "divider",
+                                "&:hover": {
+                                  boxShadow: 2,
+                                  transform: "translateY(-2px)",
+                                },
+                              }}
+                            >
+                              <CardContent>
+                                <Stack spacing={1}>
+                                  <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    alignItems="flex-start"
+                                  >
+                                    <Box>
+                                      <Typography
+                                        variant="subtitle1"
+                                        fontWeight={600}
+                                      >
+                                        {topic.name}
+                                      </Typography>
+                                      <Chip
+                                        label={topic.category}
+                                        size="small"
+                                        color={
+                                          topic.category === "satisfaction"
+                                            ? "success"
+                                            : topic.category ===
+                                              "dissatisfaction"
+                                            ? "error"
+                                            : "default"
+                                        }
+                                        sx={{ mt: 0.5 }}
+                                      />
+                                    </Box>
+                                  </Stack>
+                                  {topic.description && (
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      {topic.description}
+                                    </Typography>
+                                  )}
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      {t("companyPage.mentionedIn")}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={600}
+                                    >
+                                      {topic.occurrence_count}{" "}
+                                      {topic.occurrence_count === 1
+                                        ? t("companyPage.review")
+                                        : t("companyPage.reviews")}
+                                    </Typography>
+                                  </Stack>
+                                </Stack>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </Box>
+                    </Paper>
+                  )}
+                </Stack>
+              )}
+
+              {activeSection === "locations" && companyId && (
+                <LocationComponent
+                  locations={locations}
+                  locationConnections={locationConnections}
+                  companyId={companyId}
+                  companyName={company?.name || ""}
+                  onReviewsFetched={() => {
+                    // Refresh all review data after fetching
+                    loadAllReviewData();
                   }}
-                >
-                  {t("companyPage.deleteCompany", "Delete Company")}
-                </Button>
-              </Stack>
+                  onConnectionCreated={async () => {
+                    // Refresh location connections after platform connection
+                    try {
+                      const reviewsService = new ReviewsService(supabase);
+                      const connectionsMap: Record<string, any[]> = {};
+
+                      for (const location of locations) {
+                        const connections = await reviewsService
+                          .getLocationPlatformConnections(location.id)
+                          .catch(() => []);
+                        connectionsMap[location.id] = connections || [];
+                      }
+
+                      setLocationConnections(connectionsMap);
+                    } catch (err) {
+                      console.error(
+                        "Error refreshing location connections:",
+                        err
+                      );
+                    }
+                  }}
+                />
+              )}
+
+              {activeSection === "settings" && profile?.role === "admin" && (
+                <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+                  {/* Transfer Ownership Button */}
+                  {companyOwnerId === profile.id && companyId && (
+                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                      <Stack spacing={2}>
+                        <Typography variant="h6">
+                          {t(
+                            "companyPage.transferOwnership",
+                            "Transfer Ownership"
+                          )}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Transfer ownership of this company to another user.
+                        </Typography>
+                        <Button
+                          startIcon={<SwapHorizIcon />}
+                          onClick={() =>
+                            navigate(
+                              `/companies/${companyId}/transfer-ownership`
+                            )
+                          }
+                          variant="outlined"
+                          color="primary"
+                          sx={{
+                            alignSelf: "flex-start",
+                            borderRadius: "980px",
+                            textTransform: "none",
+                          }}
+                        >
+                          {t(
+                            "companyPage.transferOwnership",
+                            "Transfer Ownership"
+                          )}
+                        </Button>
+                      </Stack>
+                    </Paper>
+                  )}
+
+                  {/* Delete Company Section */}
+                  <Box
+                    sx={{
+                      mt: 4,
+                      pt: 4,
+                      borderTop: "1px solid",
+                      borderColor: "divider",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Stack
+                      spacing={2}
+                      sx={{
+                        alignItems: "center",
+                        textAlign: "center",
+                        maxWidth: 600,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        color="error"
+                        fontWeight={600}
+                        sx={{ mb: 1 }}
+                      >
+                        {t("companyPage.deleteCompany", "Delete Company")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t(
+                          "companyPage.deleteCompanyWarning",
+                          "Permanently delete this company and all associated data. This action cannot be undone."
+                        )}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => setDeleteDialogOpen(true)}
+                        sx={{
+                          borderRadius: "980px",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          px: 3,
+                          py: 1.5,
+                        }}
+                      >
+                        {t("companyPage.deleteCompany", "Delete Company")}
+                      </Button>
+                    </Stack>
+                  </Box>
+                </Stack>
+              )}
             </Box>
-          )}
+          </Box>
         </Stack>
 
         {/* Delete Company Confirmation Dialog */}

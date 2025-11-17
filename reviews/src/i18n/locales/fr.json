@@ -720,7 +720,14 @@
     "deleteCompanySuccess": "Entreprise supprimée avec succès",
     "hasReply": "A une réponse",
     "replies": "Réponses",
-    "compareMonths": "Comparer les mois"
+    "compareMonths": "Comparer les mois",
+    "sidebar": {
+      "overview": "Vue d'ensemble",
+      "reviews": "Avis",
+      "analytics": "Analyses",
+      "locations": "Emplacements",
+      "settings": "Paramètres"
+    }
   },
   "footer": {
     "privacyPolicy": "Politique de confidentialité",

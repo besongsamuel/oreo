@@ -720,7 +720,14 @@
     "deleteCompanySuccess": "Company deleted successfully",
     "hasReply": "Has Reply",
     "replies": "Replies",
-    "compareMonths": "Compare Months"
+    "compareMonths": "Compare Months",
+    "sidebar": {
+      "overview": "Overview",
+      "reviews": "Reviews",
+      "analytics": "Analytics",
+      "locations": "Locations",
+      "settings": "Settings"
+    }
   },
   "footer": {
     "privacyPolicy": "Privacy Policy",

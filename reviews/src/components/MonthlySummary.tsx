@@ -1,6 +1,7 @@
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
+  CompareArrows as CompareArrowsIcon,
   EmojiEvents as EmojiEventsIcon,
   Insights as InsightsIcon,
   TrendingUp as TrendingUpIcon,
@@ -28,6 +29,7 @@ import { MonthlySummarySkeleton } from "./SkeletonLoaders";
 
 interface MonthlySummaryProps {
   companyId: string;
+  onCompareMonths?: () => void;
 }
 
 interface MonthData {
@@ -49,7 +51,10 @@ interface SummaryData {
   summary: string | null;
 }
 
-export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
+export const MonthlySummary = ({
+  companyId,
+  onCompareMonths,
+}: MonthlySummaryProps) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
   const userContext = useContext(UserContext);
@@ -411,28 +416,59 @@ export const MonthlySummary = ({ companyId }: MonthlySummaryProps) => {
       <Stack spacing={3}>
         {/* Title */}
         <Box>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: "primary.main",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <InsightsIcon sx={{ fontSize: 28 }} />
-            </Box>
-            <Box>
-              <Typography variant="h5" fontWeight={600} gutterBottom>
-                {t("monthlySummary.title")}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t("monthlySummary.subtitle")}
-              </Typography>
-            </Box>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={2}
+          >
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: "primary.main",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <InsightsIcon sx={{ fontSize: 28 }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={600} gutterBottom>
+                  {t("monthlySummary.title")}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t("monthlySummary.subtitle")}
+                </Typography>
+              </Box>
+            </Stack>
+            {onCompareMonths && (
+              <Button
+                startIcon={<CompareArrowsIcon />}
+                onClick={onCompareMonths}
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{
+                  borderRadius: "980px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  boxShadow: 2,
+                  "&:hover": {
+                    boxShadow: 4,
+                    transform: "translateY(-2px)",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
+              >
+                {t("companyPage.compareMonths", "Compare Months")}
+              </Button>
+            )}
           </Stack>
         </Box>
 
