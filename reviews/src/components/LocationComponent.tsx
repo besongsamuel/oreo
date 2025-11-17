@@ -12,12 +12,14 @@ import {
   Chip,
   Divider,
   Paper,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { useLocationSummary } from "../hooks/useLocationSummary";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useSupabase } from "../hooks/useSupabase";
 import { getPlatformConfig } from "../services/platforms/platformRegistry";
@@ -56,6 +58,129 @@ interface LocationComponentProps {
   onReviewsFetched?: () => void; // Callback to refresh data after fetching reviews
   onConnectionCreated?: () => void; // Callback to refresh after platform connection
 }
+
+// LocationCard component that uses the hook for each location
+interface LocationCardProps {
+  location: Location;
+  connections: LocationConnection[];
+  onConnectClick: (locationId: string) => void;
+}
+
+const LocationCard = ({
+  location,
+  connections,
+  onConnectClick,
+}: LocationCardProps) => {
+  const { t } = useTranslation();
+  const { totalReviews, averageRating, loading } = useLocationSummary(
+    location.id
+  );
+
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Stack spacing={2}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="flex-start"
+          >
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {location.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {location.address}, {location.city}, {location.state}
+              </Typography>
+            </Box>
+
+            {/* Platform Connection Badges */}
+            {connections.length > 0 && (
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {connections.map((connection) => {
+                  const config = getPlatformConfig(connection.platform.name);
+                  const platformColor = config?.color || "#666666";
+
+                  return (
+                    <Chip
+                      key={connection.id}
+                      label={connection.platform.display_name}
+                      size="small"
+                      sx={{
+                        backgroundColor: platformColor,
+                        color: "white",
+                        fontWeight: 500,
+                        "& .MuiChip-label": {
+                          fontSize: "0.75rem",
+                        },
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            )}
+          </Stack>
+
+          {/* Connect Platform Button */}
+          <Button
+            variant="outlined"
+            startIcon={<LinkIcon />}
+            onClick={() => onConnectClick(location.id)}
+            size="small"
+            sx={{
+              borderRadius: 980,
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.75rem",
+              alignSelf: "flex-start",
+            }}
+          >
+            {t("location.connectPlatform", {
+              defaultValue: "Connect Platform",
+            })}
+          </Button>
+
+          <Divider />
+
+          <Stack direction="row" spacing={3}>
+            <Box>
+              {loading ? (
+                <Skeleton variant="text" width={40} height={32} />
+              ) : (
+                <Typography variant="h6" fontWeight={600}>
+                  {totalReviews}
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                {t("companies.reviews")}
+              </Typography>
+            </Box>
+            <Box>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                {loading ? (
+                  <Skeleton variant="text" width={40} height={32} />
+                ) : (
+                  <Typography variant="h6" fontWeight={600}>
+                    {averageRating > 0 ? averageRating.toFixed(1) : "0.0"}
+                  </Typography>
+                )}
+                <StarIcon
+                  sx={{
+                    color: "warning.main",
+                    fontSize: "1rem",
+                  }}
+                />
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                {t("companies.avgRating")}
+              </Typography>
+            </Box>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const LocationComponent = ({
   locations,
@@ -248,103 +373,12 @@ export const LocationComponent = ({
           const connections = locationConnections[location.id] || [];
 
           return (
-            <Card key={location.id} variant="outlined">
-              <CardContent>
-                <Stack spacing={2}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="flex-start"
-                  >
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {location.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {location.address}, {location.city}, {location.state}
-                      </Typography>
-                    </Box>
-
-                    {/* Platform Connection Badges */}
-                    {connections.length > 0 && (
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {connections.map((connection) => {
-                          const platformConfig = getPlatformConfig(
-                            connection.platform.name
-                          );
-                          const platformColor =
-                            platformConfig?.color || "#666666";
-
-                          return (
-                            <Chip
-                              key={connection.id}
-                              label={connection.platform.display_name}
-                              size="small"
-                              sx={{
-                                backgroundColor: platformColor,
-                                color: "white",
-                                fontWeight: 500,
-                                "& .MuiChip-label": {
-                                  fontSize: "0.75rem",
-                                },
-                              }}
-                            />
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </Stack>
-
-                  {/* Connect Platform Button */}
-                  <Button
-                    variant="outlined"
-                    startIcon={<LinkIcon />}
-                    onClick={() => handleOpenConnectDialog(location.id)}
-                    size="small"
-                    sx={{
-                      borderRadius: 980,
-                      textTransform: "none",
-                      fontWeight: 500,
-                      fontSize: "0.75rem",
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    {t("location.connectPlatform", {
-                      defaultValue: "Connect Platform",
-                    })}
-                  </Button>
-
-                  <Divider />
-
-                  <Stack direction="row" spacing={3}>
-                    <Box>
-                      <Typography variant="h6" fontWeight={600}>
-                        {location.total_reviews}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {t("companies.reviews")}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Typography variant="h6" fontWeight={600}>
-                          {location.average_rating.toFixed(1)}
-                        </Typography>
-                        <StarIcon
-                          sx={{
-                            color: "warning.main",
-                            fontSize: "1rem",
-                          }}
-                        />
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary">
-                        {t("companies.avgRating")}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+            <LocationCard
+              key={location.id}
+              location={location}
+              connections={connections}
+              onConnectClick={handleOpenConnectDialog}
+            />
           );
         })}
       </Box>
