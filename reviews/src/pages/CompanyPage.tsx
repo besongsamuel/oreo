@@ -953,6 +953,36 @@ export const CompanyPage = () => {
     selectedCommentsFilter,
   ]);
 
+  // Calculate stats from filtered reviews
+  const filteredStats = useMemo(() => {
+    if (filteredReviews.length === 0) {
+      return {
+        totalReviews: 0,
+        averageRating: 0,
+        positiveReviews: 0,
+        negativeReviews: 0,
+      };
+    }
+
+    const totalReviews = filteredReviews.length;
+    const averageRating =
+      filteredReviews.reduce((sum, review) => sum + review.rating, 0) /
+      totalReviews;
+    const positiveReviews = filteredReviews.filter(
+      (review) => review.sentiment === "positive"
+    ).length;
+    const negativeReviews = filteredReviews.filter(
+      (review) => review.sentiment === "negative"
+    ).length;
+
+    return {
+      totalReviews,
+      averageRating,
+      positiveReviews,
+      negativeReviews,
+    };
+  }, [filteredReviews]);
+
   // Client-side calculations - runs when filtered reviews change
   useEffect(() => {
     if (filteredReviews.length === 0) {
@@ -1678,23 +1708,23 @@ export const CompanyPage = () => {
           >
             <StatCardWithTrend
               title={t("companyPage.totalReviews")}
-              value={company.total_reviews}
+              value={filteredStats.totalReviews}
               color="primary.main"
             />
             <StatCardWithTrend
               title={t("companyPage.averageRating")}
-              value={`${company.average_rating.toFixed(1)}`}
+              value={`${filteredStats.averageRating.toFixed(1)}`}
               icon={<StarIcon />}
               color="warning.main"
             />
             <StatCardWithTrend
               title={t("companyPage.positiveReviews")}
-              value={company.positive_reviews}
+              value={filteredStats.positiveReviews}
               color="success.main"
             />
             <StatCardWithTrend
               title={t("companyPage.negativeReviews")}
-              value={company.negative_reviews}
+              value={filteredStats.negativeReviews}
               color="error.main"
             />
           </Box>
