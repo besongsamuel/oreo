@@ -22,7 +22,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -243,7 +242,8 @@ export const CompanyPage = () => {
   };
 
   // Page-level filters (apply to all data)
-  const [filterLocation, setFilterLocation] = useState<string>("all");
+  // filterLocation: empty array = all locations, array with location names = specific locations
+  const [filterLocation, setFilterLocation] = useState<string[]>([]);
   const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
   const [dateFilterPreset, setDateFilterPreset] = useState<
@@ -423,9 +423,9 @@ export const CompanyPage = () => {
 
       // Apply location filter
       let filteredLocationIds = locationsData.map((loc) => loc.id);
-      if (filterLocation !== "all") {
-        const filteredLocs = locationsData.filter(
-          (loc) => loc.name === filterLocation
+      if (filterLocation.length > 0) {
+        const filteredLocs = locationsData.filter((loc) =>
+          filterLocation.includes(loc.name)
         );
         filteredLocationIds = filteredLocs.map((loc) => loc.id);
       }
@@ -1450,6 +1450,14 @@ export const CompanyPage = () => {
   // Get unique locations from all locations (not just filtered reviews)
   const uniqueLocations = locations.map((loc) => loc.name).sort();
 
+  // Initialize location filter: if only one location, select it by default
+  useEffect(() => {
+    if (uniqueLocations.length === 1 && filterLocation.length === 0) {
+      setFilterLocation([uniqueLocations[0]]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uniqueLocations.length]);
+
   // Get top keywords for filter dropdown (limit to top 20)
   const topKeywordsForFilter = keywords.slice(0, 20);
 
@@ -1461,7 +1469,7 @@ export const CompanyPage = () => {
   };
 
   const handleClearAllFilters = () => {
-    setFilterLocation("all");
+    setFilterLocation([]);
     setFilterStartDate("");
     setFilterEndDate("");
     setDateFilterPreset(null);
@@ -1469,6 +1477,24 @@ export const CompanyPage = () => {
     setSelectedRating("all");
     setSelectedTopic("all");
     setSelectedCommentsFilter("all");
+  };
+
+  const handleLocationToggle = (locationName: string | "all") => {
+    if (locationName === "all") {
+      // Select "All Locations" - clear all specific location selections
+      setFilterLocation([]);
+    } else {
+      setFilterLocation((prev) => {
+        if (prev.includes(locationName)) {
+          // Deselecting a location - if it's the last one, select "all" instead
+          const newSelection = prev.filter((loc) => loc !== locationName);
+          return newSelection.length === 0 ? [] : newSelection;
+        } else {
+          // Selecting a location - add it to the selection
+          return [...prev, locationName];
+        }
+      });
+    }
   };
 
   const handleCustomDateApply = () => {
@@ -1697,7 +1723,7 @@ export const CompanyPage = () => {
                     {t("companyPage.dataFiltersDescription")}
                   </Typography>
                 </Box>
-                {(filterLocation !== "all" ||
+                {(filterLocation.length > 0 ||
                   dateFilterPreset ||
                   selectedKeyword !== "all" ||
                   selectedRating !== "all" ||
@@ -1788,6 +1814,54 @@ export const CompanyPage = () => {
                 </Stack>
               </Box>
 
+              {/* Location Filter - Chips on own line */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  {t("companyPage.locations", "Locations")}
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {/* Show "All Locations" chip only if there are multiple locations */}
+                  {uniqueLocations.length > 1 && (
+                    <Chip
+                      label={t("companyPage.allLocations", "All Locations")}
+                      onClick={() => handleLocationToggle("all")}
+                      color={
+                        filterLocation.length === 0 ? "primary" : "default"
+                      }
+                      variant={
+                        filterLocation.length === 0 ? "filled" : "outlined"
+                      }
+                      sx={{
+                        cursor: "pointer",
+                        transition: "all 0.2s ease-in-out",
+                        fontWeight: 500,
+                      }}
+                    />
+                  )}
+                  {uniqueLocations.map((location) => {
+                    const isSelected = filterLocation.includes(location);
+                    return (
+                      <Chip
+                        key={location}
+                        label={location}
+                        onClick={() => handleLocationToggle(location)}
+                        color={isSelected ? "primary" : "default"}
+                        variant={isSelected ? "filled" : "outlined"}
+                        sx={{
+                          cursor: "pointer",
+                          transition: "all 0.2s ease-in-out",
+                          fontWeight: 500,
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+
               <Box
                 sx={{
                   display: "grid",
@@ -1799,30 +1873,6 @@ export const CompanyPage = () => {
                   gap: 2,
                 }}
               >
-                {/* Location Filter */}
-                <FormControl fullWidth size="small">
-                  <InputLabel id="page-location-filter-label">
-                    {t("companyPage.allLocations")}
-                  </InputLabel>
-                  <Select
-                    labelId="page-location-filter-label"
-                    value={filterLocation}
-                    label={t("companyPage.allLocations")}
-                    onChange={(e) => setFilterLocation(e.target.value)}
-                    sx={{ bgcolor: "background.paper" }}
-                  >
-                    <MenuItem value="all">
-                      {t("companyPage.allLocations")}
-                    </MenuItem>
-                    <Divider />
-                    {uniqueLocations.map((location) => (
-                      <MenuItem key={location} value={location}>
-                        {location}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
                 {/* Keyword Filter */}
                 <FormControl fullWidth size="small">
                   <InputLabel id="keyword-filter-label">
@@ -1948,7 +1998,7 @@ export const CompanyPage = () => {
               </Box>
 
               {/* Active Filters Display */}
-              {(filterLocation !== "all" ||
+              {(filterLocation.length > 0 ||
                 dateFilterPreset ||
                 selectedKeyword !== "all" ||
                 selectedRating !== "all" ||
@@ -1967,14 +2017,15 @@ export const CompanyPage = () => {
                   >
                     {t("companyPage.active")}
                   </Typography>
-                  {filterLocation !== "all" && (
+                  {filterLocation.map((location) => (
                     <Chip
-                      label={filterLocation}
+                      key={location}
+                      label={location}
                       size="small"
                       variant="outlined"
-                      onDelete={() => setFilterLocation("all")}
+                      onDelete={() => handleLocationToggle(location)}
                     />
-                  )}
+                  ))}
                   {dateFilterPreset && (
                     <Chip
                       label={
@@ -2366,7 +2417,11 @@ export const CompanyPage = () => {
                       <SentimentAnalysis
                         sentimentData={sentimentData}
                         companyId={companyId}
-                        filterLocation={filterLocation}
+                        filterLocation={
+                          filterLocation.length > 0
+                            ? filterLocation.join(", ")
+                            : undefined
+                        }
                         filterStartDate={filterStartDate}
                         filterEndDate={filterEndDate}
                         selectedKeyword={selectedKeyword}
