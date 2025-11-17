@@ -1,4 +1,4 @@
-import { Box, Card, Stack, Typography } from "@mui/material";
+import { Box, Card, Chip, Stack, Typography } from "@mui/material";
 import Chart from "react-apexcharts";
 import { useTranslation } from "react-i18next";
 
@@ -86,28 +86,16 @@ export const RatingDistributionChart = ({
         distributed: true,
         borderRadius: 8,
         dataLabels: {
-          position: "top",
+          position: "center",
         },
       },
     },
     colors: data.map((d) => getStarColor(d.rating)),
     dataLabels: {
-      enabled: true,
-      formatter: (val: number) =>
-        `${val} (${((val / totalReviews) * 100).toFixed(1)}%)`,
-      style: {
-        fontSize: "14px",
-        fontWeight: 700,
-        colors: ["#ffffff"], // White text
-      },
-      dropShadow: {
-        enabled: true,
-        top: 1,
-        left: 1,
-        blur: 2,
-        opacity: 0.9,
-        color: "#000000",
-      },
+      enabled: false,
+    },
+    legend: {
+      show: false,
     },
     xaxis: {
       categories: data.map(
@@ -142,6 +130,32 @@ export const RatingDistributionChart = ({
         <Box sx={{ height: 250 }}>
           <Chart options={options} series={series} type="bar" height={250} />
         </Box>
+        {data.length > 0 && (
+          <Stack
+            direction="row"
+            spacing={1.5}
+            flexWrap="wrap"
+            justifyContent="center"
+            sx={{ mt: 1 }}
+          >
+            {data.map((item) => (
+              <Chip
+                key={item.rating}
+                label={`${item.rating} ${item.rating !== 1 ? t("charts.stars") : t("charts.star")}: ${item.count} (${item.percentage.toFixed(1)}%)`}
+                sx={{
+                  bgcolor: getStarColor(item.rating),
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  height: 32,
+                  "& .MuiChip-label": {
+                    px: 1.5,
+                  },
+                }}
+              />
+            ))}
+          </Stack>
+        )}
         {data.length === 0 && (
           <Typography
             variant="body2"
