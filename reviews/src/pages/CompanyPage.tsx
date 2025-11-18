@@ -37,6 +37,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  AverageRatingCard,
   CompanyHeader,
   CompanyPageSection,
   CompanyPageSidebar,
@@ -919,20 +920,10 @@ export const CompanyPage = () => {
 
     if (selectedRating !== "all") {
       filtered = filtered.filter((review) => {
-        switch (selectedRating) {
-          case "5":
-            return review.rating >= 5;
-          case "4":
-            return review.rating >= 4 && review.rating < 5;
-          case "3":
-            return review.rating >= 3 && review.rating < 4;
-          case "2":
-            return review.rating >= 2 && review.rating < 3;
-          case "1":
-            return review.rating >= 1 && review.rating < 2;
-          default:
-            return true;
-        }
+        const ratingValue = parseFloat(selectedRating);
+        // Show all ratings at or below the selected rating
+        // e.g., if 3 is selected, show ratings 3, 2, and 1
+        return review.rating <= ratingValue && review.rating >= 1;
       });
     }
 
@@ -1671,8 +1662,9 @@ export const CompanyPage = () => {
   };
 
   const handleFilterNegativeReviews = () => {
-    // Set rating filter to show 1-2 star reviews
-    setSelectedRating("1");
+    // Set rating filter to show 2 stars and below (configurable in the future)
+    // This will show all reviews with rating <= 2 (i.e., ratings 2 and 1)
+    setSelectedRating("2");
     // Switch to reviews section
     setActiveSection("reviews");
     // Scroll to reviews section (smooth scroll)
@@ -1869,6 +1861,12 @@ export const CompanyPage = () => {
             }}
           />
 
+          {/* Average Rating - Full Width */}
+          <AverageRatingCard
+            averageRating={filteredStats.averageRating}
+            totalReviews={filteredStats.totalReviews}
+          />
+
           {/* Stats Overview */}
           <Box
             sx={{
@@ -1876,7 +1874,7 @@ export const CompanyPage = () => {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, 1fr)",
-                md: "repeat(4, 1fr)",
+                md: "repeat(3, 1fr)",
               },
               gap: { xs: 2, sm: 3 },
             }}
@@ -1885,12 +1883,6 @@ export const CompanyPage = () => {
               title={t("companyPage.totalReviews")}
               value={filteredStats.totalReviews}
               color="primary.main"
-            />
-            <StatCardWithTrend
-              title={t("companyPage.averageRating")}
-              value={`${filteredStats.averageRating.toFixed(1)}`}
-              icon={<StarIcon />}
-              color="warning.main"
             />
             <StatCardWithTrend
               title={t("companyPage.positiveReviews")}

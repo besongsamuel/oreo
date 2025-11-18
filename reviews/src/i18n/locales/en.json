@@ -689,6 +689,13 @@
     "averageRating": "Average Rating",
     "positiveReviews": "Positive Reviews",
     "negativeReviews": "Negative Reviews",
+    "ratingMessage": {
+      "critical": "Your rating needs immediate attention. Focus on addressing customer concerns and improving service quality. Every improvement counts!",
+      "low": "There's significant room for improvement. Review negative feedback and implement changes. You're on the right track to better ratings!",
+      "good": "You're doing well! Keep focusing on customer satisfaction and addressing feedback. Small improvements can push you to excellent ratings!",
+      "veryGood": "Excellent work! You're close to outstanding. Continue maintaining high standards and responding to customer feedback to reach the top!",
+      "excellent": "Outstanding! You're delivering exceptional customer experiences. Keep up the excellent work and maintain these high standards!"
+    },
     "topics": "Topics",
     "topicsDescription": "Common themes discussed in reviews",
     "showLess": "Show Less",

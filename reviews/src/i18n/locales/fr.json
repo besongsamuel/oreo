@@ -689,6 +689,13 @@
     "averageRating": "Note moyenne",
     "positiveReviews": "Avis positifs",
     "negativeReviews": "Avis négatifs",
+    "ratingMessage": {
+      "critical": "Votre note nécessite une attention immédiate. Concentrez-vous sur la résolution des préoccupations des clients et l'amélioration de la qualité du service. Chaque amélioration compte !",
+      "low": "Il y a une marge d'amélioration significative. Examinez les commentaires négatifs et mettez en œuvre des changements. Vous êtes sur la bonne voie pour de meilleures notes !",
+      "good": "Vous vous en sortez bien ! Continuez à vous concentrer sur la satisfaction client et à répondre aux commentaires. De petites améliorations peuvent vous mener à d'excellentes notes !",
+      "veryGood": "Excellent travail ! Vous êtes proche de l'exceptionnel. Continuez à maintenir des normes élevées et à répondre aux commentaires des clients pour atteindre le sommet !",
+      "excellent": "Exceptionnel ! Vous offrez des expériences client exceptionnelles. Continuez votre excellent travail et maintenez ces normes élevées !"
+    },
     "topics": "Sujets",
     "topicsDescription": "Thèmes communs abordés dans les avis",
     "showLess": "Afficher moins",
