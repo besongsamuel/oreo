@@ -664,6 +664,7 @@
     "dataFiltersDescription": "Filter all data on this page by location, date, keyword, rating, and topic",
     "clearAll": "Clear all",
     "allLocations": "All Locations",
+    "allTime": "All Time",
     "dateRange": "Date Range",
     "ytd": "YTD",
     "last3Months": "Last 3 Months",

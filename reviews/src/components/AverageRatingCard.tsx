@@ -5,11 +5,13 @@ import { useTranslation } from "react-i18next";
 interface AverageRatingCardProps {
   averageRating: number;
   totalReviews: number;
+  dateRange?: string;
 }
 
 export const AverageRatingCard = ({
   averageRating,
   totalReviews,
+  dateRange,
 }: AverageRatingCardProps) => {
   const { t } = useTranslation();
 
@@ -84,9 +86,27 @@ export const AverageRatingCard = ({
       <CardContent>
         <Stack spacing={2} alignItems="center" sx={{ textAlign: "center" }}>
           <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {t("companyPage.averageRating")}
-            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ mb: 0.5 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {t("companyPage.averageRating")}
+              </Typography>
+              {dateRange && (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    •
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {dateRange}
+                  </Typography>
+                </>
+              )}
+            </Stack>
             {/* Single line for rating - highlighted and centered */}
             <Stack
               direction="row"

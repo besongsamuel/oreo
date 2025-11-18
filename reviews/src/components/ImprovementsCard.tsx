@@ -35,6 +35,7 @@ interface ImprovementsCardProps {
   totalReviews: number;
   recommendations: Recommendation[];
   onFilterNegativeReviews: () => void;
+  dateRange?: string;
 }
 
 export const ImprovementsCard = ({
@@ -43,6 +44,7 @@ export const ImprovementsCard = ({
   totalReviews,
   recommendations,
   onFilterNegativeReviews,
+  dateRange,
 }: ImprovementsCardProps) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -98,9 +100,27 @@ export const ImprovementsCard = ({
                   {t("improvementsCard.title", "Areas for Improvement")}
                 </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                {t("improvementsCard.subtitle", "Key insights from negative reviews")}
-              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                flexWrap="wrap"
+                justifyContent="center"
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {t("improvementsCard.subtitle", "Key insights from negative reviews")}
+                </Typography>
+                {dateRange && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      •
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {dateRange}
+                    </Typography>
+                  </>
+                )}
+              </Stack>
             </Box>
           </Stack>
 

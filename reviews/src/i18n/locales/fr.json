@@ -664,6 +664,7 @@
     "dataFiltersDescription": "Filtrez toutes les données de cette page par emplacement, date, mot-clé, note et sujet",
     "clearAll": "Tout effacer",
     "allLocations": "Tous les emplacements",
+    "allTime": "Toutes les périodes",
     "dateRange": "Plage de dates",
     "ytd": "Annuel (à date)",
     "last3Months": "3 derniers mois",

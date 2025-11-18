@@ -1676,6 +1676,37 @@ export const CompanyPage = () => {
     }, 100);
   };
 
+  // Helper function to format date range for display
+  const getDateRangeDisplay = (): string => {
+    if (!dateFilterPreset && !filterStartDate && !filterEndDate) {
+      return t("companyPage.allTime", "All Time");
+    }
+
+    if (dateFilterPreset === "ytd") {
+      return t("companyPage.ytd", "YTD");
+    } else if (dateFilterPreset === "3months") {
+      return t("companyPage.last3Months", "Last 3 Months");
+    } else if (dateFilterPreset === "6months") {
+      return t("companyPage.last6Months", "Last 6 Months");
+    } else if (dateFilterPreset === "12months") {
+      return t("companyPage.last12Months", "Last 12 Months");
+    } else if (
+      dateFilterPreset === "custom" &&
+      filterStartDate &&
+      filterEndDate
+    ) {
+      const startDate = new Date(filterStartDate);
+      const endDate = new Date(filterEndDate);
+      return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+    } else if (filterStartDate && filterEndDate) {
+      const startDate = new Date(filterStartDate);
+      const endDate = new Date(filterEndDate);
+      return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+    }
+
+    return t("companyPage.allTime", "All Time");
+  };
+
   const handleLocationToggle = (locationName: string | "all") => {
     if (locationName === "all") {
       // Select "All Locations" - clear all specific location selections
@@ -1865,6 +1896,7 @@ export const CompanyPage = () => {
           <AverageRatingCard
             averageRating={filteredStats.averageRating}
             totalReviews={filteredStats.totalReviews}
+            dateRange={getDateRangeDisplay()}
           />
 
           {/* Stats Overview */}
@@ -2423,6 +2455,7 @@ export const CompanyPage = () => {
                         totalReviews={filteredStats.totalReviews}
                         recommendations={negativeReviewRecommendations}
                         onFilterNegativeReviews={handleFilterNegativeReviews}
+                        dateRange={getDateRangeDisplay()}
                       />
                     )
                   )}
