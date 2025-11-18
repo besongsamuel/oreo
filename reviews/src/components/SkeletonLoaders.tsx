@@ -171,3 +171,57 @@ export const MonthlySummarySkeleton = () => (
     </CardContent>
   </Card>
 );
+
+// Chart Skeleton (for Rating Distribution and Timeline charts)
+export const ChartSkeleton = () => (
+  <Card sx={{ p: 2, borderRadius: "18px", boxShadow: 2 }}>
+    <Stack spacing={2}>
+      <Box>
+        <Skeleton variant="text" width="40%" height={28} />
+        <Skeleton variant="text" width="60%" height={20} sx={{ mt: 1 }} />
+      </Box>
+      <Box sx={{ height: 250 }}>
+        <Skeleton variant="rectangular" width="100%" height="100%" />
+      </Box>
+    </Stack>
+  </Card>
+);
+
+// Improvements Card Skeleton
+export const ImprovementsCardSkeleton = () => (
+  <Card
+    variant="outlined"
+    sx={{
+      borderRadius: 2,
+      border: 1,
+      borderColor: "error.light",
+      bgcolor: "error.light",
+      background: "linear-gradient(to bottom, rgba(211, 47, 47, 0.05), rgba(211, 47, 47, 0.02))",
+    }}
+  >
+    <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+      <Stack spacing={3}>
+        <Box>
+          <Skeleton variant="text" width="50%" height={28} />
+          <Skeleton variant="text" width="70%" height={20} sx={{ mt: 1 }} />
+        </Box>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+            gap: 2,
+          }}
+        >
+          <Skeleton variant="rectangular" width="100%" height={100} />
+          <Skeleton variant="rectangular" width="100%" height={100} />
+        </Box>
+        <Stack spacing={1.5}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rectangular" width="100%" height={80} />
+          ))}
+        </Stack>
+        <Skeleton variant="rounded" width="100%" height={48} />
+      </Stack>
+    </CardContent>
+  </Card>
+);

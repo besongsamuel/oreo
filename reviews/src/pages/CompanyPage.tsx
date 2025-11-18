@@ -54,6 +54,9 @@ import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog
 import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import {
+  ChartSkeleton,
+  ContentSkeleton,
+  ImprovementsCardSkeleton,
   KeywordChipSkeleton,
   ReviewCardSkeleton,
   StatCardSkeleton,
@@ -2412,36 +2415,48 @@ export const CompanyPage = () => {
                   )}
 
                   {/* Improvements Card */}
-                  {filteredStats.negativeReviews > 0 && (
-                    <ImprovementsCard
-                      negativeReviewsCount={filteredStats.negativeReviews}
-                      negativeReviewsPercentage={
-                        filteredStats.totalReviews > 0
-                          ? (filteredStats.negativeReviews /
-                              filteredStats.totalReviews) *
-                            100
-                          : 0
-                      }
-                      totalReviews={filteredStats.totalReviews}
-                      recommendations={negativeReviewRecommendations}
-                      onFilterNegativeReviews={handleFilterNegativeReviews}
-                    />
+                  {dataLoading ? (
+                    <ImprovementsCardSkeleton />
+                  ) : (
+                    filteredStats.negativeReviews > 0 && (
+                      <ImprovementsCard
+                        negativeReviewsCount={filteredStats.negativeReviews}
+                        negativeReviewsPercentage={
+                          filteredStats.totalReviews > 0
+                            ? (filteredStats.negativeReviews /
+                                filteredStats.totalReviews) *
+                              100
+                            : 0
+                        }
+                        totalReviews={filteredStats.totalReviews}
+                        recommendations={negativeReviewRecommendations}
+                        onFilterNegativeReviews={handleFilterNegativeReviews}
+                      />
+                    )
                   )}
 
                   {/* Rating Distribution Chart */}
-                  {company.total_reviews > 0 && (
-                    <RatingDistributionChart
-                      ratings={ratingDistribution}
-                      totalReviews={company.total_reviews}
-                      onRatingClick={(rating) =>
-                        setSelectedRating(rating.toString())
-                      }
-                    />
+                  {dataLoading ? (
+                    <ChartSkeleton />
+                  ) : (
+                    company.total_reviews > 0 && (
+                      <RatingDistributionChart
+                        ratings={ratingDistribution}
+                        totalReviews={company.total_reviews}
+                        onRatingClick={(rating) =>
+                          setSelectedRating(rating.toString())
+                        }
+                      />
+                    )
                   )}
 
                   {/* Timeline Chart */}
-                  {timelineData.length > 0 && (
-                    <ReviewsTimelineChart data={timelineData} />
+                  {dataLoading ? (
+                    <ChartSkeleton />
+                  ) : (
+                    timelineData.length > 0 && (
+                      <ReviewsTimelineChart data={timelineData} />
+                    )
                   )}
                 </Stack>
               )}
@@ -2703,187 +2718,200 @@ export const CompanyPage = () => {
               {activeSection === "analytics" && (
                 <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
                   {/* Sentiment Analysis */}
-                  {sentimentData && companyId && (
-                    <Box>
-                      <SentimentAnalysis
-                        sentimentData={sentimentData}
-                        companyId={companyId}
-                        filterLocation={
-                          filterLocation.length > 0
-                            ? filterLocation.join(", ")
-                            : undefined
-                        }
-                        filterStartDate={filterStartDate}
-                        filterEndDate={filterEndDate}
-                        selectedKeyword={selectedKeyword}
-                        selectedRating={selectedRating}
-                        selectedTopic={selectedTopic}
-                      />
-                    </Box>
+                  {dataLoading ? (
+                    <ContentSkeleton />
+                  ) : (
+                    sentimentData &&
+                    companyId && (
+                      <Box>
+                        <SentimentAnalysis
+                          sentimentData={sentimentData}
+                          companyId={companyId}
+                          filterLocation={
+                            filterLocation.length > 0
+                              ? filterLocation.join(", ")
+                              : undefined
+                          }
+                          filterStartDate={filterStartDate}
+                          filterEndDate={filterEndDate}
+                          selectedKeyword={selectedKeyword}
+                          selectedRating={selectedRating}
+                          selectedTopic={selectedTopic}
+                        />
+                      </Box>
+                    )
                   )}
 
                   {/* Keyword Analysis */}
-                  {keywordAnalysis.length > 0 && (
-                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-                      <Typography variant="h6" gutterBottom>
-                        {t("companyPage.keywordAnalysisByCategory")}
-                      </Typography>
-                      <Stack spacing={3} sx={{ mt: 3 }}>
-                        {keywordAnalysis.map((analysis) => (
-                          <Box key={analysis.category}>
-                            <Stack
-                              direction="row"
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={1}
-                            >
-                              <Typography
-                                variant="body1"
-                                fontWeight={600}
-                                textTransform="capitalize"
+                  {dataLoading ? (
+                    <ContentSkeleton />
+                  ) : (
+                    keywordAnalysis.length > 0 && (
+                      <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                        <Typography variant="h6" gutterBottom>
+                          {t("companyPage.keywordAnalysisByCategory")}
+                        </Typography>
+                        <Stack spacing={3} sx={{ mt: 3 }}>
+                          {keywordAnalysis.map((analysis) => (
+                            <Box key={analysis.category}>
+                              <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                mb={1}
                               >
-                                {analysis.category}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {analysis.count} {t("companyPage.mentions")} (
-                                {analysis.percentage.toFixed(1)}%)
-                              </Typography>
-                            </Stack>
-                            <LinearProgress
-                              variant="determinate"
-                              value={analysis.percentage}
-                              sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                "& .MuiLinearProgress-bar": {
+                                <Typography
+                                  variant="body1"
+                                  fontWeight={600}
+                                  textTransform="capitalize"
+                                >
+                                  {analysis.category}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {analysis.count} {t("companyPage.mentions")} (
+                                  {analysis.percentage.toFixed(1)}%)
+                                </Typography>
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={analysis.percentage}
+                                sx={{
+                                  height: 8,
                                   borderRadius: 4,
-                                  backgroundColor: "primary.main",
-                                },
-                              }}
-                            />
-                          </Box>
-                        ))}
-                      </Stack>
-                    </Paper>
+                                  backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                  "& .MuiLinearProgress-bar": {
+                                    borderRadius: 4,
+                                    backgroundColor: "primary.main",
+                                  },
+                                }}
+                              />
+                            </Box>
+                          ))}
+                        </Stack>
+                      </Paper>
+                    )
                   )}
 
                   {/* Topics Section (detailed view) */}
-                  {topics.length > 0 && (
-                    <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-                      <Typography variant="h6" gutterBottom>
-                        {t("companyPage.topics")}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 3 }}
-                      >
-                        {t("companyPage.topicsDescription")}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: {
-                            xs: "1fr",
-                            sm: "repeat(2, 1fr)",
-                            md: "repeat(3, 1fr)",
-                          },
-                          gap: 2,
-                        }}
-                      >
-                        {topics.map((topic) => {
-                          const isSelected = selectedTopic === topic.name;
-                          return (
-                            <Card
-                              key={topic.id}
-                              variant="outlined"
-                              onClick={() =>
-                                setSelectedTopic(
-                                  isSelected ? "all" : topic.name
-                                )
-                              }
-                              sx={{
-                                transition: "all 0.2s ease-in-out",
-                                cursor: "pointer",
-                                border: isSelected ? 2 : 1,
-                                borderColor: isSelected
-                                  ? "primary.main"
-                                  : "divider",
-                                "&:hover": {
-                                  boxShadow: 2,
-                                  transform: "translateY(-2px)",
-                                },
-                              }}
-                            >
-                              <CardContent>
-                                <Stack spacing={1}>
-                                  <Stack
-                                    direction="row"
-                                    justifyContent="space-between"
-                                    alignItems="flex-start"
-                                  >
-                                    <Box>
+                  {dataLoading ? (
+                    <ContentSkeleton />
+                  ) : (
+                    topics.length > 0 && (
+                      <Paper sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                        <Typography variant="h6" gutterBottom>
+                          {t("companyPage.topics")}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mb: 3 }}
+                        >
+                          {t("companyPage.topicsDescription")}
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: {
+                              xs: "1fr",
+                              sm: "repeat(2, 1fr)",
+                              md: "repeat(3, 1fr)",
+                            },
+                            gap: 2,
+                          }}
+                        >
+                          {topics.map((topic) => {
+                            const isSelected = selectedTopic === topic.name;
+                            return (
+                              <Card
+                                key={topic.id}
+                                variant="outlined"
+                                onClick={() =>
+                                  setSelectedTopic(
+                                    isSelected ? "all" : topic.name
+                                  )
+                                }
+                                sx={{
+                                  transition: "all 0.2s ease-in-out",
+                                  cursor: "pointer",
+                                  border: isSelected ? 2 : 1,
+                                  borderColor: isSelected
+                                    ? "primary.main"
+                                    : "divider",
+                                  "&:hover": {
+                                    boxShadow: 2,
+                                    transform: "translateY(-2px)",
+                                  },
+                                }}
+                              >
+                                <CardContent>
+                                  <Stack spacing={1}>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      alignItems="flex-start"
+                                    >
+                                      <Box>
+                                        <Typography
+                                          variant="subtitle1"
+                                          fontWeight={600}
+                                        >
+                                          {topic.name}
+                                        </Typography>
+                                        <Chip
+                                          label={topic.category}
+                                          size="small"
+                                          color={
+                                            topic.category === "satisfaction"
+                                              ? "success"
+                                              : topic.category ===
+                                                "dissatisfaction"
+                                              ? "error"
+                                              : "default"
+                                          }
+                                          sx={{ mt: 0.5 }}
+                                        />
+                                      </Box>
+                                    </Stack>
+                                    {topic.description && (
                                       <Typography
-                                        variant="subtitle1"
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {topic.description}
+                                      </Typography>
+                                    )}
+                                    <Stack
+                                      direction="row"
+                                      spacing={1}
+                                      alignItems="center"
+                                    >
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {t("companyPage.mentionedIn")}
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
                                         fontWeight={600}
                                       >
-                                        {topic.name}
+                                        {topic.occurrence_count}{" "}
+                                        {topic.occurrence_count === 1
+                                          ? t("companyPage.review")
+                                          : t("companyPage.reviews")}
                                       </Typography>
-                                      <Chip
-                                        label={topic.category}
-                                        size="small"
-                                        color={
-                                          topic.category === "satisfaction"
-                                            ? "success"
-                                            : topic.category ===
-                                              "dissatisfaction"
-                                            ? "error"
-                                            : "default"
-                                        }
-                                        sx={{ mt: 0.5 }}
-                                      />
-                                    </Box>
+                                    </Stack>
                                   </Stack>
-                                  {topic.description && (
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {topic.description}
-                                    </Typography>
-                                  )}
-                                  <Stack
-                                    direction="row"
-                                    spacing={1}
-                                    alignItems="center"
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {t("companyPage.mentionedIn")}
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight={600}
-                                    >
-                                      {topic.occurrence_count}{" "}
-                                      {topic.occurrence_count === 1
-                                        ? t("companyPage.review")
-                                        : t("companyPage.reviews")}
-                                    </Typography>
-                                  </Stack>
-                                </Stack>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </Box>
-                    </Paper>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </Box>
+                      </Paper>
+                    )
                   )}
                 </Stack>
               )}

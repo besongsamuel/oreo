@@ -18,9 +18,11 @@ export { ReviewComponent } from "./ReviewComponent";
 export { ReviewsList } from "./ReviewsList";
 export { SEO } from "./SEO";
 export {
+    ChartSkeleton,
     CompanyCardSkeleton,
     ContentSkeleton,
     HeaderSkeleton,
+    ImprovementsCardSkeleton,
     KeywordChipSkeleton,
     MonthlySummarySkeleton,
     ProfileSectionSkeleton,
