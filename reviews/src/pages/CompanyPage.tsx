@@ -40,6 +40,7 @@ import {
   CompanyHeader,
   CompanyPageSection,
   CompanyPageSidebar,
+  ImprovementsCard,
   LocationComponent,
   MonthComparisonModal,
   MonthlySummary,
@@ -48,6 +49,7 @@ import {
   ReviewsTimelineChart,
   StatCardWithTrend,
 } from "../components";
+import type { Recommendation } from "../components/ImprovementsCard";
 import { PlatformConnectionDialog } from "../components/PlatformConnectionDialog";
 import { SEO } from "../components/SEO";
 import { SentimentAnalysis } from "../components/SentimentAnalysis";
@@ -972,7 +974,7 @@ export const CompanyPage = () => {
       (review) => review.sentiment === "positive"
     ).length;
     const negativeReviews = filteredReviews.filter(
-      (review) => review.sentiment === "negative"
+      (review) => review.sentiment === "negative" || review.rating <= 2
     ).length;
 
     return {
@@ -981,6 +983,162 @@ export const CompanyPage = () => {
       positiveReviews,
       negativeReviews,
     };
+  }, [filteredReviews]);
+
+  // Analyze negative reviews and generate recommendations
+  const negativeReviewRecommendations = useMemo(() => {
+    const negativeReviews = filteredReviews.filter(
+      (review) => review.sentiment === "negative" || review.rating <= 2
+    );
+
+    if (negativeReviews.length === 0) {
+      return [];
+    }
+
+    // Extract keywords from negative reviews
+    const negativeKeywordMap = new Map<
+      string,
+      { count: number; category: string }
+    >();
+    negativeReviews.forEach((review) => {
+      review.keywords.forEach((keyword) => {
+        const existing = negativeKeywordMap.get(keyword.text.toLowerCase());
+        if (existing) {
+          existing.count++;
+        } else {
+          negativeKeywordMap.set(keyword.text.toLowerCase(), {
+            count: 1,
+            category: keyword.category || "other",
+          });
+        }
+      });
+    });
+
+    // Extract topics from negative reviews
+    const negativeTopicMap = new Map<
+      string,
+      { count: number; category: string; description?: string }
+    >();
+    negativeReviews.forEach((review) => {
+      review.topics.forEach((topic) => {
+        const existing = negativeTopicMap.get(topic.name.toLowerCase());
+        if (existing) {
+          existing.count++;
+        } else {
+          negativeTopicMap.set(topic.name.toLowerCase(), {
+            count: 1,
+            category: topic.category || "neutral",
+            description: topic.description,
+          });
+        }
+      });
+    });
+
+    // Generate recommendations from keywords
+    const keywordRecommendations: Recommendation[] = Array.from(
+      negativeKeywordMap.entries()
+    )
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([keywordText, data], index) => {
+        const category = data.category;
+        const priority: "high" | "medium" | "low" =
+          data.count >= 5 ? "high" : data.count >= 2 ? "medium" : "low";
+
+        // Generate actionable description based on category
+        let description = `"${keywordText}" is mentioned frequently in negative reviews.`;
+        if (category === "service") {
+          description +=
+            " Consider improving customer service training and response times.";
+        } else if (category === "staff") {
+          description +=
+            " Focus on staff training and customer interaction quality.";
+        } else if (category === "quality") {
+          description += " Review product or service quality standards.";
+        } else if (category === "price") {
+          description += " Evaluate pricing strategy and value proposition.";
+        } else if (category === "cleanliness") {
+          description += " Address cleanliness and maintenance issues.";
+        } else if (category === "ambiance") {
+          description +=
+            " Consider improving the overall atmosphere and environment.";
+        } else if (category === "food") {
+          description += " Review food quality, preparation, and presentation.";
+        }
+
+        return {
+          id: `keyword-${index}`,
+          title: `Address "${keywordText}" concerns`,
+          description,
+          category,
+          priority,
+          keywordCount: data.count,
+        };
+      });
+
+    // Generate recommendations from topics
+    const topicRecommendations: Recommendation[] = Array.from(
+      negativeTopicMap.entries()
+    )
+      .filter(([_, data]) => data.category === "dissatisfaction")
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([topicName, data], index) => {
+        const priority: "high" | "medium" | "low" =
+          data.count >= 3 ? "high" : data.count >= 2 ? "medium" : "low";
+
+        return {
+          id: `topic-${index}`,
+          title: `Improve "${topicName}"`,
+          description:
+            data.description ||
+            `This topic is frequently mentioned in negative reviews. Take action to address customer concerns about ${topicName}.`,
+          category: "other",
+          priority,
+          topicCount: data.count,
+        };
+      });
+
+    // Combine and deduplicate recommendations
+    const allRecommendations = [
+      ...keywordRecommendations,
+      ...topicRecommendations,
+    ];
+    const uniqueRecommendations = new Map<string, Recommendation>();
+
+    allRecommendations.forEach((rec) => {
+      const key = `${rec.category}-${rec.title}`;
+      if (!uniqueRecommendations.has(key)) {
+        uniqueRecommendations.set(key, rec);
+      } else {
+        const existing = uniqueRecommendations.get(key)!;
+        // Merge counts if same recommendation
+        existing.keywordCount =
+          (existing.keywordCount || 0) + (rec.keywordCount || 0);
+        existing.topicCount =
+          (existing.topicCount || 0) + (rec.topicCount || 0);
+        // Upgrade priority if needed
+        if (
+          (existing.keywordCount || 0) + (existing.topicCount || 0) >= 5 &&
+          existing.priority !== "high"
+        ) {
+          existing.priority = "high";
+        }
+      }
+    });
+
+    // Sort by priority and count
+    return Array.from(uniqueRecommendations.values())
+      .sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        }
+        const aCount = (a.keywordCount || 0) + (a.topicCount || 0);
+        const bCount = (b.keywordCount || 0) + (b.topicCount || 0);
+        return bCount - aCount;
+      })
+      .slice(0, 15);
   }, [filteredReviews]);
 
   // Client-side calculations - runs when filtered reviews change
@@ -1507,6 +1665,20 @@ export const CompanyPage = () => {
     setSelectedRating("all");
     setSelectedTopic("all");
     setSelectedCommentsFilter("all");
+  };
+
+  const handleFilterNegativeReviews = () => {
+    // Set rating filter to show 1-2 star reviews
+    setSelectedRating("1");
+    // Switch to reviews section
+    setActiveSection("reviews");
+    // Scroll to reviews section (smooth scroll)
+    setTimeout(() => {
+      const reviewsSection = document.getElementById("reviews-section");
+      if (reviewsSection) {
+        reviewsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
   };
 
   const handleLocationToggle = (locationName: string | "all") => {
@@ -2239,6 +2411,23 @@ export const CompanyPage = () => {
                     />
                   )}
 
+                  {/* Improvements Card */}
+                  {filteredStats.negativeReviews > 0 && (
+                    <ImprovementsCard
+                      negativeReviewsCount={filteredStats.negativeReviews}
+                      negativeReviewsPercentage={
+                        filteredStats.totalReviews > 0
+                          ? (filteredStats.negativeReviews /
+                              filteredStats.totalReviews) *
+                            100
+                          : 0
+                      }
+                      totalReviews={filteredStats.totalReviews}
+                      recommendations={negativeReviewRecommendations}
+                      onFilterNegativeReviews={handleFilterNegativeReviews}
+                    />
+                  )}
+
                   {/* Rating Distribution Chart */}
                   {company.total_reviews > 0 && (
                     <RatingDistributionChart
@@ -2258,7 +2447,7 @@ export const CompanyPage = () => {
               )}
 
               {activeSection === "reviews" && (
-                <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+                <Stack spacing={{ xs: 2, sm: 3, md: 4 }} id="reviews-section">
                   {/* Topics Section */}
                   {topics.length > 0 && (
                     <Accordion defaultExpanded>

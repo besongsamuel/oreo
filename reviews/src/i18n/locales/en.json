@@ -742,6 +742,40 @@
       "settings": "Settings"
     }
   },
+  "improvementsCard": {
+    "title": "Areas for Improvement",
+    "subtitle": "Key insights from negative reviews",
+    "negativeReviewsCount": "Negative Reviews",
+    "negativeReviewsPercentage": "Percentage",
+    "outOfTotal": "out of {{total}} reviews",
+    "ofAllReviews": "of all reviews",
+    "topPriorities": "Top Priorities",
+    "viewAllRecommendations": "View All Recommendations",
+    "hideRecommendations": "Hide All Recommendations",
+    "filterNegativeReviews": "View Negative Reviews",
+    "noNegativeReviews": "No negative reviews found",
+    "recommendationsByCategory": "Recommendations by Category",
+    "priority": "Priority",
+    "quickWin": "Quick Win",
+    "mentionedInKeywords": "Mentioned in {{count}} keyword",
+    "mentionedInKeywords_plural": "Mentioned in {{count}} keywords",
+    "mentionedInTopics": "{{count}} topic",
+    "mentionedInTopics_plural": "{{count}} topics",
+    "category": {
+      "service": "Service",
+      "staff": "Staff",
+      "quality": "Quality",
+      "price": "Price",
+      "cleanliness": "Cleanliness",
+      "ambiance": "Ambiance",
+      "food": "Food",
+      "other": "Other"
+    }
+  },
+  "reviewComponent": {
+    "needsAttention": "Needs Attention",
+    "negativeReview": "Negative Review"
+  },
   "footer": {
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",

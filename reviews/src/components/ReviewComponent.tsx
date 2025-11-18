@@ -1,4 +1,8 @@
-import { Close as CloseIcon, Star as StarIcon } from "@mui/icons-material";
+import {
+  Close as CloseIcon,
+  Star as StarIcon,
+  Warning as WarningIcon,
+} from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -57,6 +61,9 @@ export const ReviewComponent = ({
     review.raw_data?.replies && review.raw_data.replies.length > 0;
   const replies = review.raw_data?.replies || [];
 
+  const isNegative =
+    (review.rating <= 2 || review.sentiment === "negative") && !hasReplies;
+
   const handleOpenReplies = () => {
     setRepliesDialogOpen(true);
   };
@@ -71,9 +78,13 @@ export const ReviewComponent = ({
         variant="outlined"
         sx={{
           transition: "all 0.2s ease-in-out",
+          border: isNegative ? 2 : 1,
+          borderColor: isNegative ? "error.main" : "divider",
+          bgcolor: isNegative ? "rgba(211, 47, 47, 0.03)" : "background.paper",
           "&:hover": {
-            boxShadow: 2,
+            boxShadow: isNegative ? 3 : 2,
             transform: "translateY(-2px)",
+            borderColor: isNegative ? "error.dark" : "primary.main",
           },
         }}
       >
@@ -105,6 +116,21 @@ export const ReviewComponent = ({
                     size="small"
                     variant="outlined"
                   />
+                  {isNegative && (
+                    <Chip
+                      icon={<WarningIcon sx={{ fontSize: 16 }} />}
+                      label={t("reviewComponent.needsAttention", "Needs Attention")}
+                      size="small"
+                      color="error"
+                      variant="filled"
+                      sx={{
+                        fontWeight: 600,
+                        "& .MuiChip-icon": {
+                          color: "inherit",
+                        },
+                      }}
+                    />
+                  )}
                   {hasReplies && (
                     <Chip
                       label={t("companyPage.hasReply", "Has Reply")}

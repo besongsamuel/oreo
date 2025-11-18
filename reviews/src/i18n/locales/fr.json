@@ -742,6 +742,40 @@
       "settings": "Paramètres"
     }
   },
+  "improvementsCard": {
+    "title": "Domaines à améliorer",
+    "subtitle": "Insights clés des avis négatifs",
+    "negativeReviewsCount": "Avis négatifs",
+    "negativeReviewsPercentage": "Pourcentage",
+    "outOfTotal": "sur {{total}} avis",
+    "ofAllReviews": "de tous les avis",
+    "topPriorities": "Priorités principales",
+    "viewAllRecommendations": "Voir toutes les recommandations",
+    "hideRecommendations": "Masquer toutes les recommandations",
+    "filterNegativeReviews": "Voir les avis négatifs",
+    "noNegativeReviews": "Aucun avis négatif trouvé",
+    "recommendationsByCategory": "Recommandations par catégorie",
+    "priority": "Priorité",
+    "quickWin": "Gain rapide",
+    "mentionedInKeywords": "Mentionné dans {{count}} mot-clé",
+    "mentionedInKeywords_plural": "Mentionné dans {{count}} mots-clés",
+    "mentionedInTopics": "{{count}} sujet",
+    "mentionedInTopics_plural": "{{count}} sujets",
+    "category": {
+      "service": "Service",
+      "staff": "Personnel",
+      "quality": "Qualité",
+      "price": "Prix",
+      "cleanliness": "Propreté",
+      "ambiance": "Ambiance",
+      "food": "Nourriture",
+      "other": "Autre"
+    }
+  },
+  "reviewComponent": {
+    "needsAttention": "Nécessite une attention",
+    "negativeReview": "Avis négatif"
+  },
   "footer": {
     "privacyPolicy": "Politique de confidentialité",
     "termsOfUse": "Conditions d'utilisation",

@@ -31,3 +31,5 @@ export { StatCardWithTrend } from "./StatCardWithTrend";
 export { UpgradeDialog } from "./UpgradeDialog";
 export { CompanyPageSidebar } from "./CompanyPageSidebar";
 export type { CompanyPageSection } from "./CompanyPageSidebar";
+export { ImprovementsCard } from "./ImprovementsCard";
+export type { Recommendation } from "./ImprovementsCard";
