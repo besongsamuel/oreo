@@ -1,4 +1,5 @@
 import {
+  CalendarToday as CalendarTodayIcon,
   ExpandMore as ExpandMoreIcon,
   FilterList as FilterListIcon,
   PriorityHigh as PriorityHighIcon,
@@ -69,6 +70,10 @@ export const ImprovementsCard = ({
     return t(`improvementsCard.category.${category}`, category);
   };
 
+  const getPriorityLabel = (priority: "high" | "medium" | "low") => {
+    return t(`improvementsCard.priority.${priority}`, priority);
+  };
+
   if (negativeReviewsCount === 0) {
     return null;
   }
@@ -81,47 +86,78 @@ export const ImprovementsCard = ({
         border: 1,
         borderColor: "error.light",
         bgcolor: "error.light",
-        background: "linear-gradient(to bottom, rgba(211, 47, 47, 0.05), rgba(211, 47, 47, 0.02))",
+        background:
+          "linear-gradient(to bottom, rgba(211, 47, 47, 0.05), rgba(211, 47, 47, 0.02))",
       }}
     >
       <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
         <Stack spacing={3}>
           {/* Header */}
-          <Stack
-            direction="row"
-            spacing={2}
-            alignItems="flex-start"
-            justifyContent="space-between"
-          >
-            <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                <TrendingDownIcon sx={{ color: "error.main" }} />
-                <Typography variant="h6" fontWeight={600}>
-                  {t("improvementsCard.title", "Areas for Improvement")}
-                </Typography>
-              </Stack>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                flexWrap="wrap"
-                justifyContent="center"
-              >
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="flex-start"
+              justifyContent="space-between"
+            >
+              <Box>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
+                  <TrendingDownIcon sx={{ color: "error.main" }} />
+                  <Typography variant="h6" fontWeight={600}>
+                    {t("improvementsCard.title", "Areas for Improvement")}
+                  </Typography>
+                </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  {t("improvementsCard.subtitle", "Key insights from negative reviews")}
+                  {t(
+                    "improvementsCard.subtitle",
+                    "Key insights from negative reviews"
+                  )}
                 </Typography>
-                {dateRange && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      •
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {dateRange}
-                    </Typography>
-                  </>
-                )}
-              </Stack>
-            </Box>
+              </Box>
+            </Stack>
+
+            {/* Date Range Highlight */}
+            {dateRange && (
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: "primary.main",
+                  border: 1,
+                  borderColor: "primary.dark",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  boxShadow: 1,
+                }}
+              >
+                <CalendarTodayIcon
+                  sx={{
+                    color: "primary.contrastText",
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "primary.contrastText",
+                    fontWeight: 600,
+                    flex: 1,
+                  }}
+                >
+                  {t("improvementsCard.basedOnDateRange", {
+                    dateRange,
+                    defaultValue: "Based on {{dateRange}}",
+                  })}
+                </Typography>
+              </Box>
+            )}
           </Stack>
 
           {/* Summary Stats */}
@@ -224,10 +260,9 @@ export const ImprovementsCard = ({
                             variant="outlined"
                           />
                           <Chip
-                            label={rec.priority}
+                            label={getPriorityLabel(rec.priority)}
                             size="small"
                             color={getPriorityColor(rec.priority)}
-                            sx={{ textTransform: "capitalize" }}
                           />
                         </Stack>
                       </Stack>
@@ -237,15 +272,22 @@ export const ImprovementsCard = ({
                       {(rec.keywordCount || rec.topicCount) && (
                         <Stack direction="row" spacing={1} alignItems="center">
                           {rec.keywordCount && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {t("improvementsCard.mentionedInKeywords", {
                                 count: rec.keywordCount,
-                                defaultValue: "Mentioned in {{count}} keyword{{s}}",
+                                defaultValue:
+                                  "Mentioned in {{count}} keyword{{s}}",
                               })}
                             </Typography>
                           )}
                           {rec.topicCount && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {t("improvementsCard.mentionedInTopics", {
                                 count: rec.topicCount,
                                 defaultValue: "{{count}} topic{{s}}",
@@ -292,8 +334,14 @@ export const ImprovementsCard = ({
               >
                 <Typography variant="body2" fontWeight={500}>
                   {expanded
-                    ? t("improvementsCard.hideRecommendations", "Hide All Recommendations")
-                    : t("improvementsCard.viewAllRecommendations", "View All Recommendations")}
+                    ? t(
+                        "improvementsCard.hideRecommendations",
+                        "Hide All Recommendations"
+                      )
+                    : t(
+                        "improvementsCard.viewAllRecommendations",
+                        "View All Recommendations"
+                      )}
                 </Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ px: 2, pb: 2 }}>
@@ -305,7 +353,10 @@ export const ImprovementsCard = ({
                     gutterBottom
                     sx={{ mb: 2 }}
                   >
-                    {t("improvementsCard.recommendationsByCategory", "Recommendations by Category")}
+                    {t(
+                      "improvementsCard.recommendationsByCategory",
+                      "Recommendations by Category"
+                    )}
                   </Typography>
                   <Stack spacing={2}>
                     {Object.entries(
@@ -348,10 +399,9 @@ export const ImprovementsCard = ({
                                   {rec.title}
                                 </Typography>
                                 <Chip
-                                  label={rec.priority}
+                                  label={getPriorityLabel(rec.priority)}
                                   size="small"
                                   color={getPriorityColor(rec.priority)}
-                                  sx={{ textTransform: "capitalize" }}
                                 />
                               </Stack>
                               <Typography
@@ -386,11 +436,13 @@ export const ImprovementsCard = ({
               py: 1.5,
             }}
           >
-            {t("improvementsCard.filterNegativeReviews", "View Negative Reviews")}
+            {t(
+              "improvementsCard.filterNegativeReviews",
+              "View Negative Reviews"
+            )}
           </Button>
         </Stack>
       </CardContent>
     </Card>
   );
 };
-

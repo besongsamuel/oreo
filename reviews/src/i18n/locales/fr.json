@@ -753,6 +753,7 @@
   "improvementsCard": {
     "title": "Domaines à améliorer",
     "subtitle": "Insights clés des avis négatifs",
+    "basedOnDateRange": "Période: {{dateRange}}",
     "negativeReviewsCount": "Avis négatifs",
     "negativeReviewsPercentage": "Pourcentage",
     "outOfTotal": "sur {{total}} avis",
@@ -764,6 +765,9 @@
     "noNegativeReviews": "Aucun avis négatif trouvé",
     "recommendationsByCategory": "Recommandations par catégorie",
     "priority": "Priorité",
+    "priority.high": "Élevée",
+    "priority.medium": "Moyenne",
+    "priority.low": "Faible",
     "quickWin": "Gain rapide",
     "mentionedInKeywords": "Mentionné dans {{count}} mot-clé",
     "mentionedInKeywords_plural": "Mentionné dans {{count}} mots-clés",
@@ -778,6 +782,21 @@
       "ambiance": "Ambiance",
       "food": "Nourriture",
       "other": "Autre"
+    },
+    "recommendations": {
+      "keywordMentioned": "\"{{keyword}}\" est mentionné fréquemment dans les avis négatifs.",
+      "addressKeywordConcerns": "Traiter les préoccupations concernant \"{{keyword}}\"",
+      "improveTopic": "Améliorer \"{{topic}}\"",
+      "topicFrequentlyMentioned": "Ce sujet est fréquemment mentionné dans les avis négatifs. Prenez des mesures pour répondre aux préoccupations des clients concernant {{topic}}.",
+      "categoryDescriptions": {
+        "service": "Envisagez d'améliorer la formation au service client et les temps de réponse.",
+        "staff": "Concentrez-vous sur la formation du personnel et la qualité de l'interaction avec les clients.",
+        "quality": "Examinez les normes de qualité des produits ou services.",
+        "price": "Évaluez la stratégie de prix et la proposition de valeur.",
+        "cleanliness": "Traitement des problèmes de propreté et d'entretien.",
+        "ambiance": "Envisagez d'améliorer l'atmosphère et l'environnement général.",
+        "food": "Examinez la qualité, la préparation et la présentation des aliments."
+      }
     }
   },
   "reviewComponent": {

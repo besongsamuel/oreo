@@ -753,6 +753,7 @@
   "improvementsCard": {
     "title": "Areas for Improvement",
     "subtitle": "Key insights from negative reviews",
+    "basedOnDateRange": "Time period: {{dateRange}}",
     "negativeReviewsCount": "Negative Reviews",
     "negativeReviewsPercentage": "Percentage",
     "outOfTotal": "out of {{total}} reviews",
@@ -764,6 +765,9 @@
     "noNegativeReviews": "No negative reviews found",
     "recommendationsByCategory": "Recommendations by Category",
     "priority": "Priority",
+    "priority.high": "High",
+    "priority.medium": "Medium",
+    "priority.low": "Low",
     "quickWin": "Quick Win",
     "mentionedInKeywords": "Mentioned in {{count}} keyword",
     "mentionedInKeywords_plural": "Mentioned in {{count}} keywords",
@@ -778,6 +782,21 @@
       "ambiance": "Ambiance",
       "food": "Food",
       "other": "Other"
+    },
+    "recommendations": {
+      "keywordMentioned": "\"{{keyword}}\" is mentioned frequently in negative reviews.",
+      "addressKeywordConcerns": "Address \"{{keyword}}\" concerns",
+      "improveTopic": "Improve \"{{topic}}\"",
+      "topicFrequentlyMentioned": "This topic is frequently mentioned in negative reviews. Take action to address customer concerns about {{topic}}.",
+      "categoryDescriptions": {
+        "service": "Consider improving customer service training and response times.",
+        "staff": "Focus on staff training and customer interaction quality.",
+        "quality": "Review product or service quality standards.",
+        "price": "Evaluate pricing strategy and value proposition.",
+        "cleanliness": "Address cleanliness and maintenance issues.",
+        "ambiance": "Consider improving the overall atmosphere and environment.",
+        "food": "Review food quality, preparation, and presentation."
+      }
     }
   },
   "reviewComponent": {

@@ -1040,29 +1040,29 @@ export const CompanyPage = () => {
           data.count >= 5 ? "high" : data.count >= 2 ? "medium" : "low";
 
         // Generate actionable description based on category
-        let description = `"${keywordText}" is mentioned frequently in negative reviews.`;
-        if (category === "service") {
-          description +=
-            " Consider improving customer service training and response times.";
-        } else if (category === "staff") {
-          description +=
-            " Focus on staff training and customer interaction quality.";
-        } else if (category === "quality") {
-          description += " Review product or service quality standards.";
-        } else if (category === "price") {
-          description += " Evaluate pricing strategy and value proposition.";
-        } else if (category === "cleanliness") {
-          description += " Address cleanliness and maintenance issues.";
-        } else if (category === "ambiance") {
-          description +=
-            " Consider improving the overall atmosphere and environment.";
-        } else if (category === "food") {
-          description += " Review food quality, preparation, and presentation.";
+        let description = t(
+          "improvementsCard.recommendations.keywordMentioned",
+          {
+            keyword: keywordText,
+            defaultValue: `"${keywordText}" is mentioned frequently in negative reviews.`,
+          }
+        );
+
+        const categoryDescriptionKey = `improvementsCard.recommendations.categoryDescriptions.${category}`;
+        const categoryDescription = t(categoryDescriptionKey, {
+          defaultValue: "",
+        });
+
+        if (categoryDescription) {
+          description += ` ${categoryDescription}`;
         }
 
         return {
           id: `keyword-${index}`,
-          title: `Address "${keywordText}" concerns`,
+          title: t("improvementsCard.recommendations.addressKeywordConcerns", {
+            keyword: keywordText,
+            defaultValue: `Address "${keywordText}" concerns`,
+          }),
           description,
           category,
           priority,
@@ -1083,10 +1083,16 @@ export const CompanyPage = () => {
 
         return {
           id: `topic-${index}`,
-          title: `Improve "${topicName}"`,
+          title: t("improvementsCard.recommendations.improveTopic", {
+            topic: topicName,
+            defaultValue: `Improve "${topicName}"`,
+          }),
           description:
             data.description ||
-            `This topic is frequently mentioned in negative reviews. Take action to address customer concerns about ${topicName}.`,
+            t("improvementsCard.recommendations.topicFrequentlyMentioned", {
+              topic: topicName,
+              defaultValue: `This topic is frequently mentioned in negative reviews. Take action to address customer concerns about ${topicName}.`,
+            }),
           category: "other",
           priority,
           topicCount: data.count,
@@ -1133,7 +1139,7 @@ export const CompanyPage = () => {
         return bCount - aCount;
       })
       .slice(0, 15);
-  }, [filteredReviews]);
+  }, [filteredReviews, t]);
 
   // Client-side calculations - runs when filtered reviews change
   useEffect(() => {
