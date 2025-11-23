@@ -55,8 +55,6 @@ interface KeywordTopicSelectorProps {
   topicTargetRatings: Record<string, number>;
   onKeywordRatingChange: (keywordId: string, rating: number) => void;
   onTopicRatingChange: (topicId: string, rating: number) => void;
-  startDate?: string;
-  endDate?: string;
 }
 
 const MAX_KEYWORDS = 3;
@@ -72,26 +70,13 @@ export const KeywordTopicSelector = ({
   topicTargetRatings,
   onKeywordRatingChange,
   onTopicRatingChange,
-  startDate,
-  endDate,
 }: KeywordTopicSelectorProps) => {
   const { t } = useTranslation();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchTopic, setSearchTopic] = useState("");
 
-  // Filter reviews by date range if provided
-  const filteredReviews = useMemo(() => {
-    if (!startDate && !endDate) return enrichedReviews;
-
-    return enrichedReviews.filter((review) => {
-      const reviewDate = new Date(review.published_at)
-        .toISOString()
-        .split("T")[0];
-      if (startDate && reviewDate < startDate) return false;
-      if (endDate && reviewDate > endDate) return false;
-      return true;
-    });
-  }, [enrichedReviews, startDate, endDate]);
+  // Use all enriched reviews (filtering will be done by parent component with timespan)
+  const filteredReviews = enrichedReviews;
 
   // Compute keywords with average ratings from enrichedReviews
   const keywords = useMemo(() => {

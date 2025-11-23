@@ -9,6 +9,7 @@ import {
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Objective } from "../services/objectivesService";
+import { Timespan, getTimespanDates } from "../utils/objectivesUtils";
 import { NoReviewsIllustration } from "./illustrations/ObjectiveIllustrations";
 import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
 
@@ -38,39 +39,42 @@ interface ObjectiveProgressChartProps {
   objectives: Objective[];
   enrichedReviews: EnrichedReview[];
   loading?: boolean;
+  year: number;
+  timespan: Timespan;
 }
 
 export const ObjectiveProgressChart = ({
   objectives,
   enrichedReviews,
   loading = false,
+  year,
+  timespan,
 }: ObjectiveProgressChartProps) => {
   const { t } = useTranslation();
 
-  // Compute current rating for reviews within objective timeframe
-  const computeCurrentRating = useCallback(
-    (startDate: string, endDate: string): number => {
-      const filteredReviews = enrichedReviews.filter((review) => {
-        const reviewDate = new Date(review.published_at)
-          .toISOString()
-          .split("T")[0];
-        return reviewDate >= startDate && reviewDate <= endDate;
-      });
+  // Get date range from year and timespan
+  const { startDate, endDate } = useMemo(() => {
+    return getTimespanDates(year, timespan);
+  }, [year, timespan]);
 
-      if (filteredReviews.length === 0) return 0;
+  // Compute current rating for reviews within selected timespan
+  const computeCurrentRating = useCallback((): number => {
+    const filteredReviews = enrichedReviews.filter((review) => {
+      const reviewDate = new Date(review.published_at)
+        .toISOString()
+        .split("T")[0];
+      return reviewDate >= startDate && reviewDate <= endDate;
+    });
 
-      const sum = filteredReviews.reduce(
-        (acc, review) => acc + review.rating,
-        0
-      );
-      return sum / filteredReviews.length;
-    },
-    [enrichedReviews]
-  );
+    if (filteredReviews.length === 0) return 0;
 
-  // Compute current rating for a specific keyword within objective timeframe
+    const sum = filteredReviews.reduce((acc, review) => acc + review.rating, 0);
+    return sum / filteredReviews.length;
+  }, [enrichedReviews, startDate, endDate]);
+
+  // Compute current rating for a specific keyword within selected timespan
   const computeKeywordRating = useCallback(
-    (keywordId: string, startDate: string, endDate: string): number => {
+    (keywordId: string): number => {
       const filteredReviews = enrichedReviews.filter((review) => {
         const reviewDate = new Date(review.published_at)
           .toISOString()
@@ -88,12 +92,12 @@ export const ObjectiveProgressChart = ({
       );
       return sum / filteredReviews.length;
     },
-    [enrichedReviews]
+    [enrichedReviews, startDate, endDate]
   );
 
-  // Compute current rating for a specific topic within objective timeframe
+  // Compute current rating for a specific topic within selected timespan
   const computeTopicRating = useCallback(
-    (topicId: string, startDate: string, endDate: string): number => {
+    (topicId: string): number => {
       const filteredReviews = enrichedReviews.filter((review) => {
         const reviewDate = new Date(review.published_at)
           .toISOString()
@@ -111,57 +115,82 @@ export const ObjectiveProgressChart = ({
       );
       return sum / filteredReviews.length;
     },
-    [enrichedReviews]
+    [enrichedReviews, startDate, endDate]
   );
 
-  // Compute current sentiment score for reviews within objective timeframe
-  const computeCurrentSentimentScore = useCallback(
-    (startDate: string, endDate: string): number | undefined => {
+  // Compute current sentiment score for reviews within selected timespan
+  const computeCurrentSentimentScore = useCallback((): number | undefined => {
+    const filteredReviews = enrichedReviews.filter((review) => {
+      const reviewDate = new Date(review.published_at)
+        .toISOString()
+        .split("T")[0];
+      return reviewDate >= startDate && reviewDate <= endDate;
+    });
+
+    const reviewsWithSentiment = filteredReviews.filter(
+      (review) =>
+        review.sentiment_analysis?.sentiment_score !== undefined &&
+        review.sentiment_analysis?.sentiment_score !== null
+    );
+
+    if (reviewsWithSentiment.length === 0) return undefined;
+
+    const sum = reviewsWithSentiment.reduce(
+      (acc, review) => acc + (review.sentiment_analysis?.sentiment_score || 0),
+      0
+    );
+    return sum / reviewsWithSentiment.length;
+  }, [enrichedReviews, startDate, endDate]);
+
+  // Count reviews for a specific keyword within selected timespan
+  const countKeywordReviews = useCallback(
+    (keywordId: string): number => {
       const filteredReviews = enrichedReviews.filter((review) => {
         const reviewDate = new Date(review.published_at)
           .toISOString()
           .split("T")[0];
-        return reviewDate >= startDate && reviewDate <= endDate;
+        const inTimeframe = reviewDate >= startDate && reviewDate <= endDate;
+        const hasKeyword = review.keywords.some((kw) => kw.id === keywordId);
+        return inTimeframe && hasKeyword;
       });
-
-      const reviewsWithSentiment = filteredReviews.filter(
-        (review) =>
-          review.sentiment_analysis?.sentiment_score !== undefined &&
-          review.sentiment_analysis?.sentiment_score !== null
-      );
-
-      if (reviewsWithSentiment.length === 0) return undefined;
-
-      const sum = reviewsWithSentiment.reduce(
-        (acc, review) =>
-          acc + (review.sentiment_analysis?.sentiment_score || 0),
-        0
-      );
-      return sum / reviewsWithSentiment.length;
+      return filteredReviews.length;
     },
-    [enrichedReviews]
+    [enrichedReviews, startDate, endDate]
+  );
+
+  // Count reviews for a specific topic within selected timespan
+  const countTopicReviews = useCallback(
+    (topicId: string): number => {
+      const filteredReviews = enrichedReviews.filter((review) => {
+        const reviewDate = new Date(review.published_at)
+          .toISOString()
+          .split("T")[0];
+        const inTimeframe = reviewDate >= startDate && reviewDate <= endDate;
+        const hasTopic = review.topics.some((topic) => topic.id === topicId);
+        return inTimeframe && hasTopic;
+      });
+      return filteredReviews.length;
+    },
+    [enrichedReviews, startDate, endDate]
   );
 
   // Compute status details for each objective
   const objectiveStatusDetails = useMemo(() => {
     return objectives.map((objective) => {
       const currentRating = objective.target_rating
-        ? computeCurrentRating(objective.start_date, objective.end_date)
+        ? computeCurrentRating()
         : undefined;
 
       const currentSentimentScore = objective.target_sentiment_score
-        ? computeCurrentSentimentScore(objective.start_date, objective.end_date)
+        ? computeCurrentSentimentScore()
         : undefined;
 
       const keywordTargets =
         objective.targets
           ?.filter((target) => target.target_type === "keyword")
           .map((target) => {
-            const currentRating = computeKeywordRating(
-              target.target_id,
-              objective.start_date,
-              objective.end_date
-            );
+            const currentRating = computeKeywordRating(target.target_id);
+            const reviewCount = countKeywordReviews(target.target_id);
             const progressPercentage =
               target.target_rating > 0
                 ? Math.min((currentRating / target.target_rating) * 100, 100)
@@ -174,18 +203,17 @@ export const ObjectiveProgressChart = ({
               target_rating: target.target_rating,
               current_rating: currentRating,
               progress_percentage: progressPercentage,
+              review_count: reviewCount,
             };
-          }) || [];
+          })
+          .filter((target) => target.review_count > 0) || [];
 
       const topicTargets =
         objective.targets
           ?.filter((target) => target.target_type === "topic")
           .map((target) => {
-            const currentRating = computeTopicRating(
-              target.target_id,
-              objective.start_date,
-              objective.end_date
-            );
+            const currentRating = computeTopicRating(target.target_id);
+            const reviewCount = countTopicReviews(target.target_id);
             const progressPercentage =
               target.target_rating > 0
                 ? Math.min((currentRating / target.target_rating) * 100, 100)
@@ -198,8 +226,10 @@ export const ObjectiveProgressChart = ({
               target_rating: target.target_rating,
               current_rating: currentRating,
               progress_percentage: progressPercentage,
+              review_count: reviewCount,
             };
-          }) || [];
+          })
+          .filter((target) => target.review_count > 0) || [];
 
       // Calculate overall progress
       let overallProgress = objective.progress || 0;
@@ -243,6 +273,8 @@ export const ObjectiveProgressChart = ({
     computeCurrentSentimentScore,
     computeKeywordRating,
     computeTopicRating,
+    countKeywordReviews,
+    countTopicReviews,
   ]);
 
   if (loading) {
@@ -439,13 +471,23 @@ export const ObjectiveProgressChart = ({
                     </Stack>
                     <Stack spacing={0.5}>
                       {detail.keywordTargets.map((keywordTarget) => (
-                        <ObjectiveStatusIndicator
-                          key={keywordTarget.id}
-                          target={keywordTarget.target_rating}
-                          current={keywordTarget.current_rating}
-                          label={keywordTarget.keyword_text}
-                          type="keyword"
-                        />
+                        <Box key={keywordTarget.id}>
+                          <ObjectiveStatusIndicator
+                            target={keywordTarget.target_rating}
+                            current={keywordTarget.current_rating}
+                            label={keywordTarget.keyword_text}
+                            type="keyword"
+                          />
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ ml: 5.5, mt: -0.5, mb: 0.5 }}
+                          >
+                            {t("objectives.reviewCount", "{{count}} reviews", {
+                              count: keywordTarget.review_count,
+                            })}
+                          </Typography>
+                        </Box>
                       ))}
                     </Stack>
                   </Box>
@@ -475,13 +517,23 @@ export const ObjectiveProgressChart = ({
                     </Stack>
                     <Stack spacing={0.5}>
                       {detail.topicTargets.map((topicTarget) => (
-                        <ObjectiveStatusIndicator
-                          key={topicTarget.id}
-                          target={topicTarget.target_rating}
-                          current={topicTarget.current_rating}
-                          label={topicTarget.topic_name}
-                          type="topic"
-                        />
+                        <Box key={topicTarget.id}>
+                          <ObjectiveStatusIndicator
+                            target={topicTarget.target_rating}
+                            current={topicTarget.current_rating}
+                            label={topicTarget.topic_name}
+                            type="topic"
+                          />
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ ml: 5.5, mt: -0.5, mb: 0.5 }}
+                          >
+                            {t("objectives.reviewCount", "{{count}} reviews", {
+                              count: topicTarget.review_count,
+                            })}
+                          </Typography>
+                        </Box>
                       ))}
                     </Stack>
                   </Box>

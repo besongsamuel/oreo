@@ -31,7 +31,18 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEnrichedReviews } from "../hooks/useEnrichedReviews";
-import { CreateObjectiveInput, Objective } from "../services/objectivesService";
+import { useSupabase } from "../hooks/useSupabase";
+import {
+  CreateObjectiveInput,
+  Objective,
+  ObjectivesService,
+} from "../services/objectivesService";
+import {
+  Timespan,
+  formatTimespanDisplay,
+  getCurrentQuarter,
+  getTimespanDates,
+} from "../utils/objectivesUtils";
 import { ObjectiveFormDialog } from "./ObjectiveFormDialog";
 import { ObjectiveProgressChart } from "./ObjectiveProgressChart";
 
@@ -48,7 +59,6 @@ interface ObjectivesCardProps {
 }
 
 type PriorityFilter = "all" | "high" | "medium" | "low";
-type QuarterFilter = "all" | "Q1" | "Q2" | "Q3" | "Q4";
 type StatusFilter =
   | "all"
   | "not_started"
@@ -56,18 +66,6 @@ type StatusFilter =
   | "achieved"
   | "overdue"
   | "failed";
-
-const getQuarter = (date: Date): "Q1" | "Q2" | "Q3" | "Q4" => {
-  const month = date.getMonth(); // 0-11
-  if (month < 3) return "Q1";
-  if (month < 6) return "Q2";
-  if (month < 9) return "Q3";
-  return "Q4";
-};
-
-const getQuarterFromDate = (dateString: string): "Q1" | "Q2" | "Q3" | "Q4" => {
-  return getQuarter(new Date(dateString));
-};
 
 export const ObjectivesCard = ({
   objectives,
@@ -78,8 +76,14 @@ export const ObjectivesCard = ({
   onDeleteObjective,
 }: ObjectivesCardProps) => {
   const { t } = useTranslation();
+  const supabase = useSupabase();
+
+  // Year and timespan selection (client-side only)
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState<number>(currentYear);
+  const [timespan, setTimespan] = useState<Timespan>(getCurrentQuarter());
+
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-  const [quarterFilter, setQuarterFilter] = useState<QuarterFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(
     null
@@ -93,37 +97,56 @@ export const ObjectivesCard = ({
     null
   );
 
-  // Get selected objective
-  const selectedObjective = useMemo(() => {
-    return objectives.find((obj) => obj.id === selectedObjectiveId) || null;
-  }, [objectives, selectedObjectiveId]);
+  // Calculate date range from year and timespan
+  const { startDate, endDate } = useMemo(() => {
+    return getTimespanDates(year, timespan);
+  }, [year, timespan]);
 
-  // Fetch enrichedReviews for selected objective
+  // Fetch enrichedReviews for all objectives with selected timespan
   const { enrichedReviews, loading: enrichedReviewsLoading } =
     useEnrichedReviews({
       companyId,
-      startDate: selectedObjective?.start_date,
-      endDate: selectedObjective?.end_date,
-      enabled: !!selectedObjective,
+      startDate,
+      endDate,
+      enabled: true,
     });
 
+  // Calculate progress for each objective client-side
+  const objectivesWithProgress = useMemo(() => {
+    const objectivesService = new ObjectivesService(supabase);
+    return objectives.map((objective) => {
+      const progress = objectivesService.calculateProgressClientSide(
+        objective,
+        enrichedReviews,
+        year,
+        timespan
+      );
+      return {
+        ...objective,
+        progress,
+      };
+    });
+  }, [objectives, enrichedReviews, year, timespan, supabase]);
+
+  // Get selected objective
+  const selectedObjective = useMemo(() => {
+    return (
+      objectivesWithProgress.find((obj) => obj.id === selectedObjectiveId) ||
+      null
+    );
+  }, [objectivesWithProgress, selectedObjectiveId]);
+
   const filteredObjectives = useMemo(() => {
-    return objectives.filter((obj) => {
+    return objectivesWithProgress.filter((obj) => {
       if (priorityFilter !== "all" && obj.priority !== priorityFilter) {
         return false;
-      }
-      if (quarterFilter !== "all") {
-        const objQuarter = getQuarterFromDate(obj.end_date);
-        if (objQuarter !== quarterFilter) {
-          return false;
-        }
       }
       if (statusFilter !== "all" && obj.status !== statusFilter) {
         return false;
       }
       return true;
     });
-  }, [objectives, priorityFilter, quarterFilter, statusFilter]);
+  }, [objectivesWithProgress, priorityFilter, statusFilter]);
 
   const handleCreateClick = () => {
     setEditingObjective(null);
@@ -308,22 +331,35 @@ export const ObjectivesCard = ({
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>{t("objectives.quarter", "Quarter")}</InputLabel>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel>{t("objectives.year", "Year")}</InputLabel>
             <Select
-              value={quarterFilter}
-              onChange={(e) =>
-                setQuarterFilter(e.target.value as QuarterFilter)
-              }
-              label={t("objectives.quarter", "Quarter")}
+              value={year}
+              onChange={(e) => setYear(e.target.value as number)}
+              label={t("objectives.year", "Year")}
             >
+              {Array.from({ length: 5 }, (_, i) => currentYear - i).map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>{t("objectives.timespan", "Timespan")}</InputLabel>
+            <Select
+              value={timespan}
+              onChange={(e) => setTimespan(e.target.value as Timespan)}
+              label={t("objectives.timespan", "Timespan")}
+            >
+              <MenuItem value="q1">Q1</MenuItem>
+              <MenuItem value="q2">Q2</MenuItem>
+              <MenuItem value="q3">Q3</MenuItem>
+              <MenuItem value="q4">Q4</MenuItem>
               <MenuItem value="all">
-                {t("objectives.allQuarters", "All")}
+                {t("objectives.allYear", "All Year")}
               </MenuItem>
-              <MenuItem value="Q1">Q1</MenuItem>
-              <MenuItem value="Q2">Q2</MenuItem>
-              <MenuItem value="Q3">Q3</MenuItem>
-              <MenuItem value="Q4">Q4</MenuItem>
             </Select>
           </FormControl>
 
@@ -390,10 +426,7 @@ export const ObjectivesCard = ({
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        {t(
-                          "objectives.targetCompletionDate",
-                          "Target Completion Date"
-                        )}
+                        {t("objectives.timespan", "Timespan")}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -474,7 +507,7 @@ export const ObjectivesCard = ({
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {new Date(objective.end_date).toLocaleDateString()}
+                          {formatTimespanDisplay(year, timespan)}
                         </Typography>
                         <Chip
                           label={t(
@@ -528,6 +561,8 @@ export const ObjectivesCard = ({
           objectives={[selectedObjective]}
           enrichedReviews={enrichedReviews}
           loading={enrichedReviewsLoading}
+          year={year}
+          timespan={timespan}
         />
       )}
 
@@ -539,8 +574,6 @@ export const ObjectivesCard = ({
         objective={editingObjective}
         companyId={companyId}
         enrichedReviews={enrichedReviews}
-        startDate={selectedObjective?.start_date}
-        endDate={selectedObjective?.end_date}
       />
 
       {/* Delete Confirmation Dialog */}

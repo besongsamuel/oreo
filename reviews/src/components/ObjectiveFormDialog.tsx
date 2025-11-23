@@ -45,8 +45,6 @@ interface ObjectiveFormDialogProps {
   objective?: Objective | null;
   companyId: string;
   enrichedReviews: EnrichedReview[];
-  startDate?: string;
-  endDate?: string;
 }
 
 const steps = ["general", "targets"];
@@ -58,8 +56,6 @@ export const ObjectiveFormDialog = ({
   objective,
   companyId,
   enrichedReviews,
-  startDate,
-  endDate,
 }: ObjectiveFormDialogProps) => {
   const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
@@ -69,8 +65,6 @@ export const ObjectiveFormDialog = ({
   // Step 1: General objective fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [startDateValue, setStartDateValue] = useState("");
-  const [endDateValue, setEndDateValue] = useState("");
   const [targetRating, setTargetRating] = useState<number | undefined>(
     undefined
   );
@@ -96,8 +90,6 @@ export const ObjectiveFormDialog = ({
         // Edit mode
         setName(objective.name);
         setDescription(objective.description || "");
-        setStartDateValue(objective.start_date);
-        setEndDateValue(objective.end_date);
         setTargetRating(objective.target_rating);
         // Convert from -1 to 1 range to 1-100 range for display
         setTargetSentiment(
@@ -131,8 +123,6 @@ export const ObjectiveFormDialog = ({
         // Create mode - reset form
         setName("");
         setDescription("");
-        setStartDateValue(startDate || "");
-        setEndDateValue(endDate || "");
         setTargetRating(undefined);
         setTargetSentiment(undefined);
         setPriority("medium");
@@ -144,34 +134,13 @@ export const ObjectiveFormDialog = ({
       setActiveStep(0);
       setError(null);
     }
-  }, [open, objective, startDate, endDate]);
+  }, [open, objective]);
 
   const handleNext = () => {
     // Validate step 1
     if (activeStep === 0) {
       if (!name.trim()) {
         setError(t("objectives.errors.nameRequired", "Name is required"));
-        return;
-      }
-      if (!startDateValue) {
-        setError(
-          t("objectives.errors.startDateRequired", "Start date is required")
-        );
-        return;
-      }
-      if (!endDateValue) {
-        setError(
-          t("objectives.errors.endDateRequired", "End date is required")
-        );
-        return;
-      }
-      if (new Date(startDateValue) > new Date(endDateValue)) {
-        setError(
-          t(
-            "objectives.errors.endDateBeforeStart",
-            "End date must be after start date"
-          )
-        );
         return;
       }
       if (
@@ -224,8 +193,6 @@ export const ObjectiveFormDialog = ({
         company_id: objective?.company_id || companyId,
         name: name.trim(),
         description: description.trim() || undefined,
-        start_date: startDateValue,
-        end_date: endDateValue,
         target_rating: targetRating,
         target_sentiment_score: targetSentimentScore,
         priority,
@@ -301,27 +268,6 @@ export const ObjectiveFormDialog = ({
                   "Optional description of the objective"
                 )}
               />
-
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  label={t("objectives.startDate", "Start Date")}
-                  type="date"
-                  value={startDateValue}
-                  onChange={(e) => setStartDateValue(e.target.value)}
-                  fullWidth
-                  required
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  label={t("objectives.endDate", "End Date")}
-                  type="date"
-                  value={endDateValue}
-                  onChange={(e) => setEndDateValue(e.target.value)}
-                  fullWidth
-                  required
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Stack>
 
               <Stack direction="row" spacing={2}>
                 <TextField
@@ -405,8 +351,6 @@ export const ObjectiveFormDialog = ({
                   [topicId]: rating,
                 }));
               }}
-              startDate={startDateValue}
-              endDate={endDateValue}
             />
           )}
         </Stack>

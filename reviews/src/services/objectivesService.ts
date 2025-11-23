@@ -1,12 +1,33 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { getTimespanDates, Timespan } from "../utils/objectivesUtils";
+
+export interface EnrichedReview {
+    id: string;
+    rating: number;
+    keywords: Array<{
+        id: string;
+        text: string;
+        category: string;
+    }>;
+    topics: Array<{
+        id: string;
+        name: string;
+        category: string;
+        description?: string;
+    }>;
+    published_at: string;
+    sentiment_analysis?: {
+        sentiment: string;
+        sentiment_score: number;
+        emotions?: any;
+    } | null;
+}
 
 export interface Objective {
     id: string;
     company_id: string;
     name: string;
     description?: string;
-    start_date: string;
-    end_date: string;
     target_rating?: number;
     target_sentiment_score?: number;
     priority: "high" | "medium" | "low";
@@ -44,8 +65,6 @@ export interface CreateObjectiveInput {
     company_id: string;
     name: string;
     description?: string;
-    start_date: string;
-    end_date: string;
     target_rating?: number;
     target_sentiment_score?: number;
     priority: "high" | "medium" | "low";
@@ -59,8 +78,6 @@ export interface CreateObjectiveInput {
 export interface UpdateObjectiveInput {
     name?: string;
     description?: string;
-    start_date?: string;
-    end_date?: string;
     target_rating?: number;
     target_sentiment_score?: number;
     priority?: "high" | "medium" | "low";
@@ -110,22 +127,21 @@ export class ObjectivesService {
 
         const objectives = (data || []) as Objective[];
 
-        // Fetch targets and progress for each objective
-        const objectivesWithProgress = await Promise.all(
+        // Fetch targets for each objective (progress is now calculated client-side)
+        const objectivesWithTargets = await Promise.all(
             objectives.map(async (objective) => {
                 const targets = await this.getObjectiveTargets(objective.id);
-                const progress = await this.calculateProgress(objective.id);
                 return {
                     ...objective,
                     targets,
-                    progress,
+                    progress: 0, // Progress will be calculated client-side
                 };
             }),
         );
 
-        console.log("objectivesWithProgress", objectivesWithProgress);
+        console.log("objectivesWithTargets", objectivesWithTargets);
 
-        return objectivesWithProgress;
+        return objectivesWithTargets;
     }
 
     /**
@@ -147,12 +163,11 @@ export class ObjectivesService {
 
         const objective = data as Objective;
         const targets = await this.getObjectiveTargets(objectiveId);
-        const progress = await this.calculateProgress(objectiveId);
 
         return {
             ...objective,
             targets,
-            progress,
+            progress: 0, // Progress will be calculated client-side
         };
     }
 
@@ -205,22 +220,129 @@ export class ObjectivesService {
     }
 
     /**
-     * Calculate progress for an objective
+     * Calculate progress for an objective client-side using filtered reviews
      */
-    async calculateProgress(objectiveId: string): Promise<number> {
-        const { data, error } = await this.supabase.rpc(
-            "calculate_objective_progress",
-            {
-                p_objective_id: objectiveId,
-            },
-        );
+    calculateProgressClientSide(
+        objective: Objective,
+        reviews: EnrichedReview[],
+        year: number,
+        timespan: Timespan,
+    ): number {
+        const { startDate, endDate } = getTimespanDates(year, timespan);
 
-        if (error) {
-            console.error("Error calculating progress:", error);
+        // Filter reviews by date range
+        const filteredReviews = reviews.filter((review) => {
+            const reviewDate = new Date(review.published_at)
+                .toISOString()
+                .split("T")[0];
+            return reviewDate >= startDate && reviewDate <= endDate;
+        });
+
+        if (filteredReviews.length === 0) {
             return 0;
         }
 
-        return data || 0;
+        const progressValues: number[] = [];
+
+        // Calculate rating progress if target_rating exists
+        if (objective.target_rating && objective.target_rating > 0) {
+            const currentRating = filteredReviews.reduce((sum, r) =>
+                sum + r.rating, 0) /
+                filteredReviews.length;
+            const ratingProgress = Math.min(
+                (currentRating / objective.target_rating) * 100,
+                100,
+            );
+            progressValues.push(ratingProgress);
+        }
+
+        // Calculate sentiment progress if target_sentiment_score exists
+        if (
+            objective.target_sentiment_score !== undefined &&
+            objective.target_sentiment_score !== null &&
+            objective.target_sentiment_score > -1
+        ) {
+            const reviewsWithSentiment = filteredReviews.filter(
+                (review) =>
+                    review.sentiment_analysis?.sentiment_score !== undefined &&
+                    review.sentiment_analysis?.sentiment_score !== null,
+            );
+
+            if (reviewsWithSentiment.length > 0) {
+                const currentSentiment = reviewsWithSentiment.reduce(
+                    (sum, r) =>
+                        sum + (r.sentiment_analysis?.sentiment_score || 0),
+                    0,
+                ) / reviewsWithSentiment.length;
+
+                // Normalize sentiment score (-1 to 1) to 0-2 range for calculation
+                const sentimentProgress = Math.min(
+                    ((currentSentiment + 1) /
+                        (objective.target_sentiment_score + 1)) * 100,
+                    100,
+                );
+                progressValues.push(sentimentProgress);
+            }
+        }
+
+        // Calculate keyword/topic progress
+        // Only include targets that have reviews in the selected timespan
+        if (objective.targets && objective.targets.length > 0) {
+            objective.targets.forEach((target) => {
+                if (target.target_rating && target.target_rating > 0) {
+                    let currentRating = 0;
+                    let reviewCount = 0;
+
+                    if (target.target_type === "keyword") {
+                        const keywordReviews = filteredReviews.filter((
+                            review,
+                        ) => review.keywords.some((kw) =>
+                            kw.id === target.target_id
+                        ));
+
+                        reviewCount = keywordReviews.length;
+                        // Only calculate if there are reviews
+                        if (reviewCount > 0) {
+                            currentRating = keywordReviews.reduce((sum, r) =>
+                                sum + r.rating, 0) /
+                                keywordReviews.length;
+                        }
+                    } else if (target.target_type === "topic") {
+                        const topicReviews = filteredReviews.filter((review) =>
+                            review.topics.some((topic) =>
+                                topic.id === target.target_id
+                            )
+                        );
+
+                        reviewCount = topicReviews.length;
+                        // Only calculate if there are reviews
+                        if (reviewCount > 0) {
+                            currentRating = topicReviews.reduce((sum, r) =>
+                                sum + r.rating, 0) /
+                                topicReviews.length;
+                        }
+                    }
+
+                    // Only include in progress calculation if there are reviews
+                    if (reviewCount > 0 && currentRating > 0) {
+                        const targetProgress = Math.min(
+                            (currentRating / target.target_rating) * 100,
+                            100,
+                        );
+                        progressValues.push(targetProgress);
+                    }
+                }
+            });
+        }
+
+        // Return average progress
+        if (progressValues.length === 0) {
+            return 0;
+        }
+
+        const averageProgress = progressValues.reduce((sum, p) => sum + p, 0) /
+            progressValues.length;
+        return Math.round(averageProgress * 100) / 100; // Round to 2 decimal places
     }
 
     /**
@@ -240,8 +362,6 @@ export class ObjectivesService {
                 company_id: input.company_id,
                 name: input.name,
                 description: input.description,
-                start_date: input.start_date,
-                end_date: input.end_date,
                 target_rating: input.target_rating,
                 target_sentiment_score: input.target_sentiment_score,
                 priority: input.priority,
