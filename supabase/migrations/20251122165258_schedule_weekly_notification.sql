@@ -46,5 +46,6 @@ SELECT cron.schedule(
   $$
 );
 
-COMMENT ON TABLE cron.job IS 'Weekly notification cron job runs every Monday at 9:00 AM UTC';
+-- Note: Weekly notification cron job runs every Monday at 9:00 AM UTC
+-- The cron.job table is managed by pg_cron extension and cannot be commented without superuser privileges
 

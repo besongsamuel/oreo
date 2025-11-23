@@ -4,6 +4,7 @@ import {
   LocationOn as LocationOnIcon,
   RateReview as ReviewsIcon,
   Settings as SettingsIcon,
+  TrackChanges as ObjectivesIcon,
 } from "@mui/icons-material";
 import {
   Box,
@@ -21,6 +22,7 @@ export type CompanyPageSection =
   | "overview"
   | "reviews"
   | "analytics"
+  | "objectives"
   | "locations"
   | "settings";
 
@@ -61,6 +63,11 @@ export const CompanyPageSidebar = ({
       id: "reviews",
       labelKey: "companyPage.sidebar.reviews",
       icon: <ReviewsIcon />,
+    },
+    {
+      id: "objectives",
+      labelKey: "companyPage.sidebar.objectives",
+      icon: <ObjectivesIcon />,
     },
     {
       id: "locations",

@@ -45,6 +45,7 @@ import {
   LocationComponent,
   MonthComparisonModal,
   MonthlySummary,
+  ObjectivesCard,
   RatingDistributionChart,
   ReviewsList,
   ReviewsTimelineChart,
@@ -63,8 +64,10 @@ import {
   StatCardSkeleton,
 } from "../components/SkeletonLoaders";
 import { UserContext } from "../context/UserContext";
+import { useObjectives } from "../hooks/useObjectives";
 import { usePlatformIntegration } from "../hooks/usePlatformIntegration";
 import { useSupabase } from "../hooks/useSupabase";
+import { CreateObjectiveInput } from "../services/objectivesService";
 import { ReviewsService } from "../services/reviewsService";
 
 interface CompanyDetails {
@@ -194,6 +197,15 @@ export const CompanyPage = () => {
     error: platformError,
     success: platformSuccess,
   } = usePlatformIntegration();
+
+  // Objectives hook
+  const {
+    objectives,
+    loading: objectivesLoading,
+    createObjective,
+    updateObjective,
+    deleteObjective,
+  } = useObjectives(companyId);
 
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<CompanyDetails | null>(null);
@@ -2945,6 +2957,29 @@ export const CompanyPage = () => {
                     )
                   )}
                 </Stack>
+              )}
+
+              {activeSection === "objectives" && companyId && (
+                <ObjectivesCard
+                  objectives={objectives}
+                  loading={objectivesLoading}
+                  enrichedReviews={enrichedReviews}
+                  companyId={companyId}
+                  onCreateObjective={async (input: CreateObjectiveInput) => {
+                    await createObjective(input);
+                  }}
+                  onUpdateObjective={async (
+                    objectiveId: string,
+                    input: CreateObjectiveInput
+                  ) => {
+                    await updateObjective(objectiveId, input);
+                  }}
+                  onDeleteObjective={async (objectiveId: string) => {
+                    await deleteObjective(objectiveId);
+                  }}
+                  startDate={filterStartDate}
+                  endDate={filterEndDate}
+                />
               )}
 
               {activeSection === "locations" && companyId && (

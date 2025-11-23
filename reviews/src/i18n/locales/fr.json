@@ -746,6 +746,7 @@
       "overview": "Vue d'ensemble",
       "reviews": "Avis",
       "analytics": "Analyses",
+      "objectives": "Objectifs",
       "locations": "Emplacements",
       "settings": "Paramètres"
     }
@@ -873,5 +874,64 @@
     "dialogTitle": "Mise à niveau requise",
     "viewPricing": "Voir les tarifs",
     "cancel": "Annuler"
+  },
+  "objectives": {
+    "title": "Mes objectifs",
+    "subtitle": "Suivez vos objectifs et vos actions pour améliorer l'expérience client quotidiennement",
+    "createObjective": "Créer un objectif",
+    "editObjective": "Modifier l'objectif",
+    "name": "Nom",
+    "namePlaceholder": "ex: Atteindre 4,6 étoiles",
+    "description": "Description",
+    "descriptionPlaceholder": "Description optionnelle de l'objectif",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "targetRating": "Note cible",
+    "targetRatingHelper": "Optionnel: Note moyenne cible (0-5)",
+    "targetSentiment": "Score de sentiment cible",
+    "targetSentimentHelper": "Optionnel: Score de sentiment cible (0-100, où 50 est neutre)",
+    "priority": "Priorité",
+    "priorityHigh": "Élevée",
+    "priorityMedium": "Moyenne",
+    "priorityLow": "Faible",
+    "allPriorities": "Toutes les priorités",
+    "quarter": "Trimestre",
+    "allQuarters": "Tous",
+    "status": "Statut",
+    "allGoals": "Tous les objectifs",
+    "progress": "Progression",
+    "targetCompletionDate": "Date d'achèvement cible",
+    "progressionGlobale": "Progression globale",
+    "noObjectives": "Aucun objectif pour le moment",
+    "noObjectivesFound": "Aucun objectif trouvé",
+    "total": "Total",
+    "keywords": "Mots-clés",
+    "keywordsDescription": "Sélectionnez jusqu'à {{max}} mots-clés ({{selected}}/{{max}} sélectionnés)",
+    "topics": "Sujets",
+    "topicsDescription": "Sélectionnez jusqu'à {{max}} sujets ({{selected}}/{{max}} sélectionnés)",
+    "searchKeywords": "Rechercher des mots-clés...",
+    "searchTopics": "Rechercher des sujets...",
+    "noKeywords": "Aucun mot-clé disponible",
+    "noTopics": "Aucun sujet disponible",
+    "steps": {
+      "general": "Général",
+      "targets": "Cibles"
+    },
+    "status": {
+      "notStarted": "Non débuté",
+      "inProgress": "En cours",
+      "achieved": "Atteints",
+      "overdue": "En retard"
+    },
+    "errors": {
+      "nameRequired": "Le nom est requis",
+      "startDateRequired": "La date de début est requise",
+      "endDateRequired": "La date de fin est requise",
+      "endDateBeforeStart": "La date de fin doit être après la date de début",
+      "atLeastOneTarget": "Veuillez définir au moins une cible (note, sentiment, mot-clé ou sujet)",
+      "saveFailed": "Échec de l'enregistrement de l'objectif"
+    },
+    "confirmDelete": "Confirmer la suppression",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet objectif ? Cette action ne peut pas être annulée."
   }
 }
