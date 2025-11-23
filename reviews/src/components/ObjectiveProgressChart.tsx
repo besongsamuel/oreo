@@ -9,6 +9,7 @@ import {
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Objective } from "../services/objectivesService";
+import { NoReviewsIllustration } from "./illustrations/ObjectiveIllustrations";
 import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
 
 interface EnrichedReview {
@@ -231,10 +232,15 @@ export const ObjectiveProgressChart = ({
       <Card sx={{ borderRadius: "18px", boxShadow: 2 }}>
         <CardContent>
           <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
+            <NoReviewsIllustration sx={{ opacity: 0.6, mb: 1 }} />
             <Typography variant="h6" fontWeight={600}>
               {t("objectives.objectiveDetails", "Objective Details")}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textAlign="center"
+            >
               {t(
                 "objectives.noReviewsForObjective",
                 "No reviews found for this objective's time period"
@@ -248,19 +254,50 @@ export const ObjectiveProgressChart = ({
 
   // Show expanded details for all objectives (should only be one when selected)
   return (
-    <Card sx={{ borderRadius: "18px", boxShadow: 2 }}>
-      <CardContent sx={{ p: 2.5 }}>
+    <Card
+      sx={{
+        borderRadius: "18px",
+        boxShadow: 2,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Decorative background element */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: -50,
+          right: -50,
+          width: 200,
+          height: 200,
+          borderRadius: "50%",
+          bgcolor: "primary.main",
+          opacity: 0.05,
+          zIndex: 0,
+        }}
+      />
+      <CardContent sx={{ p: 2.5, position: "relative", zIndex: 1 }}>
         <Stack spacing={2}>
           {objectiveStatusDetails.map((detail) => (
             <Box key={detail.objective.id}>
-              <Typography
-                variant="h6"
-                fontWeight={600}
-                gutterBottom
+              <Stack
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
                 sx={{ mb: 1.5 }}
               >
-                {detail.objective.name}
-              </Typography>
+                <Box
+                  sx={{
+                    width: 4,
+                    height: 24,
+                    bgcolor: "primary.main",
+                    borderRadius: 2,
+                  }}
+                />
+                <Typography variant="h6" fontWeight={600}>
+                  {detail.objective.name}
+                </Typography>
+              </Stack>
               {detail.objective.description && (
                 <Typography
                   variant="body2"
@@ -275,14 +312,25 @@ export const ObjectiveProgressChart = ({
                 {detail.objective.target_rating &&
                   detail.currentRating !== undefined && (
                     <Box>
-                      <Typography
-                        variant="subtitle2"
-                        fontWeight={600}
-                        gutterBottom
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
                         sx={{ mb: 1 }}
                       >
-                        {t("objectives.overallRating", "Overall Rating")}
-                      </Typography>
+                        <Box
+                          sx={{
+                            width: 3,
+                            height: 16,
+                            bgcolor: "primary.main",
+                            borderRadius: 1.5,
+                            opacity: 0.6,
+                          }}
+                        />
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {t("objectives.overallRating", "Overall Rating")}
+                        </Typography>
+                      </Stack>
                       <ObjectiveStatusIndicator
                         target={detail.objective.target_rating}
                         current={detail.currentRating}
@@ -295,14 +343,25 @@ export const ObjectiveProgressChart = ({
                 {/* Keyword Targets */}
                 {detail.keywordTargets.length > 0 && (
                   <Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      gutterBottom
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
                       sx={{ mb: 1 }}
                     >
-                      {t("objectives.keywords", "Keywords")}
-                    </Typography>
+                      <Box
+                        sx={{
+                          width: 3,
+                          height: 16,
+                          bgcolor: "secondary.main",
+                          borderRadius: 1.5,
+                          opacity: 0.6,
+                        }}
+                      />
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {t("objectives.keywords", "Keywords")}
+                      </Typography>
+                    </Stack>
                     <Stack spacing={0.5}>
                       {detail.keywordTargets.map((keywordTarget) => (
                         <ObjectiveStatusIndicator
@@ -320,14 +379,25 @@ export const ObjectiveProgressChart = ({
                 {/* Topic Targets */}
                 {detail.topicTargets.length > 0 && (
                   <Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      gutterBottom
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
                       sx={{ mb: 1 }}
                     >
-                      {t("objectives.topics", "Topics")}
-                    </Typography>
+                      <Box
+                        sx={{
+                          width: 3,
+                          height: 16,
+                          bgcolor: "warning.main",
+                          borderRadius: 1.5,
+                          opacity: 0.6,
+                        }}
+                      />
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {t("objectives.topics", "Topics")}
+                      </Typography>
+                    </Stack>
                     <Stack spacing={0.5}>
                       {detail.topicTargets.map((topicTarget) => (
                         <ObjectiveStatusIndicator

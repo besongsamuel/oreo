@@ -228,9 +228,28 @@ export const ObjectivesCard = ({
           p: 2,
           borderRadius: "18px",
           bgcolor: "background.paper",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Stack direction="row" spacing={2} alignItems="center">
+        {/* Subtle decorative background */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 4,
+            height: "100%",
+            bgcolor: "primary.main",
+            opacity: 0.3,
+          }}
+        />
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          sx={{ position: "relative", zIndex: 1 }}
+        >
           <Typography variant="body1" fontWeight={500}>
             {t("objectives.selectObjective", "Select an Objective")}:
           </Typography>
