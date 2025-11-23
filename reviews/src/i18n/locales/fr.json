@@ -927,6 +927,7 @@
     "current": "Actuel",
     "target": "Cible",
     "overallRating": "Note globale",
+    "sentimentScore": "Score de sentiment",
     "detailedBreakdown": "Détails par objectif",
     "statusIndicators": {
       "onTrack": "Sur la bonne voie",

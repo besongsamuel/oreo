@@ -12,7 +12,7 @@ interface ObjectiveStatusIndicatorProps {
   target: number;
   current: number;
   label: string;
-  type?: "rating" | "keyword" | "topic";
+  type?: "rating" | "keyword" | "topic" | "sentiment";
   showProgress?: boolean;
 }
 
@@ -25,9 +25,29 @@ export const ObjectiveStatusIndicator = ({
 }: ObjectiveStatusIndicatorProps) => {
   const { t } = useTranslation();
 
+  // Convert sentiment scores to 1-100 scale for display
+  const displayCurrent = type === "sentiment" 
+    ? ((current + 1) / 2) * 99 + 1  // -1 -> 1, 0 -> 50.5, 1 -> 100
+    : current;
+  const displayTarget = type === "sentiment"
+    ? ((target + 1) / 2) * 99 + 1  // -1 -> 1, 0 -> 50.5, 1 -> 100
+    : target;
+
   // Calculate progress percentage
-  const progressPercentage =
-    target > 0 ? Math.min((current / target) * 100, 100) : 0;
+  // For sentiment scores (-1 to 1), normalize to 0-1 range first
+  let progressPercentage = 0;
+  if (type === "sentiment") {
+    // Normalize sentiment scores from -1 to 1 range to 0 to 1 range
+    const normalizedCurrent = (current + 1) / 2; // -1 -> 0, 0 -> 0.5, 1 -> 1
+    const normalizedTarget = (target + 1) / 2;
+    if (normalizedTarget > 0) {
+      progressPercentage = Math.min((normalizedCurrent / normalizedTarget) * 100, 100);
+    }
+  } else {
+    // For ratings (0-5 range)
+    progressPercentage =
+      target > 0 ? Math.min((current / target) * 100, 100) : 0;
+  }
 
   // Determine status indicator
   let statusIndicator: "on_track" | "close" | "off_track" | "far";
@@ -123,10 +143,10 @@ export const ObjectiveStatusIndicator = ({
           {label}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem", minWidth: 90 }}>
-          {t("objectives.current", "Current")}: {current.toFixed(2)}
+          {t("objectives.current", "Current")}: {displayCurrent.toFixed(type === "sentiment" ? 0 : 2)}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem", minWidth: 90 }}>
-          {t("objectives.target", "Target")}: {target.toFixed(2)}
+          {t("objectives.target", "Target")}: {displayTarget.toFixed(type === "sentiment" ? 0 : 2)}
         </Typography>
         {showProgress && (
           <Box sx={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>

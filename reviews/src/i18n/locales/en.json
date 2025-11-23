@@ -927,6 +927,7 @@
     "current": "Current",
     "target": "Target",
     "overallRating": "Overall Rating",
+    "sentimentScore": "Sentiment Score",
     "detailedBreakdown": "Detailed Breakdown",
     "statusIndicators": {
       "onTrack": "On Track",

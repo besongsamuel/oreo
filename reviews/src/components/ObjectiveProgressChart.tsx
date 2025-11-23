@@ -27,6 +27,11 @@ interface EnrichedReview {
     description?: string;
   }>;
   published_at: string;
+  sentiment_analysis?: {
+    sentiment: string;
+    sentiment_score: number;
+    emotions?: any;
+  } | null;
 }
 
 interface ObjectiveProgressChartProps {
@@ -109,11 +114,43 @@ export const ObjectiveProgressChart = ({
     [enrichedReviews]
   );
 
+  // Compute current sentiment score for reviews within objective timeframe
+  const computeCurrentSentimentScore = useCallback(
+    (startDate: string, endDate: string): number | undefined => {
+      const filteredReviews = enrichedReviews.filter((review) => {
+        const reviewDate = new Date(review.published_at)
+          .toISOString()
+          .split("T")[0];
+        return reviewDate >= startDate && reviewDate <= endDate;
+      });
+
+      const reviewsWithSentiment = filteredReviews.filter(
+        (review) =>
+          review.sentiment_analysis?.sentiment_score !== undefined &&
+          review.sentiment_analysis?.sentiment_score !== null
+      );
+
+      if (reviewsWithSentiment.length === 0) return undefined;
+
+      const sum = reviewsWithSentiment.reduce(
+        (acc, review) =>
+          acc + (review.sentiment_analysis?.sentiment_score || 0),
+        0
+      );
+      return sum / reviewsWithSentiment.length;
+    },
+    [enrichedReviews]
+  );
+
   // Compute status details for each objective
   const objectiveStatusDetails = useMemo(() => {
     return objectives.map((objective) => {
       const currentRating = objective.target_rating
         ? computeCurrentRating(objective.start_date, objective.end_date)
+        : undefined;
+
+      const currentSentimentScore = objective.target_sentiment_score
+        ? computeCurrentSentimentScore(objective.start_date, objective.end_date)
         : undefined;
 
       const keywordTargets =
@@ -193,6 +230,7 @@ export const ObjectiveProgressChart = ({
       return {
         objective,
         currentRating,
+        currentSentimentScore,
         keywordTargets,
         topicTargets,
         overallProgress,
@@ -202,6 +240,7 @@ export const ObjectiveProgressChart = ({
   }, [
     objectives,
     computeCurrentRating,
+    computeCurrentSentimentScore,
     computeKeywordRating,
     computeTopicRating,
   ]);
@@ -336,6 +375,42 @@ export const ObjectiveProgressChart = ({
                         current={detail.currentRating}
                         label={t("objectives.overallRating", "Overall Rating")}
                         type="rating"
+                      />
+                    </Box>
+                  )}
+
+                {/* Sentiment Score */}
+                {detail.objective.target_sentiment_score !== undefined &&
+                  detail.objective.target_sentiment_score !== null &&
+                  detail.currentSentimentScore !== undefined && (
+                    <Box>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mb: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 3,
+                            height: 16,
+                            bgcolor: "info.main",
+                            borderRadius: 1.5,
+                            opacity: 0.6,
+                          }}
+                        />
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {t("objectives.sentimentScore", "Sentiment Score")}
+                        </Typography>
+                      </Stack>
+                      <ObjectiveStatusIndicator
+                        target={detail.objective.target_sentiment_score}
+                        current={detail.currentSentimentScore}
+                        label={t(
+                          "objectives.sentimentScore",
+                          "Sentiment Score"
+                        )}
+                        type="sentiment"
                       />
                     </Box>
                   )}

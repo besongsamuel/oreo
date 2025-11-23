@@ -17,6 +17,11 @@ interface EnrichedReview {
     description?: string;
   }>;
   published_at: string;
+  sentiment_analysis?: {
+    sentiment: string;
+    sentiment_score: number;
+    emotions?: any;
+  } | null;
 }
 
 interface UseEnrichedReviewsOptions {
@@ -116,56 +121,50 @@ export const useEnrichedReviews = ({
         reviewsQuery = reviewsQuery.lte("published_at", endDate);
       }
 
-      // Fetch all data in parallel
-      const [reviewsData, keywordsData, topicsData, sentimentData] =
-        await Promise.all([
-          // Reviews
-          fetchAllPaginated<any>(
-            reviewsQuery.order("published_at", { ascending: false })
-          ),
-          // Keywords
-          fetchAllPaginated<any>(
-            supabase
-              .from("review_keywords")
-              .select(
-                `
+      // Fetch reviews first
+      const reviewsData = await fetchAllPaginated<any>(
+        reviewsQuery.order("published_at", { ascending: false })
+      );
+
+      // Get review IDs for sentiment fetch
+      const reviewIds = reviewsData.map((r: any) => r.id);
+
+      // Fetch remaining data in parallel
+      const [keywordsData, topicsData, sentimentData] = await Promise.all([
+        // Keywords
+        fetchAllPaginated<any>(
+          supabase
+            .from("review_keywords")
+            .select(
+              `
                 review_id,
                 keywords(id, text, category)
               `
-              )
-              .in("platform_connection_id", platformConnectionIds)
-          ),
-          // Topics
-          fetchAllPaginated<any>(
-            supabase
-              .from("review_topics")
-              .select(
-                `
+            )
+            .in("platform_connection_id", platformConnectionIds)
+        ),
+        // Topics
+        fetchAllPaginated<any>(
+          supabase
+            .from("review_topics")
+            .select(
+              `
                 review_id,
                 topics(id, name, category, description)
               `
-              )
-              .in("platform_connection_id", platformConnectionIds)
-          ),
-          // Sentiment - get platform_location_ids from platform_connections
-          (async () => {
-            const { data: platformConnectionsData } = await supabase
-              .from("platform_connections")
-              .select("platform_location_id")
-              .in("id", platformConnectionIds);
-            const platformLocationIds =
-              platformConnectionsData
-                ?.map((pc) => pc.platform_location_id)
-                .filter(Boolean) || [];
-            if (platformLocationIds.length === 0) return [];
-            return fetchAllPaginated<any>(
+            )
+            .in("platform_connection_id", platformConnectionIds)
+        ),
+        // Sentiment - get by review_id
+        reviewIds.length > 0
+          ? fetchAllPaginated<any>(
               supabase
                 .from("sentiment_analysis")
-                .select("*")
-                .in("platform_location_id", platformLocationIds)
-            );
-          })(),
-        ]);
+                .select("review_id, sentiment, sentiment_score, emotions")
+                .in("review_id", reviewIds)
+            )
+          : Promise.resolve([]),
+      ]);
 
       // Aggregate data into enriched reviews
       const enrichedReviewsMap = new Map<string, EnrichedReview>();
@@ -178,6 +177,7 @@ export const useEnrichedReviews = ({
           keywords: [],
           topics: [],
           published_at: review.published_at,
+          sentiment_analysis: null,
         });
       });
 
@@ -203,6 +203,18 @@ export const useEnrichedReviews = ({
             category: rt.topics.category || "neutral",
             description: rt.topics.description,
           });
+        }
+      });
+
+      // Add sentiment analysis
+      sentimentData.forEach((sa: any) => {
+        const review = enrichedReviewsMap.get(sa.review_id);
+        if (review) {
+          review.sentiment_analysis = {
+            sentiment: sa.sentiment,
+            sentiment_score: sa.sentiment_score,
+            emotions: sa.emotions,
+          };
         }
       });
 
