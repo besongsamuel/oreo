@@ -96,8 +96,8 @@ export const ObjectiveStatusIndicator = ({
   const chartOptions = {
     chart: {
       type: "donut" as const,
-      width: 40,
-      height: 40,
+      width: 70,
+      height: 70,
       sparkline: {
         enabled: true,
       },
@@ -142,12 +142,12 @@ export const ObjectiveStatusIndicator = ({
             {icon}
           </Box>
           {showProgress && (
-            <Box 
-              sx={{ 
-                width: 60, 
-                height: 60, 
-                display: "flex", 
-                alignItems: "center", 
+            <Box
+              sx={{
+                width: 70,
+                height: 70,
+                display: "flex",
+                alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
               }}
@@ -156,8 +156,8 @@ export const ObjectiveStatusIndicator = ({
                 options={chartOptions}
                 series={chartSeries}
                 type="donut"
-                width={60}
-                height={60}
+                width={70}
+                height={70}
               />
               <Box
                 sx={{

@@ -10,9 +10,13 @@ import {
 } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Objective, ObjectivesService } from "../services/objectivesService";
 import { useSupabase } from "../hooks/useSupabase";
-import { Timespan, getTimespanDates } from "../utils/objectivesUtils";
+import { Objective, ObjectivesService } from "../services/objectivesService";
+import {
+  Timespan,
+  formatTimespanDisplay,
+  getTimespanDates,
+} from "../utils/objectivesUtils";
 import { NoReviewsIllustration } from "./illustrations/ObjectiveIllustrations";
 import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
 
@@ -402,16 +406,26 @@ export const ObjectiveProgressChart = ({
                   mb: 2,
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                  <Typography variant="body2" color="text.secondary">
-                    {t("objectives.objectiveScore", "Objective Score")}:
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    color="primary.main"
+                <Stack spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    justifyContent="center"
                   >
-                    {detail.overallProgress.toFixed(0)}%
+                    <Typography variant="body2" color="text.secondary">
+                      {t("objectives.objectiveScore", "Objective Score")}:
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      fontWeight={700}
+                      color="primary.main"
+                    >
+                      {detail.overallProgress.toFixed(0)}%
+                    </Typography>
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatTimespanDisplay(year, timespan)}
                   </Typography>
                 </Stack>
               </Box>
