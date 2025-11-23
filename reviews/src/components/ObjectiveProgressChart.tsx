@@ -10,7 +10,8 @@ import {
 } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Objective } from "../services/objectivesService";
+import { Objective, ObjectivesService } from "../services/objectivesService";
+import { useSupabase } from "../hooks/useSupabase";
 import { Timespan, getTimespanDates } from "../utils/objectivesUtils";
 import { NoReviewsIllustration } from "./illustrations/ObjectiveIllustrations";
 import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
@@ -53,6 +54,11 @@ export const ObjectiveProgressChart = ({
   timespan,
 }: ObjectiveProgressChartProps) => {
   const { t } = useTranslation();
+  const supabase = useSupabase();
+  const objectivesService = useMemo(
+    () => new ObjectivesService(supabase),
+    [supabase]
+  );
 
   // Get date range from year and timespan
   const { startDate, endDate } = useMemo(() => {
@@ -233,14 +239,14 @@ export const ObjectiveProgressChart = ({
           })
           .filter((target) => target.review_count > 0) || [];
 
-      // Calculate overall progress
-      let overallProgress = objective.progress || 0;
-      if (objective.target_rating && currentRating !== undefined) {
-        overallProgress = Math.min(
-          (currentRating / objective.target_rating) * 100,
-          100
-        );
-      }
+      // Calculate overall progress using client-side calculation
+      // This includes all targets (rating, sentiment, keywords, topics)
+      const overallProgress = objectivesService.calculateProgressClientSide(
+        objective,
+        enrichedReviews,
+        year,
+        timespan
+      );
 
       // Determine status indicator
       let statusIndicator: "on_track" | "close" | "off_track" | "far";
@@ -271,6 +277,10 @@ export const ObjectiveProgressChart = ({
     });
   }, [
     objectives,
+    enrichedReviews,
+    year,
+    timespan,
+    objectivesService,
     computeCurrentRating,
     computeCurrentSentimentScore,
     computeKeywordRating,
@@ -380,6 +390,32 @@ export const ObjectiveProgressChart = ({
                   {detail.objective.description}
                 </Typography>
               )}
+
+              {/* Objective Score */}
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: "12px",
+                  bgcolor: "grey.50",
+                  border: "1px solid",
+                  borderColor: "grey.300",
+                  mb: 2,
+                }}
+              >
+                <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+                  <Typography variant="body2" color="text.secondary">
+                    {t("objectives.objectiveScore", "Objective Score")}:
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    fontWeight={700}
+                    color="primary.main"
+                  >
+                    {detail.overallProgress.toFixed(0)}%
+                  </Typography>
+                </Stack>
+              </Box>
+
               <Stack spacing={2}>
                 {/* Overall Rating and Sentiment Score */}
                 {(detail.objective.target_rating &&

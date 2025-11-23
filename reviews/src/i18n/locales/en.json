@@ -927,6 +927,7 @@
     },
     "current": "Current",
     "target": "Target",
+    "objectiveScore": "Objective Score",
     "overallRating": "Overall Rating",
     "sentimentScore": "Sentiment Score",
     "detailedBreakdown": "Detailed Breakdown",

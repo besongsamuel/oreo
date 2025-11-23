@@ -926,6 +926,7 @@
     },
     "current": "Actuel",
     "target": "Cible",
+    "objectiveScore": "Score de l'objectif",
     "overallRating": "Note globale",
     "sentimentScore": "Score de sentiment",
     "detailedBreakdown": "Détails par objectif",
