@@ -10,7 +10,7 @@ export interface Objective {
     target_rating?: number;
     target_sentiment_score?: number;
     priority: "high" | "medium" | "low";
-    status: "not_started" | "in_progress" | "achieved" | "overdue";
+    status: "not_started" | "in_progress" | "achieved" | "overdue" | "failed";
     created_at: string;
     updated_at: string;
     created_by?: string;
@@ -64,6 +64,31 @@ export interface UpdateObjectiveInput {
     target_rating?: number;
     target_sentiment_score?: number;
     priority?: "high" | "medium" | "low";
+}
+
+export interface ObjectiveStatusDetail {
+    target_rating?: number;
+    current_rating?: number;
+    target_sentiment_score?: number;
+    current_sentiment_score?: number;
+    keyword_targets?: Array<{
+        id: string;
+        keyword_id: string;
+        keyword_text: string;
+        target_rating: number;
+        current_rating: number;
+        progress_percentage: number;
+    }>;
+    topic_targets?: Array<{
+        id: string;
+        topic_id: string;
+        topic_name: string;
+        target_rating: number;
+        current_rating: number;
+        progress_percentage: number;
+    }>;
+    overall_progress: number;
+    status_indicator: "on_track" | "close" | "off_track" | "far";
 }
 
 export class ObjectivesService {

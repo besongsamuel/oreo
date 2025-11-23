@@ -897,7 +897,7 @@
     "allPriorities": "Toutes les priorités",
     "quarter": "Trimestre",
     "allQuarters": "Tous",
-    "status": "Statut",
+    "statusLabel": "Statut",
     "allGoals": "Tous les objectifs",
     "progress": "Progression",
     "targetCompletionDate": "Date d'achèvement cible",
@@ -921,7 +921,18 @@
       "notStarted": "Non débuté",
       "inProgress": "En cours",
       "achieved": "Atteints",
-      "overdue": "En retard"
+      "overdue": "En retard",
+      "failed": "Échoué"
+    },
+    "current": "Actuel",
+    "target": "Cible",
+    "overallRating": "Note globale",
+    "detailedBreakdown": "Détails par objectif",
+    "statusIndicators": {
+      "onTrack": "Sur la bonne voie",
+      "close": "Proche",
+      "offTrack": "En retard",
+      "far": "Loin de l'objectif"
     },
     "errors": {
       "nameRequired": "Le nom est requis",

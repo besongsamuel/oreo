@@ -30,31 +30,14 @@ import {
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useEnrichedReviews } from "../hooks/useEnrichedReviews";
 import { CreateObjectiveInput, Objective } from "../services/objectivesService";
 import { ObjectiveFormDialog } from "./ObjectiveFormDialog";
 import { ObjectiveProgressChart } from "./ObjectiveProgressChart";
 
-interface EnrichedReview {
-  id: string;
-  rating: number;
-  keywords: Array<{
-    id: string;
-    text: string;
-    category: string;
-  }>;
-  topics: Array<{
-    id: string;
-    name: string;
-    category: string;
-    description?: string;
-  }>;
-  published_at: string;
-}
-
 interface ObjectivesCardProps {
   objectives: Objective[];
   loading: boolean;
-  enrichedReviews: EnrichedReview[];
   companyId: string;
   onCreateObjective: (input: CreateObjectiveInput) => Promise<void>;
   onUpdateObjective: (
@@ -62,8 +45,6 @@ interface ObjectivesCardProps {
     input: CreateObjectiveInput
   ) => Promise<void>;
   onDeleteObjective: (objectiveId: string) => Promise<void>;
-  startDate?: string;
-  endDate?: string;
 }
 
 type PriorityFilter = "all" | "high" | "medium" | "low";
@@ -73,7 +54,8 @@ type StatusFilter =
   | "not_started"
   | "in_progress"
   | "achieved"
-  | "overdue";
+  | "overdue"
+  | "failed";
 
 const getQuarter = (date: Date): "Q1" | "Q2" | "Q3" | "Q4" => {
   const month = date.getMonth(); // 0-11
@@ -90,18 +72,18 @@ const getQuarterFromDate = (dateString: string): "Q1" | "Q2" | "Q3" | "Q4" => {
 export const ObjectivesCard = ({
   objectives,
   loading,
-  enrichedReviews,
   companyId,
   onCreateObjective,
   onUpdateObjective,
   onDeleteObjective,
-  startDate,
-  endDate,
 }: ObjectivesCardProps) => {
   const { t } = useTranslation();
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [quarterFilter, setQuarterFilter] = useState<QuarterFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(
+    null
+  );
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(
     null
@@ -110,6 +92,20 @@ export const ObjectivesCard = ({
   const [deletingObjectiveId, setDeletingObjectiveId] = useState<string | null>(
     null
   );
+
+  // Get selected objective
+  const selectedObjective = useMemo(() => {
+    return objectives.find((obj) => obj.id === selectedObjectiveId) || null;
+  }, [objectives, selectedObjectiveId]);
+
+  // Fetch enrichedReviews for selected objective
+  const { enrichedReviews, loading: enrichedReviewsLoading } =
+    useEnrichedReviews({
+      companyId,
+      startDate: selectedObjective?.start_date,
+      endDate: selectedObjective?.end_date,
+      enabled: !!selectedObjective,
+    });
 
   const filteredObjectives = useMemo(() => {
     return objectives.filter((obj) => {
@@ -128,19 +124,6 @@ export const ObjectivesCard = ({
       return true;
     });
   }, [objectives, priorityFilter, quarterFilter, statusFilter]);
-
-  const progressStats = useMemo(() => {
-    const achieved = objectives.filter(
-      (obj) => obj.status === "achieved"
-    ).length;
-    const inProgress = objectives.filter(
-      (obj) => obj.status === "in_progress"
-    ).length;
-    const notStarted = objectives.filter(
-      (obj) => obj.status === "not_started"
-    ).length;
-    return { achieved, inProgress, notStarted };
-  }, [objectives]);
 
   const handleCreateClick = () => {
     setEditingObjective(null);
@@ -206,6 +189,8 @@ export const ObjectivesCard = ({
         return "primary";
       case "overdue":
         return "error";
+      case "failed":
+        return "error";
       default:
         return "default";
     }
@@ -236,20 +221,46 @@ export const ObjectivesCard = ({
         </Button>
       </Stack>
 
-      {/* Progress Chart */}
-      <ObjectiveProgressChart
-        achieved={progressStats.achieved}
-        inProgress={progressStats.inProgress}
-        notStarted={progressStats.notStarted}
-      />
+      {/* Objective Selection */}
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          borderRadius: "18px",
+          bgcolor: "background.paper",
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Typography variant="body1" fontWeight={500}>
+            {t("objectives.selectObjective", "Select an Objective")}:
+          </Typography>
+          <FormControl size="small" sx={{ minWidth: 300 }}>
+            <Select
+              value={selectedObjectiveId || ""}
+              onChange={(e) => setSelectedObjectiveId(e.target.value || null)}
+              displayEmpty
+              sx={{ borderRadius: "12px" }}
+            >
+              <MenuItem value="">
+                <em>{t("objectives.noneSelected", "None")}</em>
+              </MenuItem>
+              {objectives.map((objective) => (
+                <MenuItem key={objective.id} value={objective.id}>
+                  {objective.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
 
       {/* Filters */}
       <Paper
         variant="outlined"
         sx={{
           p: 2,
-          borderRadius: 2,
-          bgcolor: "grey.50",
+          borderRadius: "18px",
+          bgcolor: "background.paper",
         }}
       >
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
@@ -298,11 +309,11 @@ export const ObjectivesCard = ({
           </FormControl>
 
           <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>{t("objectives.status", "Status")}</InputLabel>
+            <InputLabel>{t("objectives.statusLabel", "Status")}</InputLabel>
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              label={t("objectives.status", "Status")}
+              label={t("objectives.statusLabel", "Status")}
             >
               <MenuItem value="all">
                 {t("objectives.allGoals", "All Goals")}
@@ -318,6 +329,9 @@ export const ObjectivesCard = ({
               </MenuItem>
               <MenuItem value="overdue">
                 {t("objectives.status.overdue", "Overdue")}
+              </MenuItem>
+              <MenuItem value="failed">
+                {t("objectives.status.failed", "Failed")}
               </MenuItem>
             </Select>
           </FormControl>
@@ -372,7 +386,21 @@ export const ObjectivesCard = ({
                 </TableHead>
                 <TableBody>
                   {filteredObjectives.map((objective) => (
-                    <TableRow key={objective.id} hover>
+                    <TableRow
+                      key={objective.id}
+                      hover
+                      onClick={() => setSelectedObjectiveId(objective.id)}
+                      sx={{
+                        cursor: "pointer",
+                        bgcolor:
+                          selectedObjectiveId === objective.id
+                            ? "action.selected"
+                            : "transparent",
+                        "&:hover": {
+                          bgcolor: "action.hover",
+                        },
+                      }}
+                    >
                       <TableCell>
                         <Stack direction="row" spacing={1} alignItems="center">
                           {objective.status === "in_progress" && (
@@ -447,13 +475,19 @@ export const ObjectivesCard = ({
                         >
                           <IconButton
                             size="small"
-                            onClick={() => handleEditClick(objective)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(objective);
+                            }}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton
                             size="small"
-                            onClick={() => handleDeleteClick(objective.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(objective.id);
+                            }}
                             color="error"
                           >
                             <DeleteIcon fontSize="small" />
@@ -469,6 +503,15 @@ export const ObjectivesCard = ({
         </CardContent>
       </Card>
 
+      {/* Objective Details - Only show when objective is selected */}
+      {selectedObjective && (
+        <ObjectiveProgressChart
+          objectives={[selectedObjective]}
+          enrichedReviews={enrichedReviews}
+          loading={enrichedReviewsLoading}
+        />
+      )}
+
       {/* Create/Edit Dialog */}
       <ObjectiveFormDialog
         open={editDialogOpen}
@@ -477,8 +520,8 @@ export const ObjectivesCard = ({
         objective={editingObjective}
         companyId={companyId}
         enrichedReviews={enrichedReviews}
-        startDate={startDate}
-        endDate={endDate}
+        startDate={selectedObjective?.start_date}
+        endDate={selectedObjective?.end_date}
       />
 
       {/* Delete Confirmation Dialog */}

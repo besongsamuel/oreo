@@ -1,108 +1,244 @@
-import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
-import Chart from "react-apexcharts";
+import {
+  Box,
+  Card,
+  CardContent,
+  Skeleton,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Objective } from "../services/objectivesService";
+import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
+
+interface EnrichedReview {
+  id: string;
+  rating: number;
+  keywords: Array<{
+    id: string;
+    text: string;
+    category: string;
+  }>;
+  topics: Array<{
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+  }>;
+  published_at: string;
+}
 
 interface ObjectiveProgressChartProps {
-  achieved: number;
-  inProgress: number;
-  notStarted: number;
+  objectives: Objective[];
+  enrichedReviews: EnrichedReview[];
+  loading?: boolean;
 }
 
 export const ObjectiveProgressChart = ({
-  achieved,
-  inProgress,
-  notStarted,
+  objectives,
+  enrichedReviews,
+  loading = false,
 }: ObjectiveProgressChartProps) => {
   const { t } = useTranslation();
 
-  const total = achieved + inProgress + notStarted;
+  // Compute current rating for reviews within objective timeframe
+  const computeCurrentRating = useCallback(
+    (startDate: string, endDate: string): number => {
+      const filteredReviews = enrichedReviews.filter((review) => {
+        const reviewDate = new Date(review.published_at)
+          .toISOString()
+          .split("T")[0];
+        return reviewDate >= startDate && reviewDate <= endDate;
+      });
 
-  const series = [achieved, inProgress, notStarted];
-  const labels = [
-    t("objectives.status.achieved", "Achieved"),
-    t("objectives.status.inProgress", "In Progress"),
-    t("objectives.status.notStarted", "Not Started"),
-  ];
+      if (filteredReviews.length === 0) return 0;
 
-  const colors = ["#4caf50", "#2196f3", "#9e9e9e"];
+      const sum = filteredReviews.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      return sum / filteredReviews.length;
+    },
+    [enrichedReviews]
+  );
 
-  const options: ApexCharts.ApexOptions = {
-    chart: {
-      type: "donut",
-      height: 300,
-      toolbar: { show: false },
-    },
-    labels,
-    colors,
-    legend: {
-      position: "bottom",
-      horizontalAlign: "center",
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: (val: number) => {
-        return `${val.toFixed(0)}%`;
-      },
-      style: {
-        fontSize: "14px",
-        fontWeight: 600,
-        colors: ["#fff"],
-      },
-    },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: "70%",
-          labels: {
-            show: true,
-            name: {
-              show: true,
-              fontSize: "16px",
-              fontWeight: 600,
-            },
-            value: {
-              show: true,
-              fontSize: "24px",
-              fontWeight: 700,
-              formatter: (val: string) => {
-                const percentage = parseFloat(val);
-                const count = Math.round((percentage / 100) * total);
-                return `${count}`;
-              },
-            },
-            total: {
-              show: true,
-              label: t("objectives.total", "Total"),
-              fontSize: "16px",
-              fontWeight: 600,
-              formatter: () => {
-                return `${total}`;
-              },
-            },
-          },
-        },
-      },
-    },
-    tooltip: {
-      y: {
-        formatter: (val: number) => {
-          const count = Math.round((val / 100) * total);
-          return `${count} (${val.toFixed(1)}%)`;
-        },
-      },
-    },
-  };
+  // Compute current rating for a specific keyword within objective timeframe
+  const computeKeywordRating = useCallback(
+    (keywordId: string, startDate: string, endDate: string): number => {
+      const filteredReviews = enrichedReviews.filter((review) => {
+        const reviewDate = new Date(review.published_at)
+          .toISOString()
+          .split("T")[0];
+        const inTimeframe = reviewDate >= startDate && reviewDate <= endDate;
+        const hasKeyword = review.keywords.some((kw) => kw.id === keywordId);
+        return inTimeframe && hasKeyword;
+      });
 
-  if (total === 0) {
+      if (filteredReviews.length === 0) return 0;
+
+      const sum = filteredReviews.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      return sum / filteredReviews.length;
+    },
+    [enrichedReviews]
+  );
+
+  // Compute current rating for a specific topic within objective timeframe
+  const computeTopicRating = useCallback(
+    (topicId: string, startDate: string, endDate: string): number => {
+      const filteredReviews = enrichedReviews.filter((review) => {
+        const reviewDate = new Date(review.published_at)
+          .toISOString()
+          .split("T")[0];
+        const inTimeframe = reviewDate >= startDate && reviewDate <= endDate;
+        const hasTopic = review.topics.some((topic) => topic.id === topicId);
+        return inTimeframe && hasTopic;
+      });
+
+      if (filteredReviews.length === 0) return 0;
+
+      const sum = filteredReviews.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      return sum / filteredReviews.length;
+    },
+    [enrichedReviews]
+  );
+
+  // Compute status details for each objective
+  const objectiveStatusDetails = useMemo(() => {
+    return objectives.map((objective) => {
+      const currentRating = objective.target_rating
+        ? computeCurrentRating(objective.start_date, objective.end_date)
+        : undefined;
+
+      const keywordTargets =
+        objective.targets
+          ?.filter((target) => target.target_type === "keyword")
+          .map((target) => {
+            const currentRating = computeKeywordRating(
+              target.target_id,
+              objective.start_date,
+              objective.end_date
+            );
+            const progressPercentage =
+              target.target_rating > 0
+                ? Math.min((currentRating / target.target_rating) * 100, 100)
+                : 0;
+
+            return {
+              id: target.id,
+              keyword_id: target.target_id,
+              keyword_text: target.keyword?.text || "",
+              target_rating: target.target_rating,
+              current_rating: currentRating,
+              progress_percentage: progressPercentage,
+            };
+          }) || [];
+
+      const topicTargets =
+        objective.targets
+          ?.filter((target) => target.target_type === "topic")
+          .map((target) => {
+            const currentRating = computeTopicRating(
+              target.target_id,
+              objective.start_date,
+              objective.end_date
+            );
+            const progressPercentage =
+              target.target_rating > 0
+                ? Math.min((currentRating / target.target_rating) * 100, 100)
+                : 0;
+
+            return {
+              id: target.id,
+              topic_id: target.target_id,
+              topic_name: target.topic?.name || "",
+              target_rating: target.target_rating,
+              current_rating: currentRating,
+              progress_percentage: progressPercentage,
+            };
+          }) || [];
+
+      // Calculate overall progress
+      let overallProgress = objective.progress || 0;
+      if (objective.target_rating && currentRating !== undefined) {
+        overallProgress = Math.min(
+          (currentRating / objective.target_rating) * 100,
+          100
+        );
+      }
+
+      // Determine status indicator
+      let statusIndicator: "on_track" | "close" | "off_track" | "far";
+      if (
+        overallProgress >= 90 ||
+        (currentRating !== undefined &&
+          objective.target_rating &&
+          currentRating >= objective.target_rating)
+      ) {
+        statusIndicator = "on_track";
+      } else if (overallProgress >= 70) {
+        statusIndicator = "close";
+      } else if (overallProgress >= 50) {
+        statusIndicator = "off_track";
+      } else {
+        statusIndicator = "far";
+      }
+
+      return {
+        objective,
+        currentRating,
+        keywordTargets,
+        topicTargets,
+        overallProgress,
+        statusIndicator,
+      };
+    });
+  }, [
+    objectives,
+    computeCurrentRating,
+    computeKeywordRating,
+    computeTopicRating,
+  ]);
+
+  if (loading) {
+    return (
+      <Card sx={{ borderRadius: "18px", boxShadow: 2 }}>
+        <CardContent>
+          <Stack spacing={3}>
+            <Skeleton variant="text" width="40%" height={32} />
+            <Stack spacing={2}>
+              <Skeleton variant="text" width="100%" height={24} />
+              <Skeleton variant="text" width="80%" height={24} />
+              <Skeleton variant="text" width="90%" height={24} />
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (objectives.length === 0) {
+    return null;
+  }
+
+  if (enrichedReviews.length === 0) {
     return (
       <Card sx={{ borderRadius: "18px", boxShadow: 2 }}>
         <CardContent>
           <Stack spacing={2} alignItems="center" sx={{ py: 4 }}>
             <Typography variant="h6" fontWeight={600}>
-              {t("objectives.progressionGlobale", "Global Progress")}
+              {t("objectives.objectiveDetails", "Objective Details")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t("objectives.noObjectives", "No objectives yet")}
+              {t(
+                "objectives.noReviewsForObjective",
+                "No reviews found for this objective's time period"
+              )}
             </Typography>
           </Stack>
         </CardContent>
@@ -110,71 +246,104 @@ export const ObjectiveProgressChart = ({
     );
   }
 
+  // Show expanded details for all objectives (should only be one when selected)
   return (
     <Card sx={{ borderRadius: "18px", boxShadow: 2 }}>
-      <CardContent>
+      <CardContent sx={{ p: 2.5 }}>
         <Stack spacing={2}>
-          <Typography variant="h6" fontWeight={600}>
-            {t("objectives.progressionGlobale", "Global Progress")}
-          </Typography>
-          <Box sx={{ height: 300 }}>
-            <Chart
-              options={options}
-              series={series}
-              type="donut"
-              height={300}
-            />
-          </Box>
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            flexWrap="wrap"
-            sx={{ mt: 2 }}
-          >
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  bgcolor: colors[0],
-                }}
-              />
-              <Typography variant="body2">
-                {t("objectives.status.achieved", "Achieved")}: {achieved} (
-                {total > 0 ? ((achieved / total) * 100).toFixed(0) : 0}%)
+          {objectiveStatusDetails.map((detail) => (
+            <Box key={detail.objective.id}>
+              <Typography
+                variant="h6"
+                fontWeight={600}
+                gutterBottom
+                sx={{ mb: 1.5 }}
+              >
+                {detail.objective.name}
               </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  bgcolor: colors[1],
-                }}
-              />
-              <Typography variant="body2">
-                {t("objectives.status.inProgress", "In Progress")}: {inProgress}{" "}
-                ({total > 0 ? ((inProgress / total) * 100).toFixed(0) : 0}%)
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  bgcolor: colors[2],
-                }}
-              />
-              <Typography variant="body2">
-                {t("objectives.status.notStarted", "Not Started")}: {notStarted}{" "}
-                ({total > 0 ? ((notStarted / total) * 100).toFixed(0) : 0}%)
-              </Typography>
-            </Stack>
-          </Stack>
+              {detail.objective.description && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {detail.objective.description}
+                </Typography>
+              )}
+              <Stack spacing={2}>
+                {/* Overall Rating */}
+                {detail.objective.target_rating &&
+                  detail.currentRating !== undefined && (
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        gutterBottom
+                        sx={{ mb: 1 }}
+                      >
+                        {t("objectives.overallRating", "Overall Rating")}
+                      </Typography>
+                      <ObjectiveStatusIndicator
+                        target={detail.objective.target_rating}
+                        current={detail.currentRating}
+                        label={t("objectives.overallRating", "Overall Rating")}
+                        type="rating"
+                      />
+                    </Box>
+                  )}
+
+                {/* Keyword Targets */}
+                {detail.keywordTargets.length > 0 && (
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
+                      gutterBottom
+                      sx={{ mb: 1 }}
+                    >
+                      {t("objectives.keywords", "Keywords")}
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {detail.keywordTargets.map((keywordTarget) => (
+                        <ObjectiveStatusIndicator
+                          key={keywordTarget.id}
+                          target={keywordTarget.target_rating}
+                          current={keywordTarget.current_rating}
+                          label={keywordTarget.keyword_text}
+                          type="keyword"
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Topic Targets */}
+                {detail.topicTargets.length > 0 && (
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
+                      gutterBottom
+                      sx={{ mb: 1 }}
+                    >
+                      {t("objectives.topics", "Topics")}
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {detail.topicTargets.map((topicTarget) => (
+                        <ObjectiveStatusIndicator
+                          key={topicTarget.id}
+                          target={topicTarget.target_rating}
+                          current={topicTarget.current_rating}
+                          label={topicTarget.topic_name}
+                          type="topic"
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          ))}
         </Stack>
       </CardContent>
     </Card>

@@ -2963,7 +2963,6 @@ export const CompanyPage = () => {
                 <ObjectivesCard
                   objectives={objectives}
                   loading={objectivesLoading}
-                  enrichedReviews={enrichedReviews}
                   companyId={companyId}
                   onCreateObjective={async (input: CreateObjectiveInput) => {
                     await createObjective(input);
@@ -2977,8 +2976,6 @@ export const CompanyPage = () => {
                   onDeleteObjective={async (objectiveId: string) => {
                     await deleteObjective(objectiveId);
                   }}
-                  startDate={filterStartDate}
-                  endDate={filterEndDate}
                 />
               )}
 

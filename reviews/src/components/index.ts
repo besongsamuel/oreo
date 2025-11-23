@@ -36,6 +36,7 @@ export type { CompanyPageSection } from "./CompanyPageSidebar";
 export { KeywordTopicSelector } from "./KeywordTopicSelector";
 export { ObjectiveFormDialog } from "./ObjectiveFormDialog";
 export { ObjectiveProgressChart } from "./ObjectiveProgressChart";
+export { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
 export { ObjectivesCard } from "./ObjectivesCard";
 export { ImprovementsCard } from "./ImprovementsCard";
 export type { Recommendation } from "./ImprovementsCard";
