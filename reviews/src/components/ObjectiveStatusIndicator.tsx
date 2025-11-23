@@ -128,45 +128,95 @@ export const ObjectiveStatusIndicator = ({
 
   return (
     <Box sx={{ py: 0.5 }}>
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: "100%" }}>
-        <Box
-          sx={{
-            color: `${color}.main`,
-            display: "flex",
-            alignItems: "center",
-            minWidth: 24,
-          }}
-        >
-          {icon}
-        </Box>
-        <Typography variant="body2" fontWeight={500} sx={{ minWidth: 120, flex: 1 }}>
-          {label}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem", minWidth: 90 }}>
-          {t("objectives.current", "Current")}: {displayCurrent.toFixed(type === "sentiment" ? 0 : 2)}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem", minWidth: 90 }}>
-          {t("objectives.target", "Target")}: {displayTarget.toFixed(type === "sentiment" ? 0 : 2)}
-        </Typography>
-        {showProgress && (
-          <Box sx={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="donut"
-              width={40}
-              height={40}
-            />
+      <Stack direction="column" spacing={1.5} alignItems="center" sx={{ width: "100%" }}>
+        {/* Icon and Chart */}
+        <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+          <Box
+            sx={{
+              color: `${color}.main`,
+              display: "flex",
+              alignItems: "center",
+              minWidth: 24,
+            }}
+          >
+            {icon}
           </Box>
-        )}
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          color={chartColor}
-          sx={{ minWidth: 40, textAlign: "right" }}
-        >
-          {progressPercentage.toFixed(0)}%
-        </Typography>
+          {showProgress && (
+            <Box 
+              sx={{ 
+                width: 60, 
+                height: 60, 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                position: "relative",
+              }}
+            >
+              <Chart
+                options={chartOptions}
+                series={chartSeries}
+                type="donut"
+                width={60}
+                height={60}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  fontWeight={700}
+                  color={chartColor}
+                  sx={{ fontSize: "0.75rem", lineHeight: 1 }}
+                >
+                  {progressPercentage.toFixed(0)}%
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </Stack>
+
+        {/* Label and Values */}
+        <Stack spacing={0.5} sx={{ width: "100%", alignItems: "center" }}>
+          <Typography variant="body2" fontWeight={600} textAlign="center">
+            {label}
+          </Typography>
+          <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+              {t("objectives.current", "Current")}:{" "}
+              <Box 
+                component="span" 
+                sx={{ 
+                  fontWeight: 700, 
+                  fontSize: "0.95rem",
+                  color: "primary.main",
+                  fontFamily: "inherit"
+                }}
+              >
+                {displayCurrent.toFixed(type === "sentiment" ? 0 : 2)}
+              </Box>
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+              {t("objectives.target", "Target")}:{" "}
+              <Box 
+                component="span" 
+                sx={{ 
+                  fontWeight: 600, 
+                  fontSize: "0.9rem",
+                  color: "text.secondary",
+                  fontStyle: "italic"
+                }}
+              >
+                {displayTarget.toFixed(type === "sentiment" ? 0 : 2)}
+              </Box>
+            </Typography>
+          </Stack>
+        </Stack>
       </Stack>
     </Box>
   );
