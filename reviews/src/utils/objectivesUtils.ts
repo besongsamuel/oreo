@@ -179,7 +179,6 @@ export interface ObjectiveTargetForFailedIds {
 export interface ObjectiveForFailedIds {
   id: string;
   target_rating?: number;
-  target_sentiment_score?: number;
   targets?: ObjectiveTargetForFailedIds[];
 }
 
@@ -218,24 +217,6 @@ export function getFailedReviewIds(
     filteredReviews.forEach((review) => {
       if (review.rating < objective.target_rating!) {
         rating_review_ids.push(review.id);
-      }
-    });
-  }
-
-  // Check sentiment target
-  if (
-    objective.target_sentiment_score !== undefined &&
-    objective.target_sentiment_score !== null &&
-    objective.target_sentiment_score > -1
-  ) {
-    filteredReviews.forEach((review) => {
-      const sentimentScore = review.sentiment_analysis?.sentiment_score;
-      if (
-        sentimentScore !== undefined &&
-        sentimentScore !== null &&
-        sentimentScore < objective.target_sentiment_score!
-      ) {
-        sentiment_review_ids.push(review.id);
       }
     });
   }

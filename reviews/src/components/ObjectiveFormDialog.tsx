@@ -68,9 +68,6 @@ export const ObjectiveFormDialog = ({
   const [targetRating, setTargetRating] = useState<number | undefined>(
     undefined
   );
-  const [targetSentiment, setTargetSentiment] = useState<number | undefined>(
-    undefined
-  );
   const [passScore, setPassScore] = useState<number>(100);
   const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
 
@@ -92,12 +89,6 @@ export const ObjectiveFormDialog = ({
         setName(objective.name);
         setDescription(objective.description || "");
         setTargetRating(objective.target_rating);
-        // Convert from -1 to 1 range to 1-100 range for display
-        setTargetSentiment(
-          objective.target_sentiment_score !== undefined
-            ? objective.target_sentiment_score * 50 + 50
-            : undefined
-        );
         setPassScore(objective.pass_score ?? 100);
         setPriority(objective.priority);
 
@@ -126,7 +117,6 @@ export const ObjectiveFormDialog = ({
         setName("");
         setDescription("");
         setTargetRating(undefined);
-        setTargetSentiment(undefined);
         setPassScore(100);
         setPriority("medium");
         setSelectedKeywords([]);
@@ -148,14 +138,13 @@ export const ObjectiveFormDialog = ({
       }
       if (
         !targetRating &&
-        !targetSentiment &&
         selectedKeywords.length === 0 &&
         selectedTopics.length === 0
       ) {
         setError(
           t(
             "objectives.errors.atLeastOneTarget",
-            "Please set at least one target (rating, sentiment, keyword, or topic)"
+            "Please set at least one target (rating, keyword, or topic)"
           )
         );
         return;
@@ -188,16 +177,11 @@ export const ObjectiveFormDialog = ({
         })),
       ];
 
-      // Convert target sentiment from 1-100 range to -1 to 1 range
-      const targetSentimentScore =
-        targetSentiment !== undefined ? (targetSentiment - 50) / 50 : undefined;
-
       const input: CreateObjectiveInput = {
         company_id: objective?.company_id || companyId,
         name: name.trim(),
         description: description.trim() || undefined,
         target_rating: targetRating,
-        target_sentiment_score: targetSentimentScore,
         pass_score: passScore,
         priority,
         targets: targets.length > 0 ? targets : undefined,
@@ -288,25 +272,6 @@ export const ObjectiveFormDialog = ({
                   helperText={t(
                     "objectives.targetRatingHelper",
                     "Optional: Target average rating (0-5)"
-                  )}
-                />
-                <TextField
-                  label={t(
-                    "objectives.targetSentiment",
-                    "Target Sentiment Score"
-                  )}
-                  type="number"
-                  value={targetSentiment || ""}
-                  onChange={(e) =>
-                    setTargetSentiment(
-                      e.target.value ? parseFloat(e.target.value) : undefined
-                    )
-                  }
-                  fullWidth
-                  inputProps={{ min: 0, max: 100, step: 1 }}
-                  helperText={t(
-                    "objectives.targetSentimentHelper",
-                    "Optional: Target sentiment score (0-100, where 50 is neutral)"
                   )}
                 />
               </Stack>

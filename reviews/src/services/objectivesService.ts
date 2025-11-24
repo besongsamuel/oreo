@@ -29,7 +29,6 @@ export interface Objective {
     name: string;
     description?: string;
     target_rating?: number;
-    target_sentiment_score?: number;
     pass_score?: number;
     priority: "high" | "medium" | "low";
     status: "not_started" | "in_progress" | "achieved" | "overdue" | "failed";
@@ -67,7 +66,6 @@ export interface CreateObjectiveInput {
     name: string;
     description?: string;
     target_rating?: number;
-    target_sentiment_score?: number;
     pass_score?: number;
     priority: "high" | "medium" | "low";
     targets?: Array<{
@@ -81,7 +79,6 @@ export interface UpdateObjectiveInput {
     name?: string;
     description?: string;
     target_rating?: number;
-    target_sentiment_score?: number;
     pass_score?: number;
     priority?: "high" | "medium" | "low";
 }
@@ -89,8 +86,6 @@ export interface UpdateObjectiveInput {
 export interface ObjectiveStatusDetail {
     target_rating?: number;
     current_rating?: number;
-    target_sentiment_score?: number;
-    current_sentiment_score?: number;
     keyword_targets?: Array<{
         id: string;
         keyword_id: string;
@@ -259,35 +254,6 @@ export class ObjectivesService {
             progressValues.push(ratingProgress);
         }
 
-        // Calculate sentiment progress if target_sentiment_score exists
-        if (
-            objective.target_sentiment_score !== undefined &&
-            objective.target_sentiment_score !== null &&
-            objective.target_sentiment_score > -1
-        ) {
-            const reviewsWithSentiment = filteredReviews.filter(
-                (review) =>
-                    review.sentiment_analysis?.sentiment_score !== undefined &&
-                    review.sentiment_analysis?.sentiment_score !== null,
-            );
-
-            if (reviewsWithSentiment.length > 0) {
-                const currentSentiment = reviewsWithSentiment.reduce(
-                    (sum, r) =>
-                        sum + (r.sentiment_analysis?.sentiment_score || 0),
-                    0,
-                ) / reviewsWithSentiment.length;
-
-                // Normalize sentiment score (-1 to 1) to 0-2 range for calculation
-                const sentimentProgress = Math.min(
-                    ((currentSentiment + 1) /
-                        (objective.target_sentiment_score + 1)) * 100,
-                    100,
-                );
-                progressValues.push(sentimentProgress);
-            }
-        }
-
         // Calculate keyword/topic progress
         // Only include targets that have reviews in the selected timespan
         if (objective.targets && objective.targets.length > 0) {
@@ -366,7 +332,6 @@ export class ObjectivesService {
                 name: input.name,
                 description: input.description,
                 target_rating: input.target_rating,
-                target_sentiment_score: input.target_sentiment_score,
                 pass_score: input.pass_score ?? 100,
                 priority: input.priority,
                 created_by: user?.id,

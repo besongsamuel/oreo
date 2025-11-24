@@ -210,30 +210,6 @@ export const ObjectiveProgressChart = ({
     [enrichedReviews, startDate, endDate]
   );
 
-  // Compute current sentiment score for reviews within selected timespan
-  const computeCurrentSentimentScore = useCallback((): number | undefined => {
-    const filteredReviews = enrichedReviews.filter((review) => {
-      const reviewDate = new Date(review.published_at)
-        .toISOString()
-        .split("T")[0];
-      return reviewDate >= startDate && reviewDate <= endDate;
-    });
-
-    const reviewsWithSentiment = filteredReviews.filter(
-      (review) =>
-        review.sentiment_analysis?.sentiment_score !== undefined &&
-        review.sentiment_analysis?.sentiment_score !== null
-    );
-
-    if (reviewsWithSentiment.length === 0) return undefined;
-
-    const sum = reviewsWithSentiment.reduce(
-      (acc, review) => acc + (review.sentiment_analysis?.sentiment_score || 0),
-      0
-    );
-    return sum / reviewsWithSentiment.length;
-  }, [enrichedReviews, startDate, endDate]);
-
   // Count reviews for a specific keyword within selected timespan
   const countKeywordReviews = useCallback(
     (keywordId: string): number => {
@@ -271,10 +247,6 @@ export const ObjectiveProgressChart = ({
     return objectives.map((objective) => {
       const currentRating = objective.target_rating
         ? computeCurrentRating()
-        : undefined;
-
-      const currentSentimentScore = objective.target_sentiment_score
-        ? computeCurrentSentimentScore()
         : undefined;
 
       const keywordTargets =
@@ -352,7 +324,6 @@ export const ObjectiveProgressChart = ({
       return {
         objective,
         currentRating,
-        currentSentimentScore,
         keywordTargets,
         topicTargets,
         overallProgress,
@@ -366,7 +337,6 @@ export const ObjectiveProgressChart = ({
     timespan,
     objectivesService,
     computeCurrentRating,
-    computeCurrentSentimentScore,
     computeKeywordRating,
     computeTopicRating,
     countKeywordReviews,
@@ -511,125 +481,38 @@ export const ObjectiveProgressChart = ({
               </Box>
 
               <Stack spacing={2}>
-                {/* Overall Rating and Sentiment Score */}
-                {(detail.objective.target_rating &&
-                  detail.currentRating !== undefined) ||
-                (detail.objective.target_sentiment_score !== undefined &&
-                  detail.objective.target_sentiment_score !== null &&
-                  detail.currentSentimentScore !== undefined) ? (
-                  <Box>
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
-                      {/* Overall Rating */}
-                      {detail.objective.target_rating &&
-                        detail.currentRating !== undefined && (
-                          <Box
-                            sx={{
-                              flex: 1,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              justifyContent="center"
-                              sx={{ mb: 1 }}
-                            >
-                              <Box
-                                sx={{
-                                  width: 3,
-                                  height: 16,
-                                  bgcolor: "primary.main",
-                                  borderRadius: 1.5,
-                                  opacity: 0.6,
-                                }}
-                              />
-                              <Typography variant="subtitle2" fontWeight={600}>
-                                {t(
-                                  "objectives.overallRating",
-                                  "Overall Rating"
-                                )}
-                              </Typography>
-                            </Stack>
-                            <ObjectiveStatusIndicator
-                              target={detail.objective.target_rating}
-                              current={detail.currentRating}
-                              label={t(
-                                "objectives.overallRating",
-                                "Overall Rating"
-                              )}
-                              type="rating"
-                            />
-                          </Box>
-                        )}
-
-                      {/* Vertical Separator */}
-                      {detail.objective.target_rating &&
-                        detail.currentRating !== undefined &&
-                        detail.objective.target_sentiment_score !== undefined &&
-                        detail.objective.target_sentiment_score !== null &&
-                        detail.currentSentimentScore !== undefined && (
-                          <Box
-                            sx={{
-                              width: "1px",
-                              bgcolor: "grey.300",
-                              minHeight: 100,
-                              alignSelf: "stretch",
-                            }}
-                          />
-                        )}
-
-                      {/* Sentiment Score */}
-                      {detail.objective.target_sentiment_score !== undefined &&
-                        detail.objective.target_sentiment_score !== null &&
-                        detail.currentSentimentScore !== undefined && (
-                          <Box
-                            sx={{
-                              flex: 1,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              justifyContent="center"
-                              sx={{ mb: 1 }}
-                            >
-                              <Box
-                                sx={{
-                                  width: 3,
-                                  height: 16,
-                                  bgcolor: "info.main",
-                                  borderRadius: 1.5,
-                                  opacity: 0.6,
-                                }}
-                              />
-                              <Typography variant="subtitle2" fontWeight={600}>
-                                {t(
-                                  "objectives.sentimentScore",
-                                  "Sentiment Score"
-                                )}
-                              </Typography>
-                            </Stack>
-                            <ObjectiveStatusIndicator
-                              target={detail.objective.target_sentiment_score}
-                              current={detail.currentSentimentScore}
-                              label={t(
-                                "objectives.sentimentScore",
-                                "Sentiment Score"
-                              )}
-                              type="sentiment"
-                            />
-                          </Box>
-                        )}
-                    </Stack>
-                  </Box>
-                ) : null}
+                {/* Overall Rating */}
+                {detail.objective.target_rating &&
+                  detail.currentRating !== undefined && (
+                    <Box>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ mb: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 3,
+                            height: 16,
+                            bgcolor: "primary.main",
+                            borderRadius: 1.5,
+                            opacity: 0.6,
+                          }}
+                        />
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {t("objectives.overallRating", "Overall Rating")}
+                        </Typography>
+                      </Stack>
+                      <ObjectiveStatusIndicator
+                        target={detail.objective.target_rating}
+                        current={detail.currentRating}
+                        label={t("objectives.overallRating", "Overall Rating")}
+                        type="rating"
+                      />
+                    </Box>
+                  )}
 
                 {/* Keyword Targets */}
                 {detail.keywordTargets.length > 0 && (

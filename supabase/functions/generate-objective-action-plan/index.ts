@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
         const { data: objective, error: objectiveError } = await supabaseClient
             .from("company_objectives")
             .select(
-                "id, company_id, name, target_rating, target_sentiment_score",
+                "id, company_id, name, target_rating",
             )
             .eq("id", objective_id)
             .single();
@@ -230,15 +230,6 @@ Deno.serve(async (req: Request) => {
         if (rating_review_ids.length > 0 && objective.target_rating) {
             failedTargets.push(
                 `Overall rating target (${objective.target_rating}) - ${rating_review_ids.length} reviews below target`,
-            );
-        }
-        if (
-            sentiment_review_ids.length > 0 &&
-            objective.target_sentiment_score !== null &&
-            objective.target_sentiment_score !== undefined
-        ) {
-            failedTargets.push(
-                `Sentiment score target (${objective.target_sentiment_score}) - ${sentiment_review_ids.length} reviews below target`,
             );
         }
         if (Object.keys(keyword_review_ids).length > 0) {
