@@ -30,6 +30,7 @@ export interface Objective {
     description?: string;
     target_rating?: number;
     target_sentiment_score?: number;
+    pass_score?: number;
     priority: "high" | "medium" | "low";
     status: "not_started" | "in_progress" | "achieved" | "overdue" | "failed";
     created_at: string;
@@ -67,6 +68,7 @@ export interface CreateObjectiveInput {
     description?: string;
     target_rating?: number;
     target_sentiment_score?: number;
+    pass_score?: number;
     priority: "high" | "medium" | "low";
     targets?: Array<{
         target_type: "keyword" | "topic";
@@ -80,6 +82,7 @@ export interface UpdateObjectiveInput {
     description?: string;
     target_rating?: number;
     target_sentiment_score?: number;
+    pass_score?: number;
     priority?: "high" | "medium" | "low";
 }
 
@@ -364,6 +367,7 @@ export class ObjectivesService {
                 description: input.description,
                 target_rating: input.target_rating,
                 target_sentiment_score: input.target_sentiment_score,
+                pass_score: input.pass_score ?? 100,
                 priority: input.priority,
                 created_by: user?.id,
             })

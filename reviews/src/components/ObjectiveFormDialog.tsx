@@ -71,6 +71,7 @@ export const ObjectiveFormDialog = ({
   const [targetSentiment, setTargetSentiment] = useState<number | undefined>(
     undefined
   );
+  const [passScore, setPassScore] = useState<number>(100);
   const [priority, setPriority] = useState<"high" | "medium" | "low">("medium");
 
   // Step 2: Keyword/Topic targets
@@ -97,6 +98,7 @@ export const ObjectiveFormDialog = ({
             ? objective.target_sentiment_score * 50 + 50
             : undefined
         );
+        setPassScore(objective.pass_score ?? 100);
         setPriority(objective.priority);
 
         // Load targets
@@ -125,6 +127,7 @@ export const ObjectiveFormDialog = ({
         setDescription("");
         setTargetRating(undefined);
         setTargetSentiment(undefined);
+        setPassScore(100);
         setPriority("medium");
         setSelectedKeywords([]);
         setSelectedTopics([]);
@@ -195,6 +198,7 @@ export const ObjectiveFormDialog = ({
         description: description.trim() || undefined,
         target_rating: targetRating,
         target_sentiment_score: targetSentimentScore,
+        pass_score: passScore,
         priority,
         targets: targets.length > 0 ? targets : undefined,
       };
@@ -306,6 +310,24 @@ export const ObjectiveFormDialog = ({
                   )}
                 />
               </Stack>
+
+              <TextField
+                label={t("objectives.passScore", "Pass Score")}
+                type="number"
+                value={passScore}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value >= 0 && value <= 100) {
+                    setPassScore(value);
+                  }
+                }}
+                fullWidth
+                inputProps={{ min: 0, max: 100, step: 1 }}
+                helperText={t(
+                  "objectives.passScoreHelper",
+                  "Minimum score (0-100) required for objective to pass. Default is 100."
+                )}
+              />
 
               <FormControl fullWidth>
                 <InputLabel>{t("objectives.priority", "Priority")}</InputLabel>

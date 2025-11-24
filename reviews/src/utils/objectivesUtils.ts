@@ -118,16 +118,17 @@ export function isTimespanComplete(
 export function calculateObjectiveStatus(
   progress: number,
   year: number,
-  timespan: Timespan
+  timespan: Timespan,
+  passScore: number = 100
 ): "not_started" | "in_progress" | "achieved" | "failed" {
   const isComplete = isTimespanComplete(year, timespan);
   
-  // If progress is 100% or more, status is achieved
-  if (progress >= 100) {
+  // If progress meets or exceeds pass_score, status is achieved
+  if (progress >= passScore) {
     return "achieved";
   }
   
-  // If timespan is complete (in the past) and progress < 100%, status is failed
+  // If timespan is complete (in the past) and progress < pass_score, status is failed
   if (isComplete) {
     return "failed";
   }
