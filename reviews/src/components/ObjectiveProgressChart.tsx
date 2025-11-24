@@ -1,5 +1,7 @@
+import { Lightbulb as LightbulbIcon } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Grid,
@@ -8,7 +10,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSupabase } from "../hooks/useSupabase";
 import { Objective, ObjectivesService } from "../services/objectivesService";
@@ -18,6 +20,7 @@ import {
   getTimespanDates,
 } from "../utils/objectivesUtils";
 import { NoReviewsIllustration } from "./illustrations/ObjectiveIllustrations";
+import { ObjectiveActionPlanModal } from "./ObjectiveActionPlanModal";
 import { ObjectiveStatusIndicator } from "./ObjectiveStatusIndicator";
 
 interface EnrichedReview {
@@ -64,10 +67,87 @@ export const ObjectiveProgressChart = ({
     [supabase]
   );
 
+  // State for action plans
+  const [actionPlans, setActionPlans] = useState<
+    Record<
+      string,
+      {
+        id: string;
+        plan: string;
+        created_at: string;
+      } | null
+    >
+  >({});
+  const [loadingActionPlans, setLoadingActionPlans] = useState(false);
+  const [actionPlanModalOpen, setActionPlanModalOpen] = useState(false);
+  const [selectedObjectiveForPlan, setSelectedObjectiveForPlan] =
+    useState<Objective | null>(null);
+
   // Get date range from year and timespan
   const { startDate, endDate } = useMemo(() => {
     return getTimespanDates(year, timespan);
   }, [year, timespan]);
+
+  // Fetch action plans for all objectives
+  useEffect(() => {
+    const fetchActionPlans = async () => {
+      if (objectives.length === 0) return;
+
+      setLoadingActionPlans(true);
+      try {
+        const plans: Record<string, any> = {};
+        await Promise.all(
+          objectives.map(async (objective) => {
+            try {
+              const plan = await objectivesService.getObjectiveActionPlan(
+                objective.id,
+                year,
+                timespan
+              );
+              plans[objective.id] = plan;
+            } catch (error) {
+              console.error(
+                `Error fetching action plan for objective ${objective.id}:`,
+                error
+              );
+              plans[objective.id] = null;
+            }
+          })
+        );
+        setActionPlans(plans);
+      } catch (error) {
+        console.error("Error fetching action plans:", error);
+      } finally {
+        setLoadingActionPlans(false);
+      }
+    };
+
+    fetchActionPlans();
+  }, [objectives, year, timespan, objectivesService]);
+
+  const handleGenerateActionPlan = (objective: Objective) => {
+    setSelectedObjectiveForPlan(objective);
+    setActionPlanModalOpen(true);
+  };
+
+  const handleActionPlanGenerated = async () => {
+    if (!selectedObjectiveForPlan) return;
+
+    // Refresh the action plan for the selected objective
+    try {
+      const plan = await objectivesService.getObjectiveActionPlan(
+        selectedObjectiveForPlan.id,
+        year,
+        timespan
+      );
+      setActionPlans((prev) => ({
+        ...prev,
+        [selectedObjectiveForPlan.id]: plan,
+      }));
+    } catch (error) {
+      console.error("Error refreshing action plan:", error);
+    }
+  };
 
   // Compute current rating for reviews within selected timespan
   const computeCurrentRating = useCallback((): number => {
@@ -688,11 +768,197 @@ export const ObjectiveProgressChart = ({
                     </Grid>
                   </Box>
                 )}
+
+                {/* Action Plan Section */}
+                {detail.objective.status === "failed" && (
+                  <Box sx={{ mt: 3 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ mb: 2 }}
+                    >
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Box
+                          sx={{
+                            width: 3,
+                            height: 16,
+                            bgcolor: "error.main",
+                            borderRadius: 1.5,
+                            opacity: 0.6,
+                          }}
+                        />
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {t("objectives.actionPlan.title", "Action Plan")}
+                        </Typography>
+                      </Stack>
+                      {!actionPlans[detail.objective.id] && (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={<LightbulbIcon />}
+                          onClick={() =>
+                            handleGenerateActionPlan(detail.objective)
+                          }
+                          sx={{
+                            borderRadius: "980px",
+                            textTransform: "none",
+                          }}
+                        >
+                          {t("objectives.actionPlan.generate", "Generate Plan")}
+                        </Button>
+                      )}
+                    </Stack>
+
+                    {loadingActionPlans ? (
+                      <Stack spacing={1}>
+                        <Skeleton variant="text" width="100%" height={24} />
+                        <Skeleton variant="text" width="90%" height={24} />
+                        <Skeleton variant="text" width="95%" height={24} />
+                      </Stack>
+                    ) : actionPlans[detail.objective.id] ? (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2.5,
+                          borderRadius: "12px",
+                          borderColor: "grey.300",
+                          bgcolor: "grey.50",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            "& h2, & h3": {
+                              mt: 2,
+                              mb: 1,
+                              fontSize: "1.1em",
+                              fontWeight: 600,
+                              color: "primary.main",
+                            },
+                            "& h2:first-of-type, & h3:first-of-type": {
+                              mt: 0,
+                            },
+                            "& h4": {
+                              mt: 1.5,
+                              mb: 0.5,
+                              fontSize: "1em",
+                              fontWeight: 600,
+                            },
+                            "& strong": {
+                              fontWeight: 600,
+                            },
+                            "& ul, & ol": {
+                              pl: 2.5,
+                              mb: 1,
+                            },
+                            "& li": {
+                              mb: 0.5,
+                            },
+                            "& p": {
+                              mb: 1,
+                            },
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: formatMarkdown(
+                              actionPlans[detail.objective.id]!.plan
+                            ),
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 2, display: "block" }}
+                        >
+                          {t("objectives.actionPlan.generatedAt", "Generated")}:{" "}
+                          {new Date(
+                            actionPlans[detail.objective.id]!.created_at
+                          ).toLocaleDateString()}
+                        </Typography>
+                      </Paper>
+                    ) : (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: "12px",
+                          borderColor: "grey.300",
+                          bgcolor: "grey.50",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {t(
+                            "objectives.actionPlan.noPlan",
+                            "No action plan generated yet. Click the button above to generate one."
+                          )}
+                        </Typography>
+                      </Paper>
+                    )}
+                  </Box>
+                )}
               </Stack>
             </Box>
           ))}
         </Stack>
       </CardContent>
+
+      {/* Action Plan Generation Modal */}
+      {selectedObjectiveForPlan && (
+        <ObjectiveActionPlanModal
+          open={actionPlanModalOpen}
+          onClose={() => {
+            setActionPlanModalOpen(false);
+            setSelectedObjectiveForPlan(null);
+          }}
+          objective={selectedObjectiveForPlan}
+          enrichedReviews={enrichedReviews}
+          year={year}
+          timespan={timespan}
+          onPlanGenerated={handleActionPlanGenerated}
+        />
+      )}
     </Card>
   );
 };
+
+// Simple markdown to HTML converter
+function formatMarkdown(markdown: string): string {
+  let html = markdown;
+
+  // Headers
+  html = html.replace(/^### (.*$)/gim, "<h4>$1</h4>");
+  html = html.replace(/^## (.*$)/gim, "<h3>$1</h3>");
+  html = html.replace(/^# (.*$)/gim, "<h2>$1</h2>");
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
+
+  // Lists
+  html = html.replace(/^\* (.*$)/gim, "<li>$1</li>");
+  html = html.replace(/^- (.*$)/gim, "<li>$1</li>");
+  html = html.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
+
+  // Wrap consecutive list items in ul tags
+  html = html.replace(/(<li>.*<\/li>\n?)+/gim, (match) => `<ul>${match}</ul>`);
+
+  // Paragraphs (lines that aren't already wrapped)
+  html = html
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (
+        !trimmed ||
+        trimmed.startsWith("<h") ||
+        trimmed.startsWith("<ul") ||
+        trimmed.startsWith("<li") ||
+        trimmed.startsWith("</ul")
+      ) {
+        return line;
+      }
+      return `<p>${trimmed}</p>`;
+    })
+    .join("\n");
+
+  return html;
+}

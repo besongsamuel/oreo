@@ -700,4 +700,117 @@ export class ObjectivesService {
             .filter((topic) => topic.current_rating > 0)
             .sort((a, b) => b.current_rating - a.current_rating);
     }
+
+    /**
+     * Get action plan for an objective
+     */
+    async getObjectiveActionPlan(
+        objectiveId: string,
+        year: number,
+        timespan: Timespan,
+    ): Promise<
+        {
+            id: string;
+            objective_id: string;
+            year: number;
+            timespan: string;
+            plan: string;
+            created_at: string;
+        } | null
+    > {
+        const { data, error } = await this.supabase
+            .from("objective_action_plans")
+            .select("*")
+            .eq("objective_id", objectiveId)
+            .eq("year", year)
+            .eq("timespan", timespan)
+            .single();
+
+        if (error) {
+            if (error.code === "PGRST116") {
+                return null; // No plan found
+            }
+            throw new Error(
+                `Failed to fetch action plan: ${error.message}`,
+            );
+        }
+
+        return data as {
+            id: string;
+            objective_id: string;
+            year: number;
+            timespan: string;
+            plan: string;
+            created_at: string;
+        };
+    }
+
+    /**
+     * Generate action plan for an objective
+     */
+    async generateObjectiveActionPlan(
+        objectiveId: string,
+        year: number,
+        timespan: Timespan,
+        reviewIds: {
+            rating_review_ids: string[];
+            sentiment_review_ids: string[];
+            keyword_review_ids: Record<string, string[]>;
+            topic_review_ids: Record<string, string[]>;
+        },
+    ): Promise<{ id: string }> {
+        // Get Supabase URL and anon key from environment
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+        if (!supabaseUrl) {
+            throw new Error("REACT_APP_SUPABASE_URL is not set");
+        }
+
+        // Get auth token
+        const {
+            data: { session },
+        } = await this.supabase.auth.getSession();
+
+        if (!session) {
+            throw new Error("User not authenticated");
+        }
+
+        // Call edge function
+        const response = await fetch(
+            `${supabaseUrl}/functions/v1/generate-objective-action-plan`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    objective_id: objectiveId,
+                    year,
+                    timespan,
+                    rating_review_ids: reviewIds.rating_review_ids,
+                    sentiment_review_ids: reviewIds.sentiment_review_ids,
+                    keyword_review_ids: reviewIds.keyword_review_ids,
+                    topic_review_ids: reviewIds.topic_review_ids,
+                }),
+            },
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({
+                error: "Unknown error",
+            }));
+            throw new Error(
+                errorData.error ||
+                    `Failed to generate action plan: ${response.statusText}`,
+            );
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || "Failed to generate action plan");
+        }
+
+        return { id: data.action_plan_id };
+    }
 }

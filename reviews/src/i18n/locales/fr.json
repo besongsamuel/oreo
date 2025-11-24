@@ -945,6 +945,27 @@
       "saveFailed": "Échec de l'enregistrement de l'objectif"
     },
     "confirmDelete": "Confirmer la suppression",
-    "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet objectif ? Cette action ne peut pas être annulée."
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet objectif ? Cette action ne peut pas être annulée.",
+    "selectObjective": "Sélectionner un objectif",
+    "noneSelected": "Aucun",
+    "year": "Année",
+    "timespan": "Période",
+    "allYear": "Toute l'année",
+    "objectiveDetails": "Détails de l'objectif",
+    "noReviewsForObjective": "Aucun avis trouvé pour la période de cet objectif",
+    "reviewCount": "{{count}} avis",
+    "actionPlan": {
+      "title": "Plan d'action",
+      "generate": "Générer un plan",
+      "generateTitle": "Générer un plan d'action",
+      "description": "Générez un plan d'action basé sur l'IA en fonction des avis qui n'ont pas atteint les objectifs. Le plan fournira 1 à 3 recommandations actionnables.",
+      "confirmation": "Cela analysera les avis échoués et créera un plan pour :",
+      "generating": "Génération en cours...",
+      "generatingNote": "Cela peut prendre quelques instants...",
+      "noPlan": "Aucun plan d'action généré pour le moment. Cliquez sur le bouton ci-dessus pour en générer un.",
+      "generatedAt": "Généré",
+      "noFailedReviews": "Aucun avis échoué trouvé pour cet objectif. Impossible de générer un plan d'action.",
+      "generationError": "Échec de la génération du plan d'action"
+    }
   }
 }

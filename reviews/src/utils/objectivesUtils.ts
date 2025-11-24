@@ -137,3 +137,143 @@ export function calculateObjectiveStatus(
   return "in_progress";
 }
 
+/**
+ * Interface for enriched review (matches EnrichedReview from objectivesService)
+ */
+export interface EnrichedReviewForFailedIds {
+  id: string;
+  rating: number;
+  keywords: Array<{
+    id: string;
+    text: string;
+    category: string;
+  }>;
+  topics: Array<{
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+  }>;
+  published_at: string;
+  sentiment_analysis?: {
+    sentiment: string;
+    sentiment_score: number;
+    emotions?: any;
+  } | null;
+}
+
+/**
+ * Interface for objective target
+ */
+export interface ObjectiveTargetForFailedIds {
+  id: string;
+  target_type: "keyword" | "topic";
+  target_id: string;
+  target_rating: number;
+}
+
+/**
+ * Interface for objective
+ */
+export interface ObjectiveForFailedIds {
+  id: string;
+  target_rating?: number;
+  target_sentiment_score?: number;
+  targets?: ObjectiveTargetForFailedIds[];
+}
+
+/**
+ * Get failed review IDs for each target type
+ * Returns review IDs that are below the target values
+ */
+export function getFailedReviewIds(
+  objective: ObjectiveForFailedIds,
+  enrichedReviews: EnrichedReviewForFailedIds[],
+  year: number,
+  timespan: Timespan
+): {
+  rating_review_ids: string[];
+  sentiment_review_ids: string[];
+  keyword_review_ids: Record<string, string[]>;
+  topic_review_ids: Record<string, string[]>;
+} {
+  const { startDate, endDate } = getTimespanDates(year, timespan);
+
+  // Filter reviews by date range
+  const filteredReviews = enrichedReviews.filter((review) => {
+    const reviewDate = new Date(review.published_at)
+      .toISOString()
+      .split("T")[0];
+    return reviewDate >= startDate && reviewDate <= endDate;
+  });
+
+  const rating_review_ids: string[] = [];
+  const sentiment_review_ids: string[] = [];
+  const keyword_review_ids: Record<string, string[]> = {};
+  const topic_review_ids: Record<string, string[]> = {};
+
+  // Check rating target
+  if (objective.target_rating && objective.target_rating > 0) {
+    filteredReviews.forEach((review) => {
+      if (review.rating < objective.target_rating!) {
+        rating_review_ids.push(review.id);
+      }
+    });
+  }
+
+  // Check sentiment target
+  if (
+    objective.target_sentiment_score !== undefined &&
+    objective.target_sentiment_score !== null &&
+    objective.target_sentiment_score > -1
+  ) {
+    filteredReviews.forEach((review) => {
+      const sentimentScore = review.sentiment_analysis?.sentiment_score;
+      if (
+        sentimentScore !== undefined &&
+        sentimentScore !== null &&
+        sentimentScore < objective.target_sentiment_score!
+      ) {
+        sentiment_review_ids.push(review.id);
+      }
+    });
+  }
+
+  // Check keyword/topic targets
+  if (objective.targets && objective.targets.length > 0) {
+    objective.targets.forEach((target) => {
+      if (target.target_rating && target.target_rating > 0) {
+        const targetReviews = filteredReviews.filter((review) => {
+          if (target.target_type === "keyword") {
+            const hasKeyword = review.keywords.some(
+              (kw) => kw.id === target.target_id
+            );
+            return hasKeyword && review.rating < target.target_rating;
+          } else {
+            const hasTopic = review.topics.some(
+              (topic) => topic.id === target.target_id
+            );
+            return hasTopic && review.rating < target.target_rating;
+          }
+        });
+
+        if (targetReviews.length > 0) {
+          const reviewIds = targetReviews.map((r) => r.id);
+          if (target.target_type === "keyword") {
+            keyword_review_ids[target.target_id] = reviewIds;
+          } else {
+            topic_review_ids[target.target_id] = reviewIds;
+          }
+        }
+      }
+    });
+  }
+
+  return {
+    rating_review_ids,
+    sentiment_review_ids,
+    keyword_review_ids,
+    topic_review_ids,
+  };
+}
+
