@@ -261,6 +261,8 @@ Deno.serve(async (req: Request) => {
             company.industry || "Unknown",
             objective.name,
             failedTargets,
+            year,
+            timespan,
         );
 
         // Save action plan to database
@@ -354,6 +356,8 @@ async function generateActionPlan(
     industry: string,
     objectiveName: string,
     failedTargets: string[],
+    year: number,
+    timespan: "q1" | "q2" | "q3" | "q4" | "all",
 ): Promise<StructuredActionPlan> {
     const languageNames: Record<string, string> = {
         "en": "English",
@@ -366,6 +370,16 @@ async function generateActionPlan(
             failedTargets.map((t) => `- ${t}`).join("\n")
         }`
         : "";
+
+    // Format timespan for display
+    const timespanLabels: Record<typeof timespan, string> = {
+        q1: "Q1",
+        q2: "Q2",
+        q3: "Q3",
+        q4: "Q4",
+        all: "All Year",
+    };
+    const timespanDisplay = timespanLabels[timespan];
 
     const openaiResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -387,11 +401,12 @@ Based on customer reviews for a company that failed to meet their objective targ
 
 Company: ${companyName}
 Industry: ${industry}
-Objective: ${objectiveName}${failedTargetsText}
+Objective: ${objectiveName}
+Period: ${timespanDisplay} ${year}${failedTargetsText}
 
 You must respond with a valid JSON object containing:
-- "name": A concise name for this action plan (max 100 characters)
-- "description": A brief description of what this action plan addresses (max 200 characters)
+- "name": A concise, descriptive name for this action plan that includes the period (${timespanDisplay} ${year}) and the key issue addressed. Maximum 100 characters. Example: "Q1 2024 Customer Service Improvement Plan" or "Rating Improvement Action Plan - Q2 2024"
+- "description": A brief description of what this action plan addresses, including the period (${timespanDisplay} ${year}) and failed targets. Maximum 200 characters
 - "markdown": A full markdown-formatted action plan with clear headings and bullet points (similar to your previous format)
 - "topics": An array of topic groups, each containing:
   - "topic": The topic/theme name (e.g., "Customer Service", "Product Quality")

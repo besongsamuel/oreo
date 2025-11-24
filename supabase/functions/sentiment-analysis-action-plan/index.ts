@@ -343,6 +343,9 @@ Deno.serve(async (req: Request) => {
             openaiApiKey,
             filteredReviews.length,
             preferredLanguage,
+            filterStartDate!,
+            filterEndDate!,
+            selectedSentiment!,
         );
 
         // Save action plan to database
@@ -438,12 +441,47 @@ async function generateActionPlan(
     apiKey: string,
     reviewCount: number,
     language: string = "fr",
+    filterStartDate: string,
+    filterEndDate: string,
+    selectedSentiment: string,
 ): Promise<StructuredActionPlan> {
     const languageNames: Record<string, string> = {
         "en": "English",
         "fr": "French",
     };
     const languageName = languageNames[language] || "French";
+
+    // Format dates for display (use user's language preference)
+    const locale = language === "en" ? "en-US" : "fr-FR";
+    const startDateObj = new Date(filterStartDate);
+    const endDateObj = new Date(filterEndDate);
+    const dateRangeDisplay = `${startDateObj.toLocaleDateString(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    })} - ${endDateObj.toLocaleDateString(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    })}`;
+
+    // Format sentiment for display
+    const sentimentLabels: Record<string, Record<string, string>> = {
+        en: {
+            positive: "Positive",
+            negative: "Negative",
+            neutral: "Neutral",
+        },
+        fr: {
+            positive: "Positif",
+            negative: "Négatif",
+            neutral: "Neutre",
+        },
+    };
+    const sentimentDisplay =
+        sentimentLabels[language]?.[selectedSentiment.toLowerCase()] ||
+        selectedSentiment;
+
     const openaiResponse = await fetch(
         "https://api.openai.com/v1/chat/completions",
         {
@@ -462,9 +500,13 @@ async function generateActionPlan(
                             `You are a business consultant specializing in customer experience analysis. 
 Based on customer reviews, generate actionable recommendations for business improvement.
 
+Analysis Period: ${dateRangeDisplay}
+Sentiment Filter: ${sentimentDisplay}
+Review Count: ${reviewCount} reviews
+
 You must respond with a valid JSON object containing:
-- "name": A concise name for this action plan (max 100 characters)
-- "description": A brief description of what this action plan addresses (max 200 characters)
+- "name": A concise, descriptive name for this action plan that includes the period (${dateRangeDisplay}) and sentiment focus (${sentimentDisplay}). Maximum 100 characters. Example: "${sentimentDisplay} Reviews Action Plan - ${dateRangeDisplay}" or "Improving ${sentimentDisplay} Feedback (${dateRangeDisplay})"
+- "description": A brief description of what this action plan addresses, including the period (${dateRangeDisplay}) and sentiment focus (${sentimentDisplay}). Maximum 200 characters
 - "markdown": A full markdown-formatted action plan structured as follows:
   ## Overall Assessment
   Brief summary of overall customer sentiment based on ${reviewCount} reviews.
