@@ -27,7 +27,9 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEnrichedReviews } from "../hooks/useEnrichedReviews";
@@ -77,6 +79,8 @@ export const ObjectivesCard = ({
 }: ObjectivesCardProps) => {
   const { t } = useTranslation();
   const supabase = useSupabase();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Year and timespan selection (client-side only)
   const currentYear = new Date().getFullYear();
@@ -219,10 +223,261 @@ export const ObjectivesCard = ({
     }
   };
 
+  const desktopObjectivesTable = (
+    <TableContainer>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {t("objectives.name", "Name")}
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {t("objectives.progress", "Progress")}
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {t("objectives.priority", "Priority")}
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {t("objectives.timespan", "Timespan")}
+              </Typography>
+            </TableCell>
+            <TableCell align="right">
+              <Typography variant="subtitle2" fontWeight={600}>
+                {t("common.actions", "Actions")}
+              </Typography>
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredObjectives.map((objective) => (
+            <TableRow
+              key={objective.id}
+              hover
+              onClick={() => setSelectedObjectiveId(objective.id)}
+              sx={{
+                cursor: "pointer",
+                bgcolor:
+                  selectedObjectiveId === objective.id
+                    ? "action.selected"
+                    : "transparent",
+                "&:hover": {
+                  bgcolor: "action.hover",
+                },
+              }}
+            >
+              <TableCell>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {objective.status === "in_progress" && (
+                    <PlayIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                  )}
+                  {objective.status === "achieved" && (
+                    <StarIcon sx={{ fontSize: 18, color: "success.main" }} />
+                  )}
+                  <Typography variant="body2" fontWeight={500}>
+                    {objective.name}
+                  </Typography>
+                </Stack>
+              </TableCell>
+              <TableCell>
+                <Box sx={{ minWidth: 200 }}>
+                  <Stack spacing={0.5}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={objective.progress || 0}
+                      color={getProgressColor(objective.progress || 0)}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: "grey.200",
+                      }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {objective.progress?.toFixed(0) || 0}%
+                    </Typography>
+                  </Stack>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={t(
+                    `objectives.priority${
+                      objective.priority.charAt(0).toUpperCase() +
+                      objective.priority.slice(1)
+                    }`,
+                    objective.priority
+                  )}
+                  size="small"
+                  color={getPriorityColor(objective.priority)}
+                />
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">
+                  {formatTimespanDisplay(year, timespan)}
+                </Typography>
+                <Chip
+                  label={t(
+                    `objectives.status.${objective.status}`,
+                    objective.status
+                  )}
+                  size="small"
+                  color={getStatusColor(objective.status)}
+                  sx={{ mt: 0.5 }}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditClick(objective);
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(objective.id);
+                    }}
+                    color="error"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
+  const mobileObjectivesList = (
+    <Stack spacing={2}>
+      {filteredObjectives.map((objective) => (
+        <Card
+          key={objective.id}
+          variant="outlined"
+          onClick={() => setSelectedObjectiveId(objective.id)}
+          sx={{
+            borderRadius: "16px",
+            borderColor:
+              selectedObjectiveId === objective.id ? "primary.main" : "divider",
+          }}
+        >
+          <CardContent>
+            <Stack spacing={1.5}>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {objective.status === "in_progress" && (
+                    <PlayIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                  )}
+                  {objective.status === "achieved" && (
+                    <StarIcon sx={{ fontSize: 18, color: "success.main" }} />
+                  )}
+                  <Typography variant="body1" fontWeight={600}>
+                    {objective.name}
+                  </Typography>
+                </Stack>
+                <Chip
+                  label={t(
+                    `objectives.status.${objective.status}`,
+                    objective.status
+                  )}
+                  size="small"
+                  color={getStatusColor(objective.status)}
+                />
+              </Stack>
+
+              <Stack spacing={0.5}>
+                <Typography variant="caption" color="text.secondary">
+                  {t("objectives.progress", "Progress")}
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={objective.progress || 0}
+                  color={getProgressColor(objective.progress || 0)}
+                  sx={{ height: 8, borderRadius: 4, bgcolor: "grey.200" }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {objective.progress?.toFixed(0) || 0}%
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={t(
+                    `objectives.priority${
+                      objective.priority.charAt(0).toUpperCase() +
+                      objective.priority.slice(1)
+                    }`,
+                    objective.priority
+                  )}
+                  size="small"
+                  color={getPriorityColor(objective.priority)}
+                />
+                <Chip
+                  label={formatTimespanDisplay(year, timespan)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Stack>
+
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  fullWidth
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditClick(objective);
+                  }}
+                >
+                  {t("common.edit", "Edit")}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(objective.id);
+                  }}
+                >
+                  {t("common.delete", "Delete")}
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      ))}
+    </Stack>
+  );
+
   return (
     <Stack spacing={3}>
       {/* Header with Create Button */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack
+        direction={isMobile ? "column" : "row"}
+        justifyContent="space-between"
+        alignItems={isMobile ? "flex-start" : "center"}
+        spacing={isMobile ? 2 : 0}
+      >
         <Box>
           <Typography variant="h5" fontWeight={600} gutterBottom>
             {t("objectives.title", "My Objectives")}
@@ -268,15 +523,21 @@ export const ObjectivesCard = ({
           }}
         />
         <Stack
-          direction="row"
+          direction={isMobile ? "column" : "row"}
           spacing={2}
-          alignItems="center"
+          alignItems={isMobile ? "flex-start" : "center"}
           sx={{ position: "relative", zIndex: 1 }}
         >
           <Typography variant="body1" fontWeight={500}>
             {t("objectives.selectObjective", "Select an Objective")}:
           </Typography>
-          <FormControl size="small" sx={{ minWidth: 300 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: isMobile ? "100%" : 300,
+              width: isMobile ? "100%" : undefined,
+            }}
+          >
             <Select
               value={selectedObjectiveId || ""}
               onChange={(e) => setSelectedObjectiveId(e.target.value || null)}
@@ -305,9 +566,20 @@ export const ObjectivesCard = ({
           bgcolor: "background.paper",
         }}
       >
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+        <Stack
+          direction={isMobile ? "column" : "row"}
+          spacing={2}
+          alignItems="center"
+          flexWrap="wrap"
+        >
           <FilterListIcon sx={{ color: "text.secondary" }} />
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 150,
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
             <InputLabel>{t("objectives.priority", "Priority")}</InputLabel>
             <Select
               value={priorityFilter}
@@ -331,7 +603,13 @@ export const ObjectivesCard = ({
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 100 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 100,
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
             <InputLabel>{t("objectives.year", "Year")}</InputLabel>
             <Select
               value={year}
@@ -346,7 +624,13 @@ export const ObjectivesCard = ({
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 120,
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
             <InputLabel>{t("objectives.timespan", "Timespan")}</InputLabel>
             <Select
               value={timespan}
@@ -363,7 +647,13 @@ export const ObjectivesCard = ({
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 150,
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
             <InputLabel>{t("objectives.statusLabel", "Status")}</InputLabel>
             <Select
               value={statusFilter}
@@ -404,153 +694,10 @@ export const ObjectivesCard = ({
                 {t("objectives.noObjectivesFound", "No objectives found")}
               </Typography>
             </Box>
+          ) : isMobile ? (
+            mobileObjectivesList
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {t("objectives.name", "Name")}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {t("objectives.progress", "Progress")}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {t("objectives.priority", "Priority")}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {t("objectives.timespan", "Timespan")}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {t("common.actions", "Actions")}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredObjectives.map((objective) => (
-                    <TableRow
-                      key={objective.id}
-                      hover
-                      onClick={() => setSelectedObjectiveId(objective.id)}
-                      sx={{
-                        cursor: "pointer",
-                        bgcolor:
-                          selectedObjectiveId === objective.id
-                            ? "action.selected"
-                            : "transparent",
-                        "&:hover": {
-                          bgcolor: "action.hover",
-                        },
-                      }}
-                    >
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {objective.status === "in_progress" && (
-                            <PlayIcon
-                              sx={{ fontSize: 18, color: "primary.main" }}
-                            />
-                          )}
-                          {objective.status === "achieved" && (
-                            <StarIcon
-                              sx={{ fontSize: 18, color: "success.main" }}
-                            />
-                          )}
-                          <Typography variant="body2" fontWeight={500}>
-                            {objective.name}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ minWidth: 200 }}>
-                          <Stack spacing={0.5}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={objective.progress || 0}
-                              color={getProgressColor(objective.progress || 0)}
-                              sx={{
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: "grey.200",
-                              }}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {objective.progress?.toFixed(0) || 0}%
-                            </Typography>
-                          </Stack>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={t(
-                            `objectives.priority${
-                              objective.priority.charAt(0).toUpperCase() +
-                              objective.priority.slice(1)
-                            }`,
-                            objective.priority
-                          )}
-                          size="small"
-                          color={getPriorityColor(objective.priority)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatTimespanDisplay(year, timespan)}
-                        </Typography>
-                        <Chip
-                          label={t(
-                            `objectives.status.${objective.status}`,
-                            objective.status
-                          )}
-                          size="small"
-                          color={getStatusColor(objective.status)}
-                          sx={{ mt: 0.5 }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          justifyContent="flex-end"
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditClick(objective);
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(objective.id);
-                            }}
-                            color="error"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            desktopObjectivesTable
           )}
         </CardContent>
       </Card>
