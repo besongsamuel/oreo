@@ -41,6 +41,7 @@ import {
 } from "../services/objectivesService";
 import {
   Timespan,
+  calculateObjectiveStatus,
   formatTimespanDisplay,
   getCurrentQuarter,
   getTimespanDates,
@@ -115,7 +116,7 @@ export const ObjectivesCard = ({
       enabled: true,
     });
 
-  // Calculate progress for each objective client-side
+  // Calculate progress and status for each objective client-side
   const objectivesWithProgress = useMemo(() => {
     const objectivesService = new ObjectivesService(supabase);
     return objectives.map((objective) => {
@@ -125,9 +126,12 @@ export const ObjectivesCard = ({
         year,
         timespan
       );
+      // Calculate status based on progress and timespan completion
+      const status = calculateObjectiveStatus(progress, year, timespan);
       return {
         ...objective,
         progress,
+        status, // Override database status with calculated status
       };
     });
   }, [objectives, enrichedReviews, year, timespan, supabase]);

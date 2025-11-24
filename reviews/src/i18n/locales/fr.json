@@ -922,7 +922,7 @@
       "inProgress": "En cours",
       "achieved": "Atteints",
       "overdue": "En retard",
-      "failed": "Échoué"
+      "failed": "Echec"
     },
     "current": "Actuel",
     "target": "Cible",

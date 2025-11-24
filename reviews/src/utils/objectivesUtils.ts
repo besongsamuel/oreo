@@ -94,3 +94,46 @@ export function formatTimespanDisplay(
   return `${timespanLabels[timespan]} ${year}`;
 }
 
+/**
+ * Check if a timespan is complete (in the past)
+ * Returns true if the end date of the timespan has passed
+ */
+export function isTimespanComplete(
+  year: number,
+  timespan: Timespan
+): boolean {
+  const { endDate } = getTimespanDates(year, timespan);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+  
+  const endDateObj = new Date(endDate);
+  endDateObj.setHours(23, 59, 59, 999); // End of the day
+  
+  return today > endDateObj;
+}
+
+/**
+ * Calculate objective status based on progress and timespan completion
+ */
+export function calculateObjectiveStatus(
+  progress: number,
+  year: number,
+  timespan: Timespan
+): "not_started" | "in_progress" | "achieved" | "failed" {
+  const isComplete = isTimespanComplete(year, timespan);
+  
+  // If progress is 100% or more, status is achieved
+  if (progress >= 100) {
+    return "achieved";
+  }
+  
+  // If timespan is complete (in the past) and progress < 100%, status is failed
+  if (isComplete) {
+    return "failed";
+  }
+  
+  // If timespan is not complete (current or future), status is in_progress
+  // Note: We don't use "not_started" here since the objective exists and has progress
+  return "in_progress";
+}
+
