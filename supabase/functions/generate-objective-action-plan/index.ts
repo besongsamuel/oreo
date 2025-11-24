@@ -17,6 +17,19 @@ interface GenerateActionPlanResponse {
     error?: string;
 }
 
+interface StructuredActionPlan {
+    name: string;
+    description: string;
+    markdown: string;
+    topics: Array<{
+        topic: string;
+        items: Array<{
+            title: string;
+            description: string;
+        }>;
+    }>;
+}
+
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers":
@@ -72,41 +85,20 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // Check if action plan already exists
-        const { data: existingPlan } = await supabaseClient
-            .from("objective_action_plans")
-            .select("id")
-            .eq("objective_id", objective_id)
-            .eq("year", year)
-            .eq("timespan", timespan)
-            .single();
-
-        if (existingPlan) {
-            return new Response(
-                JSON.stringify({
-                    success: false,
-                    error: "Action plan already exists for this objective, year, and timespan",
-                } as GenerateActionPlanResponse),
-                {
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "application/json",
-                    },
-                    status: 400,
-                },
-            );
-        }
-
         // Fetch objective to get company_id
         const { data: objective, error: objectiveError } = await supabaseClient
             .from("company_objectives")
-            .select("id, company_id, name, target_rating, target_sentiment_score")
+            .select(
+                "id, company_id, name, target_rating, target_sentiment_score",
+            )
             .eq("id", objective_id)
             .single();
 
         if (objectiveError || !objective) {
             throw new Error(
-                `Failed to fetch objective: ${objectiveError?.message || "Objective not found"}`,
+                `Failed to fetch objective: ${
+                    objectiveError?.message || "Objective not found"
+                }`,
             );
         }
 
@@ -119,7 +111,9 @@ Deno.serve(async (req: Request) => {
 
         if (companyError || !company) {
             throw new Error(
-                `Failed to fetch company: ${companyError?.message || "Company not found"}`,
+                `Failed to fetch company: ${
+                    companyError?.message || "Company not found"
+                }`,
             );
         }
 
@@ -176,6 +170,41 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        // Generate input hash for duplicate detection
+        const sortedReviewIds = Array.from(allReviewIds).sort();
+        const hashInput = `${objective_id}|${year}|${timespan}|${
+            sortedReviewIds.join(",")
+        }`;
+        const inputHash = await crypto.subtle.digest(
+            "SHA-256",
+            new TextEncoder().encode(hashInput),
+        );
+        const inputHashHex = Array.from(new Uint8Array(inputHash))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+        // Check if action plan already exists by hash
+        const { data: existingPlan } = await supabaseClient
+            .from("action_plans")
+            .select("id")
+            .eq("input_hash", inputHashHex)
+            .single();
+
+        if (existingPlan) {
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    action_plan_id: existingPlan.id,
+                } as GenerateActionPlanResponse),
+                {
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+        }
+
         // Get company owner's preferred language
         let preferredLanguage = "fr"; // default to French
         const { data: companyWithOwner } = await supabaseClient
@@ -214,12 +243,16 @@ Deno.serve(async (req: Request) => {
         }
         if (Object.keys(keyword_review_ids).length > 0) {
             failedTargets.push(
-                `Keyword targets - ${Object.keys(keyword_review_ids).length} keywords with reviews below target`,
+                `Keyword targets - ${
+                    Object.keys(keyword_review_ids).length
+                } keywords with reviews below target`,
             );
         }
         if (Object.keys(topic_review_ids).length > 0) {
             failedTargets.push(
-                `Topic targets - ${Object.keys(topic_review_ids).length} topics with reviews below target`,
+                `Topic targets - ${
+                    Object.keys(topic_review_ids).length
+                } topics with reviews below target`,
             );
         }
 
@@ -228,7 +261,7 @@ Deno.serve(async (req: Request) => {
             .map((r) => `${r.title || ""}: ${r.content}`)
             .join("\n\n");
 
-        const actionPlan = await generateActionPlan(
+        const actionPlanData = await generateActionPlan(
             reviewsText,
             openaiApiKey,
             reviews.length,
@@ -241,20 +274,50 @@ Deno.serve(async (req: Request) => {
 
         // Save action plan to database
         const { data: savedPlan, error: saveError } = await supabaseClient
-            .from("objective_action_plans")
+            .from("action_plans")
             .insert({
-                objective_id,
-                year,
-                timespan,
-                plan: actionPlan,
+                company_id: objective.company_id,
+                source_type: "objective",
+                source_id: objective_id,
+                name: actionPlanData.name,
+                description: actionPlanData.description,
+                plan_markdown: actionPlanData.markdown,
+                input_hash: inputHashHex,
+                metadata: {
+                    year,
+                    timespan,
+                },
             })
             .select("id")
             .single();
 
         if (saveError || !savedPlan) {
             throw new Error(
-                `Failed to save action plan: ${saveError?.message || "Unknown error"}`,
+                `Failed to save action plan: ${
+                    saveError?.message || "Unknown error"
+                }`,
             );
+        }
+
+        // Save action plan items
+        let orderIndex = 0;
+        for (const topicData of actionPlanData.topics) {
+            for (const item of topicData.items) {
+                const { error: itemError } = await supabaseClient
+                    .from("action_plan_items")
+                    .insert({
+                        action_plan_id: savedPlan.id,
+                        topic: topicData.topic,
+                        title: item.title,
+                        description: item.description,
+                        order_index: orderIndex++,
+                    });
+
+                if (itemError) {
+                    console.error("Error saving action plan item:", itemError);
+                    // Continue with other items even if one fails
+                }
+            }
         }
 
         return new Response(
@@ -300,7 +363,7 @@ async function generateActionPlan(
     industry: string,
     objectiveName: string,
     failedTargets: string[],
-): Promise<string> {
+): Promise<StructuredActionPlan> {
     const languageNames: Record<string, string> = {
         "en": "English",
         "fr": "French",
@@ -308,7 +371,9 @@ async function generateActionPlan(
     const languageName = languageNames[language] || "French";
 
     const failedTargetsText = failedTargets.length > 0
-        ? `\n\nFailed Targets:\n${failedTargets.map((t) => `- ${t}`).join("\n")}`
+        ? `\n\nFailed Targets:\n${
+            failedTargets.map((t) => `- ${t}`).join("\n")
+        }`
         : "";
 
     const openaiResponse = await fetch(
@@ -321,32 +386,42 @@ async function generateActionPlan(
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
+                response_format: { type: "json_object" },
                 messages: [
                     {
                         role: "system",
                         content:
                             `You are a business consultant specializing in customer experience analysis. 
-Based on customer reviews for a company that failed to meet their objective targets, generate a concise, actionable action plan.
+Based on customer reviews for a company that failed to meet their objective targets, generate a structured, actionable action plan.
 
 Company: ${companyName}
 Industry: ${industry}
 Objective: ${objectiveName}${failedTargetsText}
 
-Your response should be a concise action plan with 1-3 key actionable points in markdown format. Focus on specific, implementable recommendations based on the reviews provided.
+You must respond with a valid JSON object containing:
+- "name": A concise name for this action plan (max 100 characters)
+- "description": A brief description of what this action plan addresses (max 200 characters)
+- "markdown": A full markdown-formatted action plan with clear headings and bullet points (similar to your previous format)
+- "topics": An array of topic groups, each containing:
+  - "topic": The topic/theme name (e.g., "Customer Service", "Product Quality")
+  - "items": An array of actionable items, each with:
+    - "title": A short, actionable title (max 80 characters)
+    - "description": A detailed description of the action item (2-4 sentences)
 
-Format the response using clear markdown headings and bullet points.
-IMPORTANT: Generate the entire action plan in ${languageName}.`,
+Group related actionable items under meaningful topics. Aim for 2-4 topics with 2-5 items per topic.
+Focus on specific, implementable recommendations based on the reviews provided.
+IMPORTANT: Generate everything in ${languageName}.`,
                     },
                     {
                         role: "user",
                         content:
-                            `Analyze these ${reviewCount} customer reviews that did not meet the objective targets and generate a focused action plan with 1-3 key recommendations:
+                            `Analyze these ${reviewCount} customer reviews that did not meet the objective targets and generate a structured action plan:
 
 ${reviewsText}`,
                     },
                 ],
                 temperature: 0.7,
-                max_tokens: 1000,
+                max_tokens: 2000,
             }),
         },
     );
@@ -359,12 +434,26 @@ ${reviewsText}`,
     }
 
     const openaiData = await openaiResponse.json();
-    const actionPlan = openaiData.choices?.[0]?.message?.content;
+    const responseContent = openaiData.choices?.[0]?.message?.content;
 
-    if (!actionPlan) {
+    if (!responseContent) {
         throw new Error("No action plan generated by OpenAI");
     }
 
-    return actionPlan;
-}
+    try {
+        const parsed = JSON.parse(responseContent) as StructuredActionPlan;
 
+        // Validate structure
+        if (
+            !parsed.name || !parsed.description || !parsed.markdown ||
+            !Array.isArray(parsed.topics)
+        ) {
+            throw new Error("Invalid action plan structure from OpenAI");
+        }
+
+        return parsed;
+    } catch (parseError) {
+        console.error("Error parsing OpenAI response:", parseError);
+        throw new Error("Failed to parse action plan JSON from OpenAI");
+    }
+}

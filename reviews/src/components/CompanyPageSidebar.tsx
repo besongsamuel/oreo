@@ -1,5 +1,6 @@
 import {
   Analytics as AnalyticsIcon,
+  Assignment as ActionPlansIcon,
   Dashboard as OverviewIcon,
   LocationOn as LocationOnIcon,
   RateReview as ReviewsIcon,
@@ -23,6 +24,7 @@ export type CompanyPageSection =
   | "reviews"
   | "analytics"
   | "objectives"
+  | "actionPlans"
   | "locations"
   | "settings";
 
@@ -68,6 +70,11 @@ export const CompanyPageSidebar = ({
       id: "objectives",
       labelKey: "companyPage.sidebar.objectives",
       icon: <ObjectivesIcon />,
+    },
+    {
+      id: "actionPlans",
+      labelKey: "companyPage.sidebar.actionPlans",
+      icon: <ActionPlansIcon />,
     },
     {
       id: "locations",

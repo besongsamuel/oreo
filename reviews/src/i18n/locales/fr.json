@@ -421,6 +421,7 @@
     "close": "Fermer",
     "failedGenerate": "Échec de la génération du plan d'action. Veuillez réessayer.",
     "errorGenerating": "Erreur lors de la génération du plan d'action. Veuillez réessayer.",
+    "actionPlanSaved": "Le plan d'action a été enregistré. Vous pouvez gérer ce plan d'action et suivre la progression depuis le menu Plans d'action.",
     "filterLabels": {
       "location": "Emplacement :",
       "from": "Du :",
@@ -747,6 +748,7 @@
       "reviews": "Avis",
       "analytics": "Analyses",
       "objectives": "Objectifs",
+      "actionPlans": "Plans d'action",
       "locations": "Emplacements",
       "settings": "Paramètres"
     }
@@ -968,6 +970,36 @@
       "generatedAt": "Généré",
       "noFailedReviews": "Aucun avis échoué trouvé pour cet objectif. Impossible de générer un plan d'action.",
       "generationError": "Échec de la génération du plan d'action"
+    }
+  },
+  "actionPlans": {
+    "title": "Plans d'action",
+    "subtitle": "Consultez et gérez vos plans d'action pour améliorer votre entreprise",
+    "noPlans": "Aucun plan d'action trouvé",
+    "noPlansDescription": "Les plans d'action apparaîtront ici une fois générés à partir d'objectifs ou d'analyses de sentiment.",
+    "actionItems": "Éléments d'action",
+    "notes": "Notes",
+    "addNote": "Ajouter une note",
+    "editNote": "Modifier la note",
+    "notePlaceholder": "Entrez votre note ici...",
+    "anonymous": "Anonyme",
+    "confirmDeleteNote": "Supprimer cette note ?",
+    "filter": {
+      "sourceType": "Type de source",
+      "allSources": "Toutes les sources",
+      "objective": "Objectif",
+      "sentiment": "Sentiment",
+      "status": "Statut",
+      "allStatuses": "Tous les statuts"
+    },
+    "status": {
+      "new": "Nouveau",
+      "inProgress": "En cours",
+      "completed": "Terminé"
+    },
+    "sourceType": {
+      "objective": "Objectif",
+      "sentiment": "Sentiment"
     }
   }
 }

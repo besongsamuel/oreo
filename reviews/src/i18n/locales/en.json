@@ -348,6 +348,7 @@
     "close": "Close",
     "failedGenerate": "Failed to generate action plan. Please try again.",
     "errorGenerating": "Error generating action plan. Please try again.",
+    "actionPlanSaved": "Action plan has been saved. You can manage this action plan and track progress from the Action Plans menu.",
     "filterLabels": {
       "location": "Location:",
       "from": "From:",
@@ -747,6 +748,7 @@
       "reviews": "Reviews",
       "analytics": "Analytics",
       "objectives": "Objectives",
+      "actionPlans": "Action Plans",
       "locations": "Locations",
       "settings": "Settings"
     }
@@ -969,6 +971,36 @@
       "generatedAt": "Generated",
       "noFailedReviews": "No failed reviews found for this objective. Cannot generate action plan.",
       "generationError": "Failed to generate action plan"
+    }
+  },
+  "actionPlans": {
+    "title": "Action Plans",
+    "subtitle": "View and manage your action plans to improve your business",
+    "noPlans": "No action plans found",
+    "noPlansDescription": "Action plans will appear here once generated from objectives or sentiment analysis.",
+    "actionItems": "Action Items",
+    "notes": "Notes",
+    "addNote": "Add Note",
+    "editNote": "Edit Note",
+    "notePlaceholder": "Enter your note here...",
+    "anonymous": "Anonymous",
+    "confirmDeleteNote": "Delete this note?",
+    "filter": {
+      "sourceType": "Source Type",
+      "allSources": "All Sources",
+      "objective": "Objective",
+      "sentiment": "Sentiment",
+      "status": "Status",
+      "allStatuses": "All Statuses"
+    },
+    "status": {
+      "new": "New",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "sourceType": {
+      "objective": "Objective",
+      "sentiment": "Sentiment"
     }
   }
 }

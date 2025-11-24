@@ -10,8 +10,22 @@ interface ActionPlanRequest {
 
 interface ActionPlanResponse {
     success: boolean;
+    action_plan_id?: string;
     actionPlan?: string;
     error?: string;
+}
+
+interface StructuredActionPlan {
+    name: string;
+    description: string;
+    markdown: string;
+    topics: Array<{
+        topic: string;
+        items: Array<{
+            title: string;
+            description: string;
+        }>;
+    }>;
 }
 
 interface Location {
@@ -256,6 +270,49 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        // Generate input hash for duplicate detection
+        const hashInput = `${companyId}|${filterStartDate}|${filterEndDate}|${selectedSentiment}`;
+        const inputHash = await crypto.subtle.digest(
+            "SHA-256",
+            new TextEncoder().encode(hashInput)
+        );
+        const inputHashHex = Array.from(new Uint8Array(inputHash))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+        // Check if action plan already exists by hash
+        const { data: existingPlan } = await supabaseClient
+            .from("action_plans")
+            .select("id")
+            .eq("input_hash", inputHashHex)
+            .single();
+
+        if (existingPlan) {
+            // Fetch the markdown for the response
+            const { data: planData } = await supabaseClient
+                .from("action_plans")
+                .select("plan_markdown")
+                .eq("id", existingPlan.id)
+                .single();
+
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    action_plan_id: existingPlan.id,
+                    actionPlan: planData?.plan_markdown || "",
+                } as ActionPlanResponse),
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "POST, OPTIONS",
+                        "Access-Control-Allow-Headers":
+                            "authorization, x-client-info, apikey, content-type",
+                    },
+                },
+            );
+        }
+
         // Get company owner's preferred language
         let preferredLanguage = "fr"; // default to French
         const { data: company } = await supabaseClient
@@ -281,17 +338,65 @@ Deno.serve(async (req: Request) => {
             .map((r) => `${r.title || ""}: ${r.content}`)
             .join("\n\n");
 
-        const actionPlan = await generateActionPlan(
+        const actionPlanData = await generateActionPlan(
             reviewsText,
             openaiApiKey,
             filteredReviews.length,
             preferredLanguage,
         );
 
+        // Save action plan to database
+        const { data: savedPlan, error: saveError } = await supabaseClient
+            .from("action_plans")
+            .insert({
+                company_id: companyId,
+                source_type: "sentiment",
+                source_id: null,
+                name: actionPlanData.name,
+                description: actionPlanData.description,
+                plan_markdown: actionPlanData.markdown,
+                input_hash: inputHashHex,
+                metadata: {
+                    filterStartDate,
+                    filterEndDate,
+                    selectedSentiment,
+                },
+            })
+            .select("id")
+            .single();
+
+        if (saveError || !savedPlan) {
+            throw new Error(
+                `Failed to save action plan: ${saveError?.message || "Unknown error"}`,
+            );
+        }
+
+        // Save action plan items
+        let orderIndex = 0;
+        for (const topicData of actionPlanData.topics) {
+            for (const item of topicData.items) {
+                const { error: itemError } = await supabaseClient
+                    .from("action_plan_items")
+                    .insert({
+                        action_plan_id: savedPlan.id,
+                        topic: topicData.topic,
+                        title: item.title,
+                        description: item.description,
+                        order_index: orderIndex++,
+                    });
+
+                if (itemError) {
+                    console.error("Error saving action plan item:", itemError);
+                    // Continue with other items even if one fails
+                }
+            }
+        }
+
         return new Response(
             JSON.stringify({
                 success: true,
-                actionPlan,
+                action_plan_id: savedPlan.id,
+                actionPlan: actionPlanData.markdown,
             } as ActionPlanResponse),
             {
                 headers: {
@@ -333,7 +438,7 @@ async function generateActionPlan(
     apiKey: string,
     reviewCount: number,
     language: string = "fr",
-): Promise<string> {
+): Promise<StructuredActionPlan> {
     const languageNames: Record<string, string> = {
         "en": "English",
         "fr": "French",
@@ -349,6 +454,7 @@ async function generateActionPlan(
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
+                response_format: { type: "json_object" },
                 messages: [
                     {
                         role: "system",
@@ -356,37 +462,45 @@ async function generateActionPlan(
                             `You are a business consultant specializing in customer experience analysis. 
 Based on customer reviews, generate actionable recommendations for business improvement.
 
-Your response should be structured as follows:
+You must respond with a valid JSON object containing:
+- "name": A concise name for this action plan (max 100 characters)
+- "description": A brief description of what this action plan addresses (max 200 characters)
+- "markdown": A full markdown-formatted action plan structured as follows:
+  ## Overall Assessment
+  Brief summary of overall customer sentiment based on ${reviewCount} reviews.
+  
+  ## Strengths
+  List 3-5 key positive points mentioned by customers.
+  
+  ## Areas for Improvement
+  List 3-5 areas where customers express concerns or dissatisfaction.
+  
+  ## Priority Action Items
+  Ranked list of the most important issues to address, with specific recommendations.
+  
+  ## Quick Wins
+  Easy, low-cost improvements that can be implemented immediately.
+- "topics": An array of topic groups, each containing:
+  - "topic": The topic/theme name (e.g., "Customer Service", "Product Quality", "Response Time")
+  - "items": An array of actionable items, each with:
+    - "title": A short, actionable title (max 80 characters)
+    - "description": A detailed description of the action item (2-4 sentences)
 
-## Overall Assessment
-Brief summary of overall customer sentiment based on ${reviewCount} reviews.
-
-## Strengths
-List 3-5 key positive points mentioned by customers.
-
-## Areas for Improvement
-List 3-5 areas where customers express concerns or dissatisfaction.
-
-## Priority Action Items
-Ranked list of the most important issues to address, with specific recommendations.
-
-## Quick Wins
-Easy, low-cost improvements that can be implemented immediately.
-
+Group related actionable items under meaningful topics. Aim for 2-4 topics with 2-5 items per topic.
+Focus on specific, implementable recommendations based on the reviews provided.
 Keep the tone professional and actionable. Be specific with recommendations.
-Format the response using clear markdown headings and bullet points.
-IMPORTANT: Generate the entire action plan in ${languageName}.`,
+IMPORTANT: Generate everything in ${languageName}.`,
                     },
                     {
                         role: "user",
                         content:
-                            `Analyze these ${reviewCount} customer reviews and generate an action plan:
+                            `Analyze these ${reviewCount} customer reviews and generate a structured action plan:
 
 ${reviewsText}`,
                     },
                 ],
                 temperature: 0.7,
-                max_tokens: 1500,
+                max_tokens: 2000,
             }),
         },
     );
@@ -399,11 +513,23 @@ ${reviewsText}`,
     }
 
     const openaiData = await openaiResponse.json();
-    const actionPlan = openaiData.choices?.[0]?.message?.content;
+    const responseContent = openaiData.choices?.[0]?.message?.content;
 
-    if (!actionPlan) {
+    if (!responseContent) {
         throw new Error("No action plan generated by OpenAI");
     }
 
-    return actionPlan;
+    try {
+        const parsed = JSON.parse(responseContent) as StructuredActionPlan;
+        
+        // Validate structure
+        if (!parsed.name || !parsed.description || !parsed.markdown || !Array.isArray(parsed.topics)) {
+            throw new Error("Invalid action plan structure from OpenAI");
+        }
+
+        return parsed;
+    } catch (parseError) {
+        console.error("Error parsing OpenAI response:", parseError);
+        throw new Error("Failed to parse action plan JSON from OpenAI");
+    }
 }

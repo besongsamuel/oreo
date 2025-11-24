@@ -100,6 +100,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const session = context?.session;
   const [actionPlanOpen, setActionPlanOpen] = useState(false);
   const [actionPlan, setActionPlan] = useState<string | null>(null);
+  const [actionPlanId, setActionPlanId] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [copied, setCopied] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -286,12 +287,15 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
 
       if (data?.success && data?.actionPlan) {
         setActionPlan(data.actionPlan);
+        setActionPlanId(data?.action_plan_id || null);
       } else {
         setActionPlan(t("sentimentAnalysis.failedGenerate"));
+        setActionPlanId(null);
       }
     } catch (error) {
       console.error("Error generating action plan:", error);
       setActionPlan(t("sentimentAnalysis.errorGenerating"));
+      setActionPlanId(null);
     } finally {
       setLoadingPlan(false);
     }
@@ -427,24 +431,48 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   };
 
   const formatActionPlan = (plan: string) => {
-    // Convert markdown-style formatting to HTML
-    return plan
-      .replace(
-        /^## (.+)$/gm,
-        '<h3 style="margin-top: 1.5em; margin-bottom: 0.5em; font-size: 1.1em; font-weight: 600;">$1</h3>'
-      )
-      .replace(
-        /^#### (.+)$/gm,
-        '<h4 style="margin-top: 1em; margin-bottom: 0.3em; font-size: 1em; font-weight: 600;">$1</h4>'
-      )
-      .replace(/^\d+\. (.+)$/gm, '<div style="margin: 0.5em 0;">$1</div>')
-      .replace(
-        /^- (.+)$/gm,
-        '<div style="margin: 0.3em 0; padding-left: 1em;">• $1</div>'
-      )
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\n\n/g, "<br /><br />")
-      .replace(/\n/g, " ");
+    return formatMarkdown(plan);
+  };
+
+  // Simple markdown to HTML converter
+  const formatMarkdown = (markdown: string): string => {
+    let html = markdown;
+
+    // Headers
+    html = html.replace(/^### (.*$)/gim, "<h4>$1</h4>");
+    html = html.replace(/^## (.*$)/gim, "<h3>$1</h3>");
+    html = html.replace(/^# (.*$)/gim, "<h2>$1</h2>");
+
+    // Bold
+    html = html.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
+
+    // Lists
+    html = html.replace(/^\* (.*$)/gim, "<li>$1</li>");
+    html = html.replace(/^- (.*$)/gim, "<li>$1</li>");
+    html = html.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
+
+    // Wrap consecutive list items in ul tags
+    html = html.replace(/(<li>.*<\/li>\n?)+/gim, (match) => `<ul>${match}</ul>`);
+
+    // Paragraphs (lines that aren't already wrapped)
+    html = html
+      .split("\n")
+      .map((line) => {
+        const trimmed = line.trim();
+        if (
+          !trimmed ||
+          trimmed.startsWith("<h") ||
+          trimmed.startsWith("<ul") ||
+          trimmed.startsWith("<li") ||
+          trimmed.startsWith("</ul")
+        ) {
+          return line;
+        }
+        return `<p>${trimmed}</p>`;
+      })
+      .join("\n");
+
+    return html;
   };
 
   const getSentimentIcon = (sentiment: string) => {
@@ -846,39 +874,74 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
                 </Alert>
               )}
 
-              {/* Action Plan Content */}
-              <Box
+              {/* Note about managing action plan */}
+              {actionPlanId && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    {t(
+                      "sentimentAnalysis.actionPlanSaved",
+                      "Action plan has been saved. You can manage this action plan and track progress from the Action Plans menu."
+                    )}
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Action Plan Content Preview */}
+              <Paper
+                variant="outlined"
                 sx={{
+                  p: 2,
+                  borderRadius: "12px",
+                  bgcolor: "grey.50",
                   maxHeight: "60vh",
                   overflow: "auto",
-                  "& h3": {
-                    mt: 3,
-                    mb: 1,
-                    fontSize: "1.1em",
-                    fontWeight: 600,
-                    color: "primary.main",
-                  },
-                  "& h4": {
-                    mt: 2,
-                    mb: 0.5,
-                    fontSize: "1em",
-                    fontWeight: 600,
-                  },
-                  "& strong": {
-                    fontWeight: 600,
-                  },
-                  "& ul, & ol": {
-                    pl: 2,
-                    mb: 1,
-                  },
-                  "& li": {
-                    mb: 0.5,
-                  },
                 }}
-                dangerouslySetInnerHTML={{
-                  __html: formatActionPlan(actionPlan),
-                }}
-              />
+              >
+                <Typography
+                  variant="body2"
+                  component="div"
+                  sx={{
+                    "& h2": {
+                      mt: 3,
+                      mb: 1,
+                      fontSize: "1.3em",
+                      fontWeight: 600,
+                      color: "primary.main",
+                    },
+                    "& h3": {
+                      mt: 2,
+                      mb: 0.5,
+                      fontSize: "1.1em",
+                      fontWeight: 600,
+                      color: "text.primary",
+                    },
+                    "& h4": {
+                      mt: 1.5,
+                      mb: 0.5,
+                      fontSize: "1em",
+                      fontWeight: 600,
+                    },
+                    "& p": {
+                      mb: 1.5,
+                      lineHeight: 1.6,
+                    },
+                    "& strong": {
+                      fontWeight: 600,
+                    },
+                    "& ul, & ol": {
+                      pl: 2,
+                      mb: 1.5,
+                      "& li": {
+                        mb: 0.5,
+                        lineHeight: 1.6,
+                      },
+                    },
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatActionPlan(actionPlan),
+                  }}
+                />
+              </Paper>
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary">

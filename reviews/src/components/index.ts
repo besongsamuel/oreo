@@ -41,3 +41,4 @@ export { ObjectivesCard } from "./ObjectivesCard";
 export { ImprovementsCard } from "./ImprovementsCard";
 export type { Recommendation } from "./ImprovementsCard";
 export { AverageRatingCard } from "./AverageRatingCard";
+export { ActionPlansCard } from "./ActionPlansCard";

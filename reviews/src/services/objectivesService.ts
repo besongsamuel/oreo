@@ -722,30 +722,41 @@ export class ObjectivesService {
             created_at: string;
         } | null
     > {
+        // Query action_plans table with source_type and source_id filters
         const { data, error } = await this.supabase
-            .from("objective_action_plans")
+            .from("action_plans")
             .select("*")
-            .eq("objective_id", objectiveId)
-            .eq("year", year)
-            .eq("timespan", timespan)
-            .single();
+            .eq("source_type", "objective")
+            .eq("source_id", objectiveId);
 
         if (error) {
-            if (error.code === "PGRST116") {
-                return null; // No plan found
-            }
             throw new Error(
                 `Failed to fetch action plan: ${error.message}`,
             );
         }
 
-        return data as {
-            id: string;
-            objective_id: string;
-            year: number;
-            timespan: string;
-            plan: string;
-            created_at: string;
+        if (!data || data.length === 0) {
+            return null;
+        }
+
+        // Filter by year and timespan from metadata
+        const matchingPlan = data.find((plan) => {
+            const metadata = plan.metadata as any;
+            return metadata?.year === year && metadata?.timespan === timespan;
+        });
+
+        if (!matchingPlan) {
+            return null;
+        }
+
+        // Map the new structure to the expected format
+        return {
+            id: matchingPlan.id,
+            objective_id: matchingPlan.source_id || objectiveId,
+            year: (matchingPlan.metadata as any)?.year || year,
+            timespan: (matchingPlan.metadata as any)?.timespan || timespan,
+            plan: matchingPlan.plan_markdown,
+            created_at: matchingPlan.created_at,
         };
     }
 
