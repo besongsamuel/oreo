@@ -162,6 +162,55 @@ export const ObjectivesCard = ({
     });
   }, [objectivesWithProgress, priorityFilter, statusFilter]);
 
+  const timespanOptions = useMemo<Array<{ value: Timespan; label: string }>>(
+    () => [
+      { value: "q1", label: "Q1" },
+      { value: "q2", label: "Q2" },
+      { value: "q3", label: "Q3" },
+      { value: "q4", label: "Q4" },
+      {
+        value: "all",
+        label: t("objectives.allYear", "All Year"),
+      },
+    ],
+    [t]
+  );
+
+  const priorityChipOptions = useMemo<
+    Array<{ value: PriorityFilter; label: string }>
+  >(
+    () => [
+      {
+        value: "all",
+        label: t("objectives.allPriorities", "All Priorities"),
+      },
+      { value: "high", label: t("objectives.priorityHigh", "High") },
+      { value: "medium", label: t("objectives.priorityMedium", "Medium") },
+      { value: "low", label: t("objectives.priorityLow", "Low") },
+    ],
+    [t]
+  );
+
+  const statusChipOptions = useMemo<
+    Array<{ value: StatusFilter; label: string }>
+  >(
+    () => [
+      { value: "all", label: t("objectives.allGoals", "All Goals") },
+      {
+        value: "in_progress",
+        label: t("objectives.status.inProgress", "In Progress"),
+      },
+      {
+        value: "not_started",
+        label: t("objectives.status.notStarted", "Not Started"),
+      },
+      { value: "achieved", label: t("objectives.status.achieved", "Achieved") },
+      { value: "overdue", label: t("objectives.status.overdue", "Overdue") },
+      { value: "failed", label: t("objectives.status.failed", "Failed") },
+    ],
+    [t]
+  );
+
   const handleCreateClick = () => {
     setEditingObjective(null);
     setEditDialogOpen(true);
@@ -576,120 +625,129 @@ export const ObjectivesCard = ({
           bgcolor: "background.paper",
         }}
       >
-        <Stack
-          direction={isMobile ? "column" : "row"}
-          spacing={2}
-          alignItems="center"
-          flexWrap="wrap"
-        >
-          <FilterListIcon sx={{ color: "text.secondary" }} />
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-              width: isMobile ? "100%" : "auto",
-            }}
+        <Stack spacing={isMobile ? 2 : 3}>
+          <Stack
+            direction={isMobile ? "column" : "row"}
+            spacing={2}
+            alignItems={isMobile ? "flex-start" : "center"}
+            flexWrap="wrap"
           >
-            <InputLabel>{t("objectives.priority", "Priority")}</InputLabel>
-            <Select
-              value={priorityFilter}
-              onChange={(e) =>
-                setPriorityFilter(e.target.value as PriorityFilter)
-              }
-              label={t("objectives.priority", "Priority")}
+            <FilterListIcon sx={{ color: "text.secondary" }} />
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 120,
+                width: isMobile ? "100%" : "auto",
+              }}
             >
-              <MenuItem value="all">
-                {t("objectives.allPriorities", "All Priorities")}
-              </MenuItem>
-              <MenuItem value="high">
-                {t("objectives.priorityHigh", "High")}
-              </MenuItem>
-              <MenuItem value="medium">
-                {t("objectives.priorityMedium", "Medium")}
-              </MenuItem>
-              <MenuItem value="low">
-                {t("objectives.priorityLow", "Low")}
-              </MenuItem>
-            </Select>
-          </FormControl>
+              <InputLabel>{t("objectives.year", "Year")}</InputLabel>
+              <Select
+                value={year}
+                onChange={(e) => setYear(e.target.value as number)}
+                label={t("objectives.year", "Year")}
+              >
+                {Array.from({ length: 5 }, (_, i) => currentYear - i).map(
+                  (y) => (
+                    <MenuItem key={y} value={y}>
+                      {y}
+                    </MenuItem>
+                  )
+                )}
+              </Select>
+            </FormControl>
+          </Stack>
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 100,
-              width: isMobile ? "100%" : "auto",
-            }}
-          >
-            <InputLabel>{t("objectives.year", "Year")}</InputLabel>
-            <Select
-              value={year}
-              onChange={(e) => setYear(e.target.value as number)}
-              label={t("objectives.year", "Year")}
-            >
-              {Array.from({ length: 5 }, (_, i) => currentYear - i).map((y) => (
-                <MenuItem key={y} value={y}>
-                  {y}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Stack spacing={2}>
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mb: 1, display: "block" }}
+              >
+                {t("objectives.priority", "Priority")}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                {priorityChipOptions.map((option) => {
+                  const selected = priorityFilter === option.value;
+                  return (
+                    <Chip
+                      key={option.value}
+                      label={option.label}
+                      clickable
+                      variant={selected ? "filled" : "outlined"}
+                      color={selected ? "primary" : "default"}
+                      onClick={() => setPriorityFilter(option.value)}
+                      sx={{
+                        borderRadius: "999px",
+                        px: 1.5,
+                        borderColor: selected ? "primary.main" : "grey.300",
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 120,
-              width: isMobile ? "100%" : "auto",
-            }}
-          >
-            <InputLabel>{t("objectives.timespan", "Timespan")}</InputLabel>
-            <Select
-              value={timespan}
-              onChange={(e) => setTimespan(e.target.value as Timespan)}
-              label={t("objectives.timespan", "Timespan")}
-            >
-              <MenuItem value="q1">Q1</MenuItem>
-              <MenuItem value="q2">Q2</MenuItem>
-              <MenuItem value="q3">Q3</MenuItem>
-              <MenuItem value="q4">Q4</MenuItem>
-              <MenuItem value="all">
-                {t("objectives.allYear", "All Year")}
-              </MenuItem>
-            </Select>
-          </FormControl>
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mb: 1, display: "block" }}
+              >
+                {t("objectives.timespan", "Timespan")}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                {timespanOptions.map((option) => {
+                  const selected = timespan === option.value;
+                  return (
+                    <Chip
+                      key={option.value}
+                      label={option.label}
+                      clickable
+                      variant={selected ? "filled" : "outlined"}
+                      color={selected ? "primary" : "default"}
+                      onClick={() => setTimespan(option.value)}
+                      sx={{
+                        borderRadius: "999px",
+                        px: 1.5,
+                        borderColor: selected ? "primary.main" : "grey.300",
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-              width: isMobile ? "100%" : "auto",
-            }}
-          >
-            <InputLabel>{t("objectives.statusLabel", "Status")}</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              label={t("objectives.statusLabel", "Status")}
-            >
-              <MenuItem value="all">
-                {t("objectives.allGoals", "All Goals")}
-              </MenuItem>
-              <MenuItem value="in_progress">
-                {t("objectives.status.inProgress", "In Progress")}
-              </MenuItem>
-              <MenuItem value="not_started">
-                {t("objectives.status.notStarted", "Not Started")}
-              </MenuItem>
-              <MenuItem value="achieved">
-                {t("objectives.status.achieved", "Achieved")}
-              </MenuItem>
-              <MenuItem value="overdue">
-                {t("objectives.status.overdue", "Overdue")}
-              </MenuItem>
-              <MenuItem value="failed">
-                {t("objectives.status.failed", "Failed")}
-              </MenuItem>
-            </Select>
-          </FormControl>
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mb: 1, display: "block" }}
+              >
+                {t("objectives.statusLabel", "Status")}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                {statusChipOptions.map((option) => {
+                  const selected = statusFilter === option.value;
+                  return (
+                    <Chip
+                      key={option.value}
+                      label={option.label}
+                      clickable
+                      variant={selected ? "filled" : "outlined"}
+                      color={selected ? "primary" : "default"}
+                      onClick={() => setStatusFilter(option.value)}
+                      sx={{
+                        borderRadius: "999px",
+                        px: 1.5,
+                        borderColor: selected ? "primary.main" : "grey.300",
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          </Stack>
         </Stack>
       </Paper>
 
