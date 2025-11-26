@@ -273,5 +273,19 @@ export class ActionPlansService {
             throw new Error(`Failed to delete note: ${error.message}`);
         }
     }
+
+    /**
+     * Delete an action plan (cascade will handle items and notes)
+     */
+    async deleteActionPlan(planId: string): Promise<void> {
+        const { error } = await this.supabase
+            .from("action_plans")
+            .delete()
+            .eq("id", planId);
+
+        if (error) {
+            throw new Error(`Failed to delete action plan: ${error.message}`);
+        }
+    }
 }
 

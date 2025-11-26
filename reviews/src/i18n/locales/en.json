@@ -651,6 +651,9 @@
     "featureSentiment": "Advanced sentiment analysis",
     "featureSupport": "Priority support"
   },
+  "companyHeader": {
+    "actionPlans": "Action Plans"
+  },
   "companyPage": {
     "seoTitle": "{{company}} - Review Analytics | Boresha",
     "seoDescription": "View detailed review analytics for {{company}}. Track sentiment, ratings, keywords, and customer feedback across all locations and platforms.",
@@ -986,6 +989,7 @@
     "anonymous": "Anonymous",
     "confirmDeleteNote": "Delete this note?",
     "filter": {
+      "title": "Filters",
       "sourceType": "Source Type",
       "allSources": "All Sources",
       "objective": "Objective",
@@ -996,11 +1000,39 @@
     "status": {
       "new": "New",
       "inProgress": "In Progress",
-      "completed": "Completed"
+      "completed": "Completed",
+      "notStarted": "Not Started",
+      "markAsNew": "Mark as Not Started",
+      "markInProgress": "Mark as In Progress",
+      "complete": "Mark as Completed",
+      "notStartedTooltip": "This action item has not been started yet",
+      "inProgressTooltip": "This action item is currently in progress",
+      "completedTooltip": "This action item has been completed"
     },
     "sourceType": {
       "objective": "Objective",
       "sentiment": "Sentiment"
-    }
+    },
+    "viewAll": "View All"
+  },
+  "actionPlansListPage": {
+    "title": "Action Plans",
+    "subtitle": "View and manage all your action plans",
+    "backToCompany": "Back to Company",
+    "noPlans": "No action plans found",
+    "noPlansDescription": "Action plans will appear here once generated from objectives or sentiment analysis.",
+    "deleteConfirmTitle": "Delete Action Plan",
+    "deleteConfirmMessage": "Are you sure you want to delete this action plan? This action cannot be undone.",
+    "deleting": "Deleting..."
+  },
+  "actionPlanDetailPage": {
+    "backToPlans": "Back to Action Plans",
+    "deletePlan": "Delete Plan",
+    "deleteConfirmTitle": "Delete Action Plan",
+    "deleteConfirmMessage": "Are you sure you want to delete this action plan? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "completeConfirmTitle": "Mark as Completed?",
+    "completeConfirmMessage": "Are you sure you want to mark this action item as completed?",
+    "complete": "Mark as Completed"
   }
 }

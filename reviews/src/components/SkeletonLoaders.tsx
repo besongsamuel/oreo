@@ -225,3 +225,74 @@ export const ImprovementsCardSkeleton = () => (
     </CardContent>
   </Card>
 );
+
+// Action Plan Card Skeleton (for list page)
+export const ActionPlanCardSkeleton = () => (
+  <Card variant="outlined" sx={{ borderRadius: "18px" }}>
+    <CardContent>
+      <Stack spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="flex-start">
+          <Skeleton variant="circular" width={40} height={40} />
+          <Box sx={{ flexGrow: 1 }}>
+            <Skeleton variant="text" width="70%" height={28} />
+            <Skeleton variant="text" width="90%" height={20} sx={{ mt: 1 }} />
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+              <Skeleton variant="rounded" width={100} height={24} />
+              <Skeleton variant="rounded" width={100} height={24} />
+              <Skeleton variant="text" width={100} height={20} />
+            </Stack>
+          </Box>
+        </Stack>
+      </Stack>
+    </CardContent>
+  </Card>
+);
+
+// Action Plan Detail Skeleton (for detail page)
+export const ActionPlanDetailSkeleton = () => (
+  <Stack spacing={3}>
+    <Stack direction="row" spacing={2} alignItems="center">
+      <Skeleton variant="rounded" width={120} height={40} />
+      <Box sx={{ flexGrow: 1 }}>
+        <Skeleton variant="text" width="60%" height={32} />
+        <Skeleton variant="text" width="80%" height={24} sx={{ mt: 1 }} />
+      </Box>
+    </Stack>
+
+    <Card variant="outlined" sx={{ borderRadius: "18px" }}>
+      <CardContent>
+        <Stack spacing={2}>
+          <Skeleton variant="text" width="40%" height={28} />
+          <Skeleton variant="text" width="100%" height={20} />
+          <Skeleton variant="text" width="95%" height={20} />
+          <Skeleton variant="text" width="90%" height={20} />
+          <Skeleton variant="text" width="85%" height={20} />
+        </Stack>
+      </CardContent>
+    </Card>
+
+    <Box>
+      <Skeleton variant="text" width="30%" height={28} />
+      <Stack spacing={2} sx={{ mt: 2 }}>
+        {[1, 2, 3].map((i) => (
+          <Card key={i} variant="outlined" sx={{ borderRadius: "12px" }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Skeleton variant="text" width="50%" height={24} />
+                  <Skeleton variant="rounded" width={140} height={36} />
+                </Stack>
+                <Skeleton variant="text" width="100%" height={20} />
+                <Skeleton variant="text" width="90%" height={20} />
+                <Box sx={{ mt: 1 }}>
+                  <Skeleton variant="text" width="20%" height={20} />
+                  <Skeleton variant="rectangular" width="100%" height={60} sx={{ mt: 1, borderRadius: "8px" }} />
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        ))}
+      </Stack>
+    </Box>
+  </Stack>
+);

@@ -1,3 +1,5 @@
+export { ActionPlanDetailPage } from "./ActionPlanDetailPage";
+export { ActionPlansListPage } from "./ActionPlansListPage";
 export { AddLocation } from "./AddLocation";
 export { AdminDashboard } from "./AdminDashboard";
 export { Companies } from "./Companies";

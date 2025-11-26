@@ -18,6 +18,8 @@ import {
   TermsOfUseFR,
   TransferOwnership,
 } from "./pages";
+import { ActionPlanDetailPage } from "./pages/ActionPlanDetailPage";
+import { ActionPlansListPage } from "./pages/ActionPlansListPage";
 import { CompanyPage } from "./pages/CompanyPage";
 // import { Dashboard } from "./pages/Dashboard";
 import { PlatformSelectionSuccess } from "./pages/PlatformSelectionSuccess";
@@ -137,6 +139,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <TransferOwnership />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies/:companyId/action_plans"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ActionPlansListPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/companies/:companyId/action_plans/:actionPlanId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ActionPlanDetailPage />
               </Layout>
             </ProtectedRoute>
           }

@@ -140,6 +140,23 @@ export const useActionPlans = (
         [service, fetchActionPlans],
     );
 
+    const deleteActionPlan = useCallback(
+        async (planId: string): Promise<void> => {
+            try {
+                await service.deleteActionPlan(planId);
+                // Refresh action plans to reflect deletion
+                await fetchActionPlans();
+            } catch (err) {
+                const error = err instanceof Error
+                    ? err
+                    : new Error(String(err));
+                setError(error);
+                throw error;
+            }
+        },
+        [service, fetchActionPlans],
+    );
+
     const refreshActionPlans = useCallback(() => {
         return fetchActionPlans();
     }, [fetchActionPlans]);
@@ -153,6 +170,7 @@ export const useActionPlans = (
         addNote,
         updateNote,
         deleteNote,
+        deleteActionPlan,
         refreshActionPlans,
     };
 };

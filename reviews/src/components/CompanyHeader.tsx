@@ -1,4 +1,5 @@
 import {
+  Assignment as AssignmentIcon,
   Business as BusinessIcon,
   CameraAlt as CameraIcon,
   Edit as EditIcon,
@@ -20,6 +21,7 @@ import {
 } from "@mui/material";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useSupabase } from "../hooks/useSupabase";
 
 interface CompanyDetails {
@@ -43,6 +45,7 @@ interface CompanyHeaderProps {
   onLogoUpdate?: (logoUrl: string) => void;
   onCompanyUpdate?: () => void;
   subscriptionTier?: string;
+  companyId?: string;
 }
 
 const getSubscriptionColor = (tier?: string) => {
@@ -61,8 +64,10 @@ export const CompanyHeader = ({
   onLogoUpdate,
   onCompanyUpdate,
   subscriptionTier,
+  companyId,
 }: CompanyHeaderProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const supabase = useSupabase();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -292,13 +297,26 @@ export const CompanyHeader = ({
             >
               {company.name}
             </Typography>
-            <IconButton
-              size="medium"
-              onClick={handleEditClick}
-              sx={{ color: "primary.main", ml: 2 }}
-            >
-              <EditIcon />
-            </IconButton>
+            <Stack direction="row" spacing={1}>
+              {companyId && (
+                <Button
+                  startIcon={<AssignmentIcon />}
+                  onClick={() => navigate(`/companies/${companyId}/action_plans`)}
+                  variant="outlined"
+                  size="small"
+                  sx={{ textTransform: "none" }}
+                >
+                  {t("companyHeader.actionPlans", "Action Plans")}
+                </Button>
+              )}
+              <IconButton
+                size="medium"
+                onClick={handleEditClick}
+                sx={{ color: "primary.main" }}
+              >
+                <EditIcon />
+              </IconButton>
+            </Stack>
           </Stack>
           <Stack
             direction="row"

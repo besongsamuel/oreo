@@ -1906,6 +1906,7 @@ export const CompanyPage = () => {
           {/* Company Header */}
           <CompanyHeader
             company={company}
+            companyId={companyId}
             onLogoUpdate={(logoUrl) => {
               setCompany({ ...company, logo_url: logoUrl });
             }}

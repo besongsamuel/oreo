@@ -35,6 +35,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useContext, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
 import { useActionPlans } from "../hooks/useActionPlans";
 import {
@@ -53,6 +54,7 @@ type StatusFilter = "all" | "new" | "in_progress" | "completed";
 
 export const ActionPlansCard = ({ companyId }: ActionPlansCardProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const context = useContext(UserContext);
@@ -256,15 +258,34 @@ export const ActionPlansCard = ({ companyId }: ActionPlansCardProps) => {
     <Stack spacing={3}>
       {/* Header */}
       <Box>
-        <Typography variant="h5" fontWeight={600} gutterBottom>
-          {t("actionPlans.title", "Action Plans")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t(
-            "actionPlans.subtitle",
-            "View and manage your action plans to improve your business"
-          )}
-        </Typography>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          sx={{ mb: 1 }}
+        >
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              {t("actionPlans.title", "Action Plans")}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t(
+                "actionPlans.subtitle",
+                "View and manage your action plans to improve your business"
+              )}
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            onClick={() => navigate(`/companies/${companyId}/action_plans`)}
+            sx={{
+              alignSelf: "flex-start",
+              textTransform: "none",
+            }}
+          >
+            {t("actionPlans.viewAll", "View All")}
+          </Button>
+        </Stack>
       </Box>
 
       {/* Filters */}
