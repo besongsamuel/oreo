@@ -23,6 +23,7 @@ import {
   DialogTitle,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -32,6 +33,8 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
+import { ActionPlanActivityTimeline } from "../components/ActionPlanActivityTimeline";
+import { ConfettiCelebration } from "../components/ConfettiCelebration";
 import { ActionPlanDetailSkeleton } from "../components/SkeletonLoaders";
 import {
   ActionPlan,
@@ -105,6 +108,8 @@ export const ActionPlanDetailPage = () => {
   const [noteText, setNoteText] = useState("");
   const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
   const [itemToComplete, setItemToComplete] = useState<ActionPlanItem | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchActionPlan = async () => {
@@ -163,6 +168,17 @@ export const ActionPlanDetailPage = () => {
     if (itemToComplete) {
       await handleStatusChange(itemToComplete.id, "completed");
       setCompleteConfirmOpen(false);
+      
+      // Trigger celebration
+      setShowConfetti(true);
+      setSuccessMessage(
+        t(
+          "actionPlanDetailPage.completionSuccess",
+          "🎉 Great job! You completed \"{{itemTitle}}\"!",
+          { itemTitle: itemToComplete.title }
+        )
+      );
+      
       setItemToComplete(null);
     }
   };
@@ -284,6 +300,35 @@ export const ActionPlanDetailPage = () => {
     return grouped;
   };
 
+  // Calculate completion percentage
+  const completionPercentage = useMemo(() => {
+    if (!actionPlan?.items || actionPlan.items.length === 0) return 0;
+    const completed = actionPlan.items.filter((item) => item.status === "completed").length;
+    return Math.round((completed / actionPlan.items.length) * 100);
+  }, [actionPlan?.items]);
+
+  // Check if entire plan is completed
+  const isPlanCompleted = useMemo(() => {
+    if (!actionPlan?.items || actionPlan.items.length === 0) return false;
+    return actionPlan.items.every((item) => item.status === "completed");
+  }, [actionPlan?.items]);
+
+  // Show celebration when plan is fully completed
+  useEffect(() => {
+    if (isPlanCompleted && actionPlan?.items && actionPlan.items.length > 0) {
+      const allCompleted = actionPlan.items.every((item) => item.status === "completed");
+      if (allCompleted && actionPlan.items.length > 0) {
+        setShowConfetti(true);
+        setSuccessMessage(
+          t(
+            "actionPlanDetailPage.planCompletedSuccess",
+            "🎉 Amazing! You've completed the entire action plan!"
+          )
+        );
+      }
+    }
+  }, [isPlanCompleted, actionPlan?.items, t]);
+
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
@@ -306,8 +351,30 @@ export const ActionPlanDetailPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
-      <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
+    <>
+      <ConfettiCelebration
+        trigger={showConfetti}
+        duration={3000}
+        onComplete={() => setShowConfetti(false)}
+      />
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        message={successMessage}
+        sx={{
+          "& .MuiSnackbarContent-root": {
+            backgroundColor: "success.main",
+            color: "white",
+            fontSize: "1rem",
+            fontWeight: 500,
+            borderRadius: "12px",
+          },
+        }}
+      />
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+        <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
         {/* Back Button and Delete */}
         <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
           <Button
@@ -346,7 +413,7 @@ export const ActionPlanDetailPage = () => {
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                     {actionPlan.description}
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" gap={1} alignItems="center">
                     <Chip
                       label={t(
                         `actionPlans.sourceType.${actionPlan.source_type}`,
@@ -361,6 +428,29 @@ export const ActionPlanDetailPage = () => {
                       color={getStatusColor(actionPlan.status) as any}
                       icon={getStatusIcon(actionPlan.status)}
                     />
+                    {/* Progress Indicator */}
+                    {actionPlan.items && actionPlan.items.length > 0 && (
+                      <Box sx={{ ml: "auto" }}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="body2" color="text.secondary">
+                            {t("actionPlansListPage.progress", "Progress")}:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
+                            color={`${
+                              completionPercentage >= 80
+                                ? "success"
+                                : completionPercentage >= 50
+                                ? "warning"
+                                : "error"
+                            }.main`}
+                          >
+                            {completionPercentage}%
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    )}
                     <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
                       {new Date(actionPlan.created_at).toLocaleDateString()}
                     </Typography>
@@ -647,6 +737,9 @@ export const ActionPlanDetailPage = () => {
           </Box>
         )}
 
+        {/* Activity Timeline */}
+        <ActionPlanActivityTimeline actionPlan={actionPlan} maxItems={10} />
+
         {/* Delete Confirmation Dialog */}
         <Dialog
           open={deleteDialogOpen}
@@ -781,9 +874,10 @@ export const ActionPlanDetailPage = () => {
               {t("common.save", "Save")}
             </Button>
           </DialogActions>
-        </Dialog>
-      </Stack>
-    </Container>
+          </Dialog>
+        </Stack>
+      </Container>
+    </>
   );
 };
 

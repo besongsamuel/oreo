@@ -14,6 +14,9 @@ export interface ActionPlan {
     created_at: string;
     updated_at: string;
     items?: ActionPlanItem[];
+    total_items?: number;
+    completed_items?: number;
+    in_progress_items?: number;
 }
 
 export interface ActionPlanItem {
@@ -71,13 +74,61 @@ export class ActionPlansService {
             query = query.eq("status", filters.status);
         }
 
-        const { data, error } = await query;
+        const { data: plans, error } = await query;
 
         if (error) {
             throw new Error(`Failed to fetch action plans: ${error.message}`);
         }
 
-        return (data || []) as ActionPlan[];
+        if (!plans || plans.length === 0) {
+            return [];
+        }
+
+        const planIds = plans.map((p) => p.id);
+
+        // Fetch item counts for all plans in one query
+        const { data: itemCounts, error: countsError } = await this.supabase
+            .from("action_plan_items")
+            .select("action_plan_id, status")
+            .in("action_plan_id", planIds);
+
+        if (countsError) {
+            console.error("Error fetching item counts:", countsError);
+        }
+
+        // Calculate counts per plan
+        const countsByPlan: Record<
+            string,
+            { total: number; completed: number; in_progress: number }
+        > = {};
+
+        planIds.forEach((planId) => {
+            countsByPlan[planId] = { total: 0, completed: 0, in_progress: 0 };
+        });
+
+        if (itemCounts) {
+            itemCounts.forEach((item) => {
+                const planId = item.action_plan_id;
+                if (countsByPlan[planId]) {
+                    countsByPlan[planId].total++;
+                    if (item.status === "completed") {
+                        countsByPlan[planId].completed++;
+                    } else if (item.status === "in_progress") {
+                        countsByPlan[planId].in_progress++;
+                    }
+                }
+            });
+        }
+
+        // Merge counts into plans
+        const plansWithCounts = plans.map((plan) => ({
+            ...plan,
+            total_items: countsByPlan[plan.id]?.total || 0,
+            completed_items: countsByPlan[plan.id]?.completed || 0,
+            in_progress_items: countsByPlan[plan.id]?.in_progress || 0,
+        }));
+
+        return plansWithCounts as ActionPlan[];
     }
 
     /**

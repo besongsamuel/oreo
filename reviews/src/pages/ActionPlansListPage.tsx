@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
   Dialog,
   DialogActions,
@@ -20,6 +21,7 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  LinearProgress,
   Paper,
   Stack,
   Typography,
@@ -29,6 +31,7 @@ import { useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import { ActionPlanStatsDashboard } from "../components/ActionPlanStatsDashboard";
 import { EmptyActionPlanIllustration } from "../components/illustrations/ActionPlanIllustrations";
 import { ActionPlanCardSkeleton } from "../components/SkeletonLoaders";
 import { useActionPlans } from "../hooks/useActionPlans";
@@ -122,6 +125,17 @@ export const ActionPlansListPage = () => {
     }
   };
 
+  const calculateProgress = (plan: ActionPlan): number => {
+    if (!plan.total_items || plan.total_items === 0) return 0;
+    return Math.round((plan.completed_items || 0) / plan.total_items * 100);
+  };
+
+  const getProgressColor = (percentage: number): "success" | "warning" | "error" => {
+    if (percentage >= 80) return "success";
+    if (percentage >= 50) return "warning";
+    return "error";
+  };
+
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
@@ -175,6 +189,9 @@ export const ActionPlansListPage = () => {
             {t("actionPlansListPage.subtitle", "View and manage all your action plans")}
           </Typography>
         </Box>
+
+        {/* Statistics Dashboard */}
+        <ActionPlanStatsDashboard actionPlans={actionPlans} loading={loading} />
 
         {/* Filters */}
         <Paper variant="outlined" sx={{ p: 2, borderRadius: "18px" }}>
@@ -388,6 +405,54 @@ export const ActionPlansListPage = () => {
                           icon={getStatusIcon(plan.status)}
                         />
                       </Stack>
+
+                      {/* Progress Indicator */}
+                      {plan.total_items !== undefined && plan.total_items > 0 && (
+                        <Box>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            sx={{ mb: 0.5 }}
+                          >
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontWeight={500}
+                            >
+                              {t("actionPlansListPage.progress", "Progress")}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              fontWeight={600}
+                              color={`${getProgressColor(calculateProgress(plan))}.main`}
+                            >
+                              {calculateProgress(plan)}%
+                            </Typography>
+                          </Stack>
+                          <LinearProgress
+                            variant="determinate"
+                            value={calculateProgress(plan)}
+                            color={getProgressColor(calculateProgress(plan))}
+                            sx={{
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: "grey.200",
+                              "& .MuiLinearProgress-bar": {
+                                borderRadius: 4,
+                              },
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 0.5, display: "block" }}
+                          >
+                            {plan.completed_items || 0} / {plan.total_items}{" "}
+                            {t("actionPlansListPage.itemsCompleted", "items completed")}
+                          </Typography>
+                        </Box>
+                      )}
 
                       <Typography
                         variant="caption"

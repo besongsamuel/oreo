@@ -1014,7 +1014,7 @@
       "objective": "Objective",
       "sentiment": "Sentiment"
     },
-    "viewAll": "View All"
+    "viewAll": "Go to Action Plans"
   },
   "actionPlansListPage": {
     "title": "Action Plans",
@@ -1024,7 +1024,15 @@
     "noPlansDescription": "Action plans will appear here once generated from objectives or sentiment analysis.",
     "deleteConfirmTitle": "Delete Action Plan",
     "deleteConfirmMessage": "Are you sure you want to delete this action plan? This action cannot be undone.",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "progress": "Progress",
+    "itemsCompleted": "items completed"
+  },
+  "actionPlansStats": {
+    "totalPlans": "Total Action Plans",
+    "completionRate": "Completion Rate",
+    "activePlans": "Active Plans",
+    "itemsCompleted": "Items Completed"
   },
   "actionPlanDetailPage": {
     "backToPlans": "Back to Action Plans",
@@ -1034,6 +1042,21 @@
     "deleting": "Deleting...",
     "completeConfirmTitle": "Mark as Completed?",
     "completeConfirmMessage": "Are you sure you want to mark this action item as completed?",
-    "complete": "Mark as Completed"
+    "complete": "Mark as Completed",
+    "completionSuccess": "🎉 Great job! You completed \"{{itemTitle}}\"!",
+    "planCompletedSuccess": "🎉 Amazing! You've completed the entire action plan!"
+  },
+  "activity": {
+    "recentActivity": "Recent Activity",
+    "noActivity": "No recent activity. Start working on your action items to see progress here!",
+    "completed": "Completed: {{itemTitle}}",
+    "started": "Started: {{itemTitle}}",
+    "noteAdded": "Added note to: {{itemTitle}}",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minute{{plural}} ago",
+    "hoursAgo": "{{count}} hour{{plural}} ago",
+    "daysAgo": "{{count}} day{{plural}} ago",
+    "weeksAgo": "{{count}} week{{plural}} ago",
+    "monthsAgo": "{{count}} month{{plural}} ago"
   }
 }
