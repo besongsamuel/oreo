@@ -1,5 +1,6 @@
 import {
   ArrowForward as ArrowForwardIcon,
+  Assignment as AssignmentIcon,
   Business as BusinessIcon,
   Edit as EditIcon,
   LocationOn as LocationIcon,
@@ -17,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 interface CompaniesCompanyCardProps {
   companyId: string;
@@ -50,6 +52,11 @@ export const CompaniesCompanyCard = ({
   onViewDetails,
 }: CompaniesCompanyCardProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleViewActionPlans = () => {
+    navigate(`/companies/${companyId}/action_plans`);
+  };
 
   return (
     <Box sx={{ height: "100%" }}>
@@ -228,23 +235,47 @@ export const CompaniesCompanyCard = ({
 
             {/* Bottom Section */}
             <Divider sx={{ my: 0 }} />
-            <Button
-              variant="text"
-              endIcon={<ArrowForwardIcon />}
-              onClick={onViewDetails}
-              sx={{
-                justifyContent: "flex-end",
-                textTransform: "none",
-                fontWeight: 500,
-                width: "100%",
-                px: 0,
-                "&:hover": {
-                  backgroundColor: "transparent",
-                },
-              }}
+            <Stack
+              direction="row"
+              spacing={1}
+              justifyContent="space-between"
+              sx={{ mt: 1 }}
             >
-              {t("companies.viewDetails")}
-            </Button>
+              <Button
+                variant="text"
+                startIcon={<AssignmentIcon />}
+                onClick={handleViewActionPlans}
+                sx={{
+                  justifyContent: "flex-start",
+                  textTransform: "none",
+                  fontWeight: 500,
+                  px: 0,
+                  flex: 1,
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                {t("companies.viewActionPlans", "View Action Plans")}
+              </Button>
+              <Button
+                variant="text"
+                endIcon={<ArrowForwardIcon />}
+                onClick={onViewDetails}
+                sx={{
+                  justifyContent: "flex-end",
+                  textTransform: "none",
+                  fontWeight: 500,
+                  px: 0,
+                  flex: 1,
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                {t("companies.viewDetails")}
+              </Button>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
