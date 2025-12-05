@@ -67,6 +67,7 @@ export const KeywordTopicSelector = ({
   const { t } = useTranslation();
   const [autocompleteValue, setAutocompleteValue] =
     useState<UnifiedOption | null>(null);
+  const [inputValue, setInputValue] = useState("");
 
   // Use all enriched reviews (filtering will be done by parent component with timespan)
   const filteredReviews = enrichedReviews;
@@ -261,8 +262,9 @@ export const KeywordTopicSelector = ({
       onTopicRatingChange(option.id, Math.min(option.current_rating + 0.5, 5));
     }
 
-    // Clear autocomplete
+    // Clear autocomplete and input
     setAutocompleteValue(null);
+    setInputValue("");
   };
 
   const handleRemoveItem = (item: UnifiedOption & { targetRating: number }) => {
@@ -321,6 +323,10 @@ export const KeywordTopicSelector = ({
 
             <Autocomplete
               value={autocompleteValue}
+              inputValue={inputValue}
+              onInputChange={(_, newInputValue) => {
+                setInputValue(newInputValue);
+              }}
               onChange={(_, newValue) => {
                 setAutocompleteValue(newValue);
                 if (newValue) {
