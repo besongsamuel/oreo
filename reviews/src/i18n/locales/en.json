@@ -1025,6 +1025,7 @@
       "sentiment": "Sentiment"
     },
     "viewAll": "Go to Action Plans",
+    "viewDetails": "View Details",
     "addItem": "Add Item",
     "editItem": "Edit Item",
     "deleteItem": "Delete Item",
