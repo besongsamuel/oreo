@@ -910,6 +910,7 @@
     "noObjectives": "Aucun objectif pour le moment",
     "noObjectivesFound": "Aucun objectif trouvé",
     "total": "Total",
+    "howItWorks": "Créez un objectif et appliquez-le à différentes périodes (année et trimestre comme Q1, Q2, Q3, Q4, ou toute l'année).",
     "keywords": "Mots-clés",
     "keywordsDescription": "Sélectionnez jusqu'à {{max}} mots-clés ({{selected}}/{{max}} sélectionnés)",
     "topics": "Sujets",
@@ -918,6 +919,14 @@
     "searchTopics": "Rechercher des sujets...",
     "noKeywords": "Aucun mot-clé disponible",
     "noTopics": "Aucun sujet disponible",
+    "selectKeywordOrTopic": "Sélectionner un mot-clé ou un sujet",
+    "selectDescription": "Sélectionnez jusqu'à {{max}} mots-clés ou sujets ({{selected}}/{{max}} sélectionnés)",
+    "searchKeywordOrTopic": "Rechercher des mots-clés ou des sujets...",
+    "maxSelectionsReached": "Maximum de 5 sélections atteint",
+    "selectedItems": "Éléments sélectionnés",
+    "typeKeyword": "Mot-clé",
+    "typeTopic": "Sujet",
+    "noItemsSelected": "Aucun élément sélectionné. Utilisez le menu déroulant ci-dessus pour ajouter des mots-clés ou des sujets.",
     "steps": {
       "general": "Général",
       "targets": "Cibles"

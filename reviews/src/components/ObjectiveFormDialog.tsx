@@ -232,6 +232,13 @@ export const ObjectiveFormDialog = ({
 
           {activeStep === 0 && (
             <Stack spacing={3}>
+              <Typography variant="body2" color="text.secondary">
+                {t(
+                  "objectives.howItWorks",
+                  "Create one objective and apply it to different periods (year and quarter like Q1, Q2, Q3, Q4, or All Year)."
+                )}
+              </Typography>
+
               <TextField
                 label={t("objectives.name", "Name")}
                 value={name}

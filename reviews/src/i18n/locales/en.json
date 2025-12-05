@@ -915,6 +915,7 @@
     "noObjectives": "No objectives yet",
     "noObjectivesFound": "No objectives found",
     "total": "Total",
+    "howItWorks": "Create one objective and apply it to different periods (year and quarter like Q1, Q2, Q3, Q4, or All Year).",
     "keywords": "Keywords",
     "keywordsDescription": "Select up to {{max}} keywords ({{selected}}/{{max}} selected)",
     "topics": "Topics",
@@ -923,6 +924,14 @@
     "searchTopics": "Search topics...",
     "noKeywords": "No keywords available",
     "noTopics": "No topics available",
+    "selectKeywordOrTopic": "Select Keyword or Topic",
+    "selectDescription": "Select up to {{max}} keywords or topics ({{selected}}/{{max}} selected)",
+    "searchKeywordOrTopic": "Search keywords or topics...",
+    "maxSelectionsReached": "Maximum 5 selections reached",
+    "selectedItems": "Selected Items",
+    "typeKeyword": "Keyword",
+    "typeTopic": "Topic",
+    "noItemsSelected": "No items selected. Use the dropdown above to add keywords or topics.",
     "steps": {
       "general": "General",
       "targets": "Targets"
