@@ -27,6 +27,7 @@ export interface ActionPlanItem {
     description: string;
     status: "new" | "in_progress" | "completed";
     order_index: number;
+    generation_type: "ai" | "manual";
     created_at: string;
     updated_at: string;
     notes?: ActionPlanItemNote[];
@@ -58,7 +59,7 @@ export class ActionPlansService {
      */
     async getActionPlans(
         companyId: string,
-        filters?: ActionPlanFilters
+        filters?: ActionPlanFilters,
     ): Promise<ActionPlan[]> {
         let query = this.supabase
             .from("action_plans")
@@ -146,7 +147,9 @@ export class ActionPlansService {
             if (planError.code === "PGRST116") {
                 return null; // Not found
             }
-            throw new Error(`Failed to fetch action plan: ${planError.message}`);
+            throw new Error(
+                `Failed to fetch action plan: ${planError.message}`,
+            );
         }
 
         // Fetch items
@@ -158,7 +161,9 @@ export class ActionPlansService {
             .order("order_index", { ascending: true });
 
         if (itemsError) {
-            throw new Error(`Failed to fetch action plan items: ${itemsError.message}`);
+            throw new Error(
+                `Failed to fetch action plan items: ${itemsError.message}`,
+            );
         }
 
         // Fetch notes for all items
@@ -181,11 +186,14 @@ export class ActionPlansService {
                     new Set(
                         (notesData || [])
                             .map((n) => n.created_by)
-                            .filter((id): id is string => id !== null)
-                    )
+                            .filter((id): id is string => id !== null),
+                    ),
                 );
 
-                let profilesMap: Record<string, { full_name: string | null; email: string }> = {};
+                let profilesMap: Record<
+                    string,
+                    { full_name: string | null; email: string }
+                > = {};
                 if (userIds.length > 0) {
                     const { data: profilesData } = await this.supabase
                         .from("profiles")
@@ -201,16 +209,20 @@ export class ActionPlansService {
                                 };
                                 return acc;
                             },
-                            {} as Record<string, { full_name: string | null; email: string }>
+                            {} as Record<
+                                string,
+                                { full_name: string | null; email: string }
+                            >,
                         );
                     }
                 }
 
                 notes = (notesData || []).map((note) => ({
                     ...note,
-                    created_by_profile: note.created_by && profilesMap[note.created_by]
-                        ? profilesMap[note.created_by]
-                        : undefined,
+                    created_by_profile:
+                        note.created_by && profilesMap[note.created_by]
+                            ? profilesMap[note.created_by]
+                            : undefined,
                 })) as ActionPlanItemNote[];
             }
         }
@@ -232,7 +244,7 @@ export class ActionPlansService {
      */
     async updateActionPlanItemStatus(
         itemId: string,
-        status: "new" | "in_progress" | "completed"
+        status: "new" | "in_progress" | "completed",
     ): Promise<void> {
         const { error } = await this.supabase
             .from("action_plan_items")
@@ -241,7 +253,7 @@ export class ActionPlansService {
 
         if (error) {
             throw new Error(
-                `Failed to update action plan item status: ${error.message}`
+                `Failed to update action plan item status: ${error.message}`,
             );
         }
     }
@@ -252,7 +264,7 @@ export class ActionPlansService {
     async addActionPlanItemNote(
         itemId: string,
         note: string,
-        userId: string
+        userId: string,
     ): Promise<ActionPlanItemNote> {
         const { data, error } = await this.supabase
             .from("action_plan_item_notes")
@@ -269,7 +281,9 @@ export class ActionPlansService {
         }
 
         // Fetch profile data
-        let created_by_profile: { full_name: string | null; email: string } | undefined;
+        let created_by_profile:
+            | { full_name: string | null; email: string }
+            | undefined;
         if (data.created_by) {
             const { data: profileData } = await this.supabase
                 .from("profiles")
@@ -296,7 +310,7 @@ export class ActionPlansService {
      */
     async updateActionPlanItemNote(
         noteId: string,
-        note: string
+        note: string,
     ): Promise<void> {
         const { error } = await this.supabase
             .from("action_plan_item_notes")
@@ -338,5 +352,97 @@ export class ActionPlansService {
             throw new Error(`Failed to delete action plan: ${error.message}`);
         }
     }
-}
 
+    /**
+     * Create a new action plan item
+     */
+    async createActionPlanItem(
+        actionPlanId: string,
+        topic: string,
+        title: string,
+        description: string,
+    ): Promise<ActionPlanItem> {
+        // Get max order_index for this topic in this action plan
+        const { data: existingItems, error: queryError } = await this.supabase
+            .from("action_plan_items")
+            .select("order_index")
+            .eq("action_plan_id", actionPlanId)
+            .eq("topic", topic)
+            .order("order_index", { ascending: false })
+            .limit(1);
+
+        if (queryError) {
+            throw new Error(
+                `Failed to query existing items: ${queryError.message}`,
+            );
+        }
+
+        const maxOrderIndex = existingItems && existingItems.length > 0
+            ? existingItems[0].order_index
+            : -1;
+        const newOrderIndex = maxOrderIndex + 1;
+
+        const { data, error } = await this.supabase
+            .from("action_plan_items")
+            .insert({
+                action_plan_id: actionPlanId,
+                topic,
+                title,
+                description,
+                order_index: newOrderIndex,
+                generation_type: "manual",
+            })
+            .select("*")
+            .single();
+
+        if (error) {
+            throw new Error(
+                `Failed to create action plan item: ${error.message}`,
+            );
+        }
+
+        return data as ActionPlanItem;
+    }
+
+    /**
+     * Update an action plan item
+     */
+    async updateActionPlanItem(
+        itemId: string,
+        topic: string,
+        title: string,
+        description: string,
+    ): Promise<void> {
+        const { error } = await this.supabase
+            .from("action_plan_items")
+            .update({
+                topic,
+                title,
+                description,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", itemId);
+
+        if (error) {
+            throw new Error(
+                `Failed to update action plan item: ${error.message}`,
+            );
+        }
+    }
+
+    /**
+     * Delete an action plan item (cascade will handle notes)
+     */
+    async deleteActionPlanItem(itemId: string): Promise<void> {
+        const { error } = await this.supabase
+            .from("action_plan_items")
+            .delete()
+            .eq("id", itemId);
+
+        if (error) {
+            throw new Error(
+                `Failed to delete action plan item: ${error.message}`,
+            );
+        }
+    }
+}

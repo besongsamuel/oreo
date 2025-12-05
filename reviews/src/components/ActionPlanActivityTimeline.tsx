@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionPlan, ActionPlanItem, ActionPlanItemNote } from "../services/actionPlansService";
+import { ActionPlan } from "../services/actionPlansService";
 
 interface ActionPlanActivityTimelineProps {
   actionPlan: ActionPlan;
@@ -69,7 +69,10 @@ export const ActionPlanActivityTimeline = ({
     });
 
     // Sort by timestamp (newest first)
-    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    events.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     return events.slice(0, maxItems);
   }, [actionPlan.items, maxItems]);
@@ -147,23 +150,17 @@ export const ActionPlanActivityTimeline = ({
   const getActivityMessage = (activity: ActivityEvent) => {
     switch (activity.type) {
       case "completed":
-        return t(
-          "activity.completed",
-          "Completed: {{itemTitle}}",
-          { itemTitle: activity.itemTitle }
-        );
+        return t("activity.completed", "Completed: {{itemTitle}}", {
+          itemTitle: activity.itemTitle,
+        });
       case "started":
-        return t(
-          "activity.started",
-          "Started: {{itemTitle}}",
-          { itemTitle: activity.itemTitle }
-        );
+        return t("activity.started", "Started: {{itemTitle}}", {
+          itemTitle: activity.itemTitle,
+        });
       case "note_added":
-        return t(
-          "activity.noteAdded",
-          "Added note to: {{itemTitle}}",
-          { itemTitle: activity.itemTitle }
-        );
+        return t("activity.noteAdded", "Added note to: {{itemTitle}}", {
+          itemTitle: activity.itemTitle,
+        });
     }
   };
 
@@ -173,7 +170,11 @@ export const ActionPlanActivityTimeline = ({
         <CardContent>
           <Stack spacing={2} alignItems="center" sx={{ py: 3 }}>
             <TimelineIcon sx={{ fontSize: 48, color: "text.disabled" }} />
-            <Typography variant="body1" color="text.secondary" textAlign="center">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              textAlign="center"
+            >
               {t(
                 "activity.noActivity",
                 "No recent activity. Start working on your action items to see progress here!"
@@ -255,4 +256,3 @@ export const ActionPlanActivityTimeline = ({
     </Card>
   );
 };
-

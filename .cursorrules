@@ -247,3 +247,86 @@ supabase migration new add_french_localization_to_features
 - **Version Control**: Tracks migration order correctly
 - **Best Practice**: Aligns with Supabase documentation and tooling
 - **Error Prevention**: Avoids duplicate timestamps or naming conflicts
+
+## Code Cleanup (REQUIRED)
+
+### Remove Unused Code After Edits (REQUIRED)
+
+**ALWAYS delete unused variables, methods, functions, components, and imports after completing edits.**
+
+#### Implementation Requirements:
+
+1. **Remove Unused Variables**: Delete any variables that are declared but never used
+2. **Remove Unused Methods/Functions**: Delete any functions or methods that are defined but never called
+3. **Remove Unused Components**: Delete any React components that are created but never rendered or imported
+4. **Remove Unused Imports**: Delete any import statements for modules, types, or functions that are no longer used
+5. **Remove Unused Type Definitions**: Delete any TypeScript interfaces, types, or enums that are no longer referenced
+6. **Clean Up After Refactoring**: When refactoring code, ensure all old/unused code paths are removed
+
+#### When to Clean Up:
+
+- **After every edit session**: Before finishing, review the modified files for unused code
+- **After refactoring**: When changing implementation, remove old code that's no longer needed
+- **After feature completion**: When a feature is done, remove any temporary or unused code
+- **Before committing**: Ensure no unused code is left in the codebase
+
+#### How to Identify Unused Code:
+
+1. **TypeScript/ESLint warnings**: Pay attention to compiler warnings about unused variables
+2. **IDE indicators**: Most IDEs highlight unused imports and variables
+3. **Manual review**: Check if variables/functions are referenced anywhere
+4. **Search the codebase**: Use grep/search to verify if code is used elsewhere
+
+#### Example Pattern:
+
+```tsx
+// ❌ BAD - Unused code left in file
+import { useState, useEffect, useCallback } from 'react'; // useEffect unused
+import { Button, Card, Typography, Box } from '@mui/material'; // Box unused
+
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+  const [unusedState, setUnusedState] = useState(''); // Unused state
+  const unusedVariable = 'test'; // Unused variable
+
+  const unusedFunction = () => { // Unused function
+    console.log('never called');
+  };
+
+  return (
+    <Card>
+      <Typography>{count}</Typography>
+      <Button onClick={() => setCount(count + 1)}>Increment</Button>
+    </Card>
+  );
+};
+
+// ✅ GOOD - Clean code with only what's used
+import { useState } from 'react';
+import { Button, Card, Typography } from '@mui/material';
+
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+
+  return (
+    <Card>
+      <Typography>{count}</Typography>
+      <Button onClick={() => setCount(count + 1)}>Increment</Button>
+    </Card>
+  );
+};
+```
+
+#### Benefits:
+
+- **Cleaner Codebase**: Easier to read and maintain
+- **Reduced Bundle Size**: Unused imports and code increase bundle size
+- **Better Performance**: Less code to parse and execute
+- **Easier Debugging**: Less clutter makes finding issues easier
+- **Professional Standards**: Production code should be clean and minimal
+
+#### Exceptions:
+
+- **Commented-out code for reference**: Can be kept temporarily if explicitly needed for context
+- **Code marked with TODO/FIXME**: Keep if it's intentional future work
+- **Exported functions/components**: If exported, they may be used externally (verify before removing)

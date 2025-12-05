@@ -55,7 +55,8 @@
     "language": "Langue",
     "english": "Anglais",
     "french": "Français",
-    "pricing": "Tarification"
+    "pricing": "Tarification",
+    "saving": "Enregistrement..."
   },
   "auth": {
     "welcome": "Bienvenue",
@@ -1000,6 +1001,51 @@
     "sourceType": {
       "objective": "Objectif",
       "sentiment": "Sentiment"
-    }
+    },
+    "addItem": "Ajouter un élément",
+    "editItem": "Modifier l'élément",
+    "deleteItem": "Supprimer l'élément",
+    "itemTitle": "Titre",
+    "itemDescription": "Description",
+    "itemTopic": "Sujet",
+    "itemTitlePlaceholder": "Entrez le titre de l'élément",
+    "itemDescriptionPlaceholder": "Entrez la description de l'élément",
+    "itemTopicPlaceholder": "Entrez le nom du sujet (ex. : Service client)",
+    "deleteItemConfirm": "Êtes-vous sûr de vouloir supprimer cet élément d'action ?",
+    "itemTitleRequired": "Le titre est requis",
+    "itemDescriptionRequired": "La description est requise",
+    "itemTopicRequired": "Le sujet est requis",
+    "itemTitleMinLength": "Le titre doit contenir au moins 3 caractères",
+    "itemDescriptionMinLength": "La description doit contenir au moins 10 caractères",
+    "saveItemError": "Échec de l'enregistrement de l'élément. Veuillez réessayer.",
+    "deleteItemError": "Échec de la suppression de l'élément. Veuillez réessayer.",
+    "noItems": "Aucun élément d'action pour le moment. Cliquez sur 'Ajouter un élément' pour en créer un."
+  },
+  "actionPlansListPage": {
+    "title": "Plans d'action",
+    "subtitle": "Consultez et gérez tous vos plans d'action",
+    "backToCompany": "Retour à l'entreprise",
+    "noPlans": "Aucun plan d'action trouvé",
+    "noPlansDescription": "Les plans d'action apparaîtront ici une fois générés à partir d'objectifs ou d'analyses de sentiment.",
+    "noPlansMatch": "Aucun plan d'action ne correspond à votre recherche",
+    "noPlansMatchDescription": "Essayez d'ajuster votre recherche ou vos filtres pour voir plus de résultats.",
+    "deleteConfirmTitle": "Supprimer le plan d'action",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer ce plan d'action ? Cette action ne peut pas être annulée.",
+    "deleting": "Suppression...",
+    "progress": "Progression",
+    "itemsCompleted": "éléments terminés"
+  },
+  "actionPlanDetailPage": {
+    "backToPlans": "Retour aux plans d'action",
+    "deletePlan": "Supprimer le plan",
+    "deleteConfirmTitle": "Supprimer le plan d'action",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer ce plan d'action ? Cette action ne peut pas être annulée.",
+    "deleting": "Suppression...",
+    "completeConfirmTitle": "Marquer comme terminé ?",
+    "completeConfirmMessage": "Êtes-vous sûr de vouloir marquer cet élément d'action comme terminé ?",
+    "complete": "Marquer comme terminé",
+    "completionSuccess": "🎉 Excellent travail ! Vous avez terminé \"{{itemTitle}}\" !",
+    "planCompletedSuccess": "🎉 Incroyable ! Vous avez terminé tout le plan d'action !",
+    "markdownPlan": "Aperçu du plan"
   }
 }

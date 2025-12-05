@@ -204,11 +204,11 @@ Each analysis object MUST include:
 3. score: number from 1-100 (1=very negative, 50=neutral, 100=very positive)
 4. emotions: array of emoticons representing emotions (optional)
 5. keywords: array of objects with:
-   - text: the keyword/phrase (MUST be 1-2 words maximum, generate in ${languageName})
+   - text: the keyword (MUST be exactly ONE word, generate in ${languageName})
    - category: one of "service", "food", "ambiance", "price", "quality", "cleanliness", "staff", "other"
    - relevance: number from 0-1 indicating importance
 6. topics: array of objects with:
-   - name: brief topic name (MUST be 1-2 words maximum, generate in ${languageName})
+   - name: brief topic name (MUST be 2-3 words, generate in ${languageName})
    - category: one of "satisfaction", "dissatisfaction", "neutral"
    - description: brief description (generate in ${languageName})
    - relevance: number from 0-1
@@ -216,6 +216,8 @@ Each analysis object MUST include:
 IMPORTANT: 
 - Return ONLY a JSON array with exactly ${reviewsWithContent.length} objects
 - Each object MUST have the reviewId field matching the ID from the input
+- Keywords MUST be exactly ONE word (single word only, no phrases)
+- Topics MUST be 2-3 words (to differentiate from keywords)
 - All keywords, topics, and descriptions MUST be in ${languageName}
 - Format: [{"reviewId": "xxx", "sentiment": "positive", ...}, ...]`,
                     },

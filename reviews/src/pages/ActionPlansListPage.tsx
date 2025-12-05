@@ -1,29 +1,24 @@
 import {
   ArrowBack as ArrowBackIcon,
-  Assignment as AssignmentIcon,
-  CheckCircle as CheckCircleIcon,
-  Circle as CircleIcon,
-  Delete as DeleteIcon,
   FilterList as FilterListIcon,
-  PlayCircle as PlayCircleIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   Grid,
-  IconButton,
-  LinearProgress,
+  InputAdornment,
+  MenuItem,
   Paper,
+  Select,
   Stack,
+  TextField,
   Typography,
   useMediaQuery,
 } from "@mui/material";
@@ -31,6 +26,7 @@ import { useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import { ActionPlanCard } from "../components/ActionPlanCard";
 import { ActionPlanStatsDashboard } from "../components/ActionPlanStatsDashboard";
 import { EmptyActionPlanIllustration } from "../components/illustrations/ActionPlanIllustrations";
 import { ActionPlanCardSkeleton } from "../components/SkeletonLoaders";
@@ -50,6 +46,7 @@ export const ActionPlansListPage = () => {
   const [sourceTypeFilter, setSourceTypeFilter] =
     useState<SourceTypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -68,11 +65,23 @@ export const ActionPlansListPage = () => {
     return f;
   }, [sourceTypeFilter, statusFilter]);
 
-  const {
-    actionPlans,
-    loading,
-    deleteActionPlan,
-  } = useActionPlans(companyId, filters);
+  const { actionPlans, loading, deleteActionPlan } = useActionPlans(
+    companyId,
+    filters
+  );
+
+  // Filter action plans by search query
+  const filteredActionPlans = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return actionPlans;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return actionPlans.filter(
+      (plan) =>
+        plan.name.toLowerCase().includes(query) ||
+        plan.description.toLowerCase().includes(query)
+    );
+  }, [actionPlans, searchQuery]);
 
   const handleDeleteClick = (plan: ActionPlan) => {
     setPlanToDelete(plan);
@@ -103,42 +112,12 @@ export const ActionPlansListPage = () => {
     navigate(`/companies/${companyId}/action_plans/${planId}`);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircleIcon sx={{ color: "success.main", fontSize: 16 }} />;
-      case "in_progress":
-        return <PlayCircleIcon sx={{ color: "warning.main", fontSize: 16 }} />;
-      default:
-        return <CircleIcon sx={{ color: "text.disabled", fontSize: 16 }} />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "success";
-      case "in_progress":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  const calculateProgress = (plan: ActionPlan): number => {
-    if (!plan.total_items || plan.total_items === 0) return 0;
-    return Math.round((plan.completed_items || 0) / plan.total_items * 100);
-  };
-
-  const getProgressColor = (percentage: number): "success" | "warning" | "error" => {
-    if (percentage >= 80) return "success";
-    if (percentage >= 50) return "warning";
-    return "error";
-  };
-
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+      >
         <Stack spacing={3}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -152,7 +131,10 @@ export const ActionPlansListPage = () => {
               {t("actionPlansListPage.title", "Action Plans")}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {t("actionPlansListPage.subtitle", "View and manage all your action plans")}
+              {t(
+                "actionPlansListPage.subtitle",
+                "View and manage all your action plans"
+              )}
             </Typography>
           </Box>
           <Stack spacing={2}>
@@ -166,7 +148,10 @@ export const ActionPlansListPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+    <Container
+      maxWidth="xl"
+      sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}
+    >
       <Stack spacing={{ xs: 2, sm: 3, md: 4 }}>
         {/* Back Button */}
         <Button
@@ -186,19 +171,26 @@ export const ActionPlansListPage = () => {
             {t("actionPlansListPage.title", "Action Plans")}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {t("actionPlansListPage.subtitle", "View and manage all your action plans")}
+            {t(
+              "actionPlansListPage.subtitle",
+              "View and manage all your action plans"
+            )}
           </Typography>
         </Box>
 
         {/* Statistics Dashboard */}
         <ActionPlanStatsDashboard actionPlans={actionPlans} loading={loading} />
 
-        {/* Filters */}
+        {/* Search and Filters */}
         <Paper variant="outlined" sx={{ p: 2, borderRadius: "18px" }}>
           <Stack spacing={2}>
             <Stack direction="row" spacing={1} alignItems="center">
               <FilterListIcon sx={{ color: "text.secondary" }} />
-              <Typography variant="body2" fontWeight={600} color="text.secondary">
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                color="text.secondary"
+              >
                 {t("actionPlans.filter.title", "Filters")}
               </Typography>
             </Stack>
@@ -207,82 +199,76 @@ export const ActionPlansListPage = () => {
               spacing={2}
               alignItems={isMobile ? "flex-start" : "center"}
             >
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
-                  {t("actionPlans.filter.sourceType", "Source Type")}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                  <Chip
-                    label={t("actionPlans.filter.allSources", "All Sources")}
-                    onClick={() => setSourceTypeFilter("all")}
-                    color={sourceTypeFilter === "all" ? "primary" : "default"}
-                    variant={sourceTypeFilter === "all" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                  <Chip
-                    label={t("actionPlans.filter.objective", "Objective")}
-                    onClick={() => setSourceTypeFilter("objective")}
-                    color={sourceTypeFilter === "objective" ? "primary" : "default"}
-                    variant={sourceTypeFilter === "objective" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                  <Chip
-                    label={t("actionPlans.filter.sentiment", "Sentiment")}
-                    onClick={() => setSourceTypeFilter("sentiment")}
-                    color={sourceTypeFilter === "sentiment" ? "primary" : "default"}
-                    variant={sourceTypeFilter === "sentiment" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                </Stack>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
-                  {t("actionPlans.filter.status", "Status")}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                  <Chip
-                    label={t("actionPlans.filter.allStatuses", "All Statuses")}
-                    onClick={() => setStatusFilter("all")}
-                    color={statusFilter === "all" ? "primary" : "default"}
-                    variant={statusFilter === "all" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                  <Chip
-                    label={t("actionPlans.status.new", "New")}
-                    onClick={() => setStatusFilter("new")}
-                    color={statusFilter === "new" ? "primary" : "default"}
-                    variant={statusFilter === "new" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                  <Chip
-                    label={t("actionPlans.status.inProgress", "In Progress")}
-                    onClick={() => setStatusFilter("in_progress")}
-                    color={statusFilter === "in_progress" ? "warning" : "default"}
-                    variant={statusFilter === "in_progress" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                  <Chip
-                    label={t("actionPlans.status.completed", "Completed")}
-                    onClick={() => setStatusFilter("completed")}
-                    color={statusFilter === "completed" ? "success" : "default"}
-                    variant={statusFilter === "completed" ? "filled" : "outlined"}
-                    clickable
-                    size="small"
-                  />
-                </Stack>
-              </Box>
+              <TextField
+                fullWidth={isMobile}
+                size="small"
+                placeholder={t("common.search", "Search")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  minWidth: isMobile ? "100%" : 250,
+                }}
+              />
+              <FormControl
+                size="small"
+                sx={{ minWidth: isMobile ? "100%" : 180 }}
+              >
+                <Select
+                  value={sourceTypeFilter}
+                  onChange={(e) =>
+                    setSourceTypeFilter(e.target.value as SourceTypeFilter)
+                  }
+                  displayEmpty
+                >
+                  <MenuItem value="all">
+                    {t("actionPlans.filter.allSources", "All Sources")}
+                  </MenuItem>
+                  <MenuItem value="objective">
+                    {t("actionPlans.filter.objective", "Objective")}
+                  </MenuItem>
+                  <MenuItem value="sentiment">
+                    {t("actionPlans.filter.sentiment", "Sentiment")}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl
+                size="small"
+                sx={{ minWidth: isMobile ? "100%" : 180 }}
+              >
+                <Select
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as StatusFilter)
+                  }
+                  displayEmpty
+                >
+                  <MenuItem value="all">
+                    {t("actionPlans.filter.allStatuses", "All Statuses")}
+                  </MenuItem>
+                  <MenuItem value="new">
+                    {t("actionPlans.status.new", "New")}
+                  </MenuItem>
+                  <MenuItem value="in_progress">
+                    {t("actionPlans.status.inProgress", "In Progress")}
+                  </MenuItem>
+                  <MenuItem value="completed">
+                    {t("actionPlans.status.completed", "Completed")}
+                  </MenuItem>
+                </Select>
+              </FormControl>
             </Stack>
           </Stack>
         </Paper>
 
         {/* Action Plans List */}
-        {actionPlans.length === 0 ? (
+        {filteredActionPlans.length === 0 ? (
           <Paper
             variant="outlined"
             sx={{
@@ -292,178 +278,38 @@ export const ActionPlansListPage = () => {
               borderColor: "grey.300",
             }}
           >
-            <EmptyActionPlanIllustration sx={{ mb: 3, color: "text.disabled" }} />
+            <EmptyActionPlanIllustration
+              sx={{ mb: 3, color: "text.disabled" }}
+            />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              {t("actionPlansListPage.noPlans", "No action plans found")}
+              {searchQuery.trim()
+                ? t(
+                    "actionPlansListPage.noPlansMatch",
+                    "No action plans match your search"
+                  )
+                : t("actionPlansListPage.noPlans", "No action plans found")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t(
-                "actionPlansListPage.noPlansDescription",
-                "Action plans will appear here once generated from objectives or sentiment analysis."
-              )}
+              {searchQuery.trim()
+                ? t(
+                    "actionPlansListPage.noPlansMatchDescription",
+                    "Try adjusting your search or filters to see more results."
+                  )
+                : t(
+                    "actionPlansListPage.noPlansDescription",
+                    "Action plans will appear here once generated from objectives or sentiment analysis."
+                  )}
             </Typography>
           </Paper>
         ) : (
           <Grid container spacing={3}>
-            {actionPlans.map((plan) => (
+            {filteredActionPlans.map((plan) => (
               <Grid size={{ xs: 12, sm: 6, md: 4 }} key={plan.id}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "18px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    "&:hover": {
-                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-                      transform: "translateY(-2px)",
-                    },
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  onClick={(e) => {
-                    // Don't navigate if clicking delete button
-                    if ((e.target as HTMLElement).closest("button")) {
-                      return;
-                    }
-                    handleCardClick(plan.id);
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                    <Stack spacing={2}>
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                        justifyContent="space-between"
-                      >
-                        <AssignmentIcon
-                          sx={{
-                            color: "primary.main",
-                            fontSize: 32,
-                            mt: 0.5,
-                          }}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(plan);
-                          }}
-                          sx={{
-                            color: "error.main",
-                            "&:hover": {
-                              backgroundColor: "error.light",
-                              color: "error.dark",
-                            },
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-
-                      <Box>
-                        <Typography variant="h6" fontWeight={600} gutterBottom>
-                          {plan.name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            mb: 2,
-                          }}
-                        >
-                          {plan.description}
-                        </Typography>
-                      </Box>
-
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        flexWrap="wrap"
-                        gap={1}
-                      >
-                        <Chip
-                          label={t(
-                            `actionPlans.sourceType.${plan.source_type}`,
-                            plan.source_type
-                          )}
-                          size="small"
-                          variant="outlined"
-                        />
-                        <Chip
-                          label={t(
-                            `actionPlans.status.${plan.status}`,
-                            plan.status
-                          )}
-                          size="small"
-                          color={getStatusColor(plan.status) as any}
-                          icon={getStatusIcon(plan.status)}
-                        />
-                      </Stack>
-
-                      {/* Progress Indicator */}
-                      {plan.total_items !== undefined && plan.total_items > 0 && (
-                        <Box>
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            sx={{ mb: 0.5 }}
-                          >
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              fontWeight={500}
-                            >
-                              {t("actionPlansListPage.progress", "Progress")}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              fontWeight={600}
-                              color={`${getProgressColor(calculateProgress(plan))}.main`}
-                            >
-                              {calculateProgress(plan)}%
-                            </Typography>
-                          </Stack>
-                          <LinearProgress
-                            variant="determinate"
-                            value={calculateProgress(plan)}
-                            color={getProgressColor(calculateProgress(plan))}
-                            sx={{
-                              height: 8,
-                              borderRadius: 4,
-                              backgroundColor: "grey.200",
-                              "& .MuiLinearProgress-bar": {
-                                borderRadius: 4,
-                              },
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mt: 0.5, display: "block" }}
-                          >
-                            {plan.completed_items || 0} / {plan.total_items}{" "}
-                            {t("actionPlansListPage.itemsCompleted", "items completed")}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: "auto" }}
-                      >
-                        {new Date(plan.created_at).toLocaleDateString()}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
+                <ActionPlanCard
+                  plan={plan}
+                  onCardClick={handleCardClick}
+                  onDeleteClick={handleDeleteClick}
+                />
               </Grid>
             ))}
           </Grid>
@@ -487,7 +333,9 @@ export const ActionPlansListPage = () => {
               )}
             </Typography>
             {planToDelete && (
-              <Box sx={{ mt: 2, p: 2, bgcolor: "grey.50", borderRadius: "8px" }}>
+              <Box
+                sx={{ mt: 2, p: 2, bgcolor: "grey.50", borderRadius: "8px" }}
+              >
                 <Typography variant="subtitle2" fontWeight={600}>
                   {planToDelete.name}
                 </Typography>
@@ -517,4 +365,3 @@ export const ActionPlansListPage = () => {
     </Container>
   );
 };
-

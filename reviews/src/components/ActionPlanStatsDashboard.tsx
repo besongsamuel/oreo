@@ -1,7 +1,7 @@
 import {
   Assignment as AssignmentIcon,
   CheckCircle as CheckCircleIcon,
-  PlayCircle as PlayCircleIcon,
+  HourglassEmpty as HourglassEmptyIcon,
   TrendingUp as TrendingUpIcon,
 } from "@mui/icons-material";
 import { Box, Card, CardContent, Grid, Stack, Typography } from "@mui/material";
@@ -134,7 +134,7 @@ export const ActionPlanStatsDashboard = ({
         "Active Plans"
       ),
       value: stats.activePlans,
-      icon: <PlayCircleIcon />,
+      icon: <HourglassEmptyIcon />,
       color: "warning",
     },
     {

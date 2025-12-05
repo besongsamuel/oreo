@@ -55,7 +55,8 @@
     "language": "Language",
     "english": "English",
     "french": "French",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "saving": "Saving..."
   },
   "auth": {
     "welcome": "Welcome",
@@ -1014,7 +1015,25 @@
       "objective": "Objective",
       "sentiment": "Sentiment"
     },
-    "viewAll": "Go to Action Plans"
+    "viewAll": "Go to Action Plans",
+    "addItem": "Add Item",
+    "editItem": "Edit Item",
+    "deleteItem": "Delete Item",
+    "itemTitle": "Title",
+    "itemDescription": "Description",
+    "itemTopic": "Topic",
+    "itemTitlePlaceholder": "Enter item title",
+    "itemDescriptionPlaceholder": "Enter item description",
+    "itemTopicPlaceholder": "Enter topic name (e.g., Customer Service)",
+    "deleteItemConfirm": "Are you sure you want to delete this action item?",
+    "itemTitleRequired": "Title is required",
+    "itemDescriptionRequired": "Description is required",
+    "itemTopicRequired": "Topic is required",
+    "itemTitleMinLength": "Title must be at least 3 characters",
+    "itemDescriptionMinLength": "Description must be at least 10 characters",
+    "saveItemError": "Failed to save item. Please try again.",
+    "deleteItemError": "Failed to delete item. Please try again.",
+    "noItems": "No action items yet. Click 'Add Item' to create one."
   },
   "actionPlansListPage": {
     "title": "Action Plans",
@@ -1022,6 +1041,8 @@
     "backToCompany": "Back to Company",
     "noPlans": "No action plans found",
     "noPlansDescription": "Action plans will appear here once generated from objectives or sentiment analysis.",
+    "noPlansMatch": "No action plans match your search",
+    "noPlansMatchDescription": "Try adjusting your search or filters to see more results.",
     "deleteConfirmTitle": "Delete Action Plan",
     "deleteConfirmMessage": "Are you sure you want to delete this action plan? This action cannot be undone.",
     "deleting": "Deleting...",
@@ -1044,7 +1065,8 @@
     "completeConfirmMessage": "Are you sure you want to mark this action item as completed?",
     "complete": "Mark as Completed",
     "completionSuccess": "🎉 Great job! You completed \"{{itemTitle}}\"!",
-    "planCompletedSuccess": "🎉 Amazing! You've completed the entire action plan!"
+    "planCompletedSuccess": "🎉 Amazing! You've completed the entire action plan!",
+    "markdownPlan": "Plan Overview"
   },
   "activity": {
     "recentActivity": "Recent Activity",

@@ -33,3 +33,4 @@ CREATE INDEX IF NOT EXISTS idx_supported_platforms_is_active ON supported_platfo
 
 
 
+

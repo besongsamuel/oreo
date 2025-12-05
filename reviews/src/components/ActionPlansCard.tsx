@@ -5,8 +5,8 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   FilterList as FilterListIcon,
+  HourglassEmpty as HourglassEmptyIcon,
   Note as NoteIcon,
-  PlayCircle as PlayCircleIcon,
 } from "@mui/icons-material";
 import {
   Accordion,
@@ -210,7 +210,7 @@ export const ActionPlansCard = ({ companyId }: ActionPlansCardProps) => {
       case "completed":
         return <CheckCircleIcon sx={{ color: "success.main" }} />;
       case "in_progress":
-        return <PlayCircleIcon sx={{ color: "warning.main" }} />;
+        return <HourglassEmptyIcon sx={{ color: "warning.main" }} />;
       default:
         return <CircleIcon sx={{ color: "text.disabled" }} />;
     }
