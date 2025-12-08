@@ -1,4 +1,5 @@
 import {
+  ArrowForward as ArrowForwardIcon,
   ContentCopy as ContentCopyIcon,
   Lightbulb as LightbulbIcon,
   SentimentDissatisfied as NegativeIcon,
@@ -30,7 +31,9 @@ import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
+import { useActionPlans } from "../hooks/useActionPlans";
 import { useSupabase } from "../hooks/useSupabase";
 import { ActionPlanFilterModal } from "./ActionPlanFilterModal";
 
@@ -94,6 +97,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   selectedTopic,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const supabase = useSupabase();
   const context = useContext(UserContext);
   const profile = context?.profile;
@@ -116,6 +120,10 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
   const [latestRun, setLatestRun] = useState<SentimentAnalysisRun | null>(null);
   const [runStatusLoading, setRunStatusLoading] = useState(false);
   const lastRunStatusRef = useRef<SentimentRunStatus | null>(null);
+
+  // Fetch sentiment-generated action plans
+  const { actionPlans: sentimentActionPlans, loading: loadingSentimentPlans } =
+    useActionPlans(companyId, { source_type: "sentiment" });
 
   const loadUnprocessedCount = useCallback(async () => {
     if (!companyId) {
@@ -452,7 +460,10 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
     html = html.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
 
     // Wrap consecutive list items in ul tags
-    html = html.replace(/(<li>.*<\/li>\n?)+/gim, (match) => `<ul>${match}</ul>`);
+    html = html.replace(
+      /(<li>.*<\/li>\n?)+/gim,
+      (match) => `<ul>${match}</ul>`
+    );
 
     // Paragraphs (lines that aren't already wrapped)
     html = html
@@ -736,6 +747,152 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({
             </Stack>
           </CardContent>
         </Card>
+
+        {/* Sentiment Action Plans */}
+        {companyId && sentimentActionPlans.length > 0 && (
+          <Card variant="outlined" sx={{ borderRadius: "18px" }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 3,
+                        height: 16,
+                        bgcolor: "primary.main",
+                        borderRadius: 1.5,
+                        opacity: 0.6,
+                      }}
+                    />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {t(
+                        "sentimentAnalysis.actionPlans",
+                        "Sentiment Action Plans"
+                      )}
+                    </Typography>
+                  </Stack>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    endIcon={<ArrowForwardIcon />}
+                    onClick={() =>
+                      navigate(`/companies/${companyId}/action_plans`)
+                    }
+                    sx={{
+                      borderRadius: "980px",
+                      textTransform: "none",
+                    }}
+                  >
+                    {t("sentimentAnalysis.viewAllPlans", "View All Plans")}
+                  </Button>
+                </Stack>
+
+                {loadingSentimentPlans ? (
+                  <Stack spacing={1}>
+                    <Skeleton variant="text" width="100%" height={24} />
+                    <Skeleton variant="text" width="90%" height={24} />
+                  </Stack>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {sentimentActionPlans.slice(0, 3).map((plan) => (
+                      <Paper
+                        key={plan.id}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: "12px",
+                          borderColor: "grey.300",
+                          bgcolor: "grey.50",
+                          "&:hover": {
+                            bgcolor: "grey.100",
+                            cursor: "pointer",
+                          },
+                        }}
+                        onClick={() =>
+                          navigate(
+                            `/companies/${companyId}/action_plans/${plan.id}`
+                          )
+                        }
+                      >
+                        <Stack spacing={1}>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            justifyContent="space-between"
+                          >
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {plan.name}
+                            </Typography>
+                            <Chip
+                              label={t(
+                                `actionPlans.status.${plan.status}`,
+                                plan.status
+                              )}
+                              size="small"
+                              color={
+                                plan.status === "completed"
+                                  ? "success"
+                                  : plan.status === "in_progress"
+                                  ? "warning"
+                                  : "default"
+                              }
+                            />
+                          </Stack>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {plan.description}
+                          </Typography>
+                          {plan.total_items !== undefined && (
+                            <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {t("actionPlansListPage.progress", "Progress")}:{" "}
+                                {plan.completed_items || 0} / {plan.total_items}{" "}
+                                {t(
+                                  "actionPlansListPage.itemsCompleted",
+                                  "items completed"
+                                )}
+                              </Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </Paper>
+                    ))}
+                    {sentimentActionPlans.length > 3 && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ textAlign: "center", mt: 1 }}
+                      >
+                        {t(
+                          "sentimentAnalysis.morePlansAvailable",
+                          "{{count}} more plan(s) available",
+                          { count: sentimentActionPlans.length - 3 }
+                        )}
+                      </Typography>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Plan Button */}
         {companyId && (

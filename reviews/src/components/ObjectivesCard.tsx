@@ -778,6 +778,7 @@ export const ObjectivesCard = ({
           loading={enrichedReviewsLoading}
           year={year}
           timespan={timespan}
+          companyId={companyId}
         />
       )}
 

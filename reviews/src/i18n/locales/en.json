@@ -351,6 +351,9 @@
     "failedGenerate": "Failed to generate action plan. Please try again.",
     "errorGenerating": "Error generating action plan. Please try again.",
     "actionPlanSaved": "Action plan has been saved. You can manage this action plan and track progress from the Action Plans menu.",
+    "actionPlans": "Sentiment Action Plans",
+    "viewAllPlans": "View All Plans",
+    "morePlansAvailable": "{{count}} more plan(s) available",
     "filterLabels": {
       "location": "Location:",
       "from": "From:",
@@ -984,6 +987,7 @@
       "noPlan": "No action plan generated yet. Click the button above to generate one.",
       "generatedAt": "Generated",
       "noFailedReviews": "No failed reviews found for this objective. Cannot generate action plan.",
+      "viewAll": "View All Plans",
       "generationError": "Failed to generate action plan"
     }
   },

@@ -423,6 +423,9 @@
     "failedGenerate": "Échec de la génération du plan d'action. Veuillez réessayer.",
     "errorGenerating": "Erreur lors de la génération du plan d'action. Veuillez réessayer.",
     "actionPlanSaved": "Le plan d'action a été enregistré. Vous pouvez gérer ce plan d'action et suivre la progression depuis le menu Plans d'action.",
+    "actionPlans": "Plans d'action de sentiment",
+    "viewAllPlans": "Voir tous les plans",
+    "morePlansAvailable": "{{count}} plan(s) supplémentaire(s) disponible(s)",
     "filterLabels": {
       "location": "Emplacement :",
       "from": "Du :",
@@ -979,6 +982,7 @@
       "noPlan": "Aucun plan d'action généré pour le moment. Cliquez sur le bouton ci-dessus pour en générer un.",
       "generatedAt": "Généré",
       "noFailedReviews": "Aucun avis échoué trouvé pour cet objectif. Impossible de générer un plan d'action.",
+      "viewAll": "Voir tous les plans",
       "generationError": "Échec de la génération du plan d'action"
     }
   },

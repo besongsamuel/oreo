@@ -1,4 +1,7 @@
-import { Lightbulb as LightbulbIcon } from "@mui/icons-material";
+import {
+  ArrowForward as ArrowForwardIcon,
+  Lightbulb as LightbulbIcon,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -12,6 +15,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useSupabase } from "../hooks/useSupabase";
 import { Objective, ObjectivesService } from "../services/objectivesService";
 import {
@@ -51,6 +55,7 @@ interface ObjectiveProgressChartProps {
   loading?: boolean;
   year: number;
   timespan: Timespan;
+  companyId?: string;
 }
 
 export const ObjectiveProgressChart = ({
@@ -59,8 +64,10 @@ export const ObjectiveProgressChart = ({
   loading = false,
   year,
   timespan,
+  companyId,
 }: ObjectiveProgressChartProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const supabase = useSupabase();
   const objectivesService = useMemo(
     () => new ObjectivesService(supabase),
@@ -652,8 +659,8 @@ export const ObjectiveProgressChart = ({
                   </Box>
                 )}
 
-                {/* Action Plan Section */}
-                {detail.objective.status === "failed" && (
+                {/* Action Plan Section - Show if objective has action plans */}
+                {actionPlans[detail.objective.id] && (
                   <Box sx={{ mt: 3 }}>
                     <Stack
                       direction="row"
@@ -667,7 +674,7 @@ export const ObjectiveProgressChart = ({
                           sx={{
                             width: 3,
                             height: 16,
-                            bgcolor: "error.main",
+                            bgcolor: "primary.main",
                             borderRadius: 1.5,
                             opacity: 0.6,
                           }}
@@ -676,20 +683,20 @@ export const ObjectiveProgressChart = ({
                           {t("objectives.actionPlan.title", "Action Plan")}
                         </Typography>
                       </Stack>
-                      {!actionPlans[detail.objective.id] && (
+                      {companyId && (
                         <Button
                           size="small"
-                          variant="contained"
-                          startIcon={<LightbulbIcon />}
+                          variant="outlined"
+                          endIcon={<ArrowForwardIcon />}
                           onClick={() =>
-                            handleGenerateActionPlan(detail.objective)
+                            navigate(`/companies/${companyId}/action_plans`)
                           }
                           sx={{
                             borderRadius: "980px",
                             textTransform: "none",
                           }}
                         >
-                          {t("objectives.actionPlan.generate", "Generate Plan")}
+                          {t("objectives.actionPlan.viewAll", "View All Plans")}
                         </Button>
                       )}
                     </Stack>
@@ -700,7 +707,7 @@ export const ObjectiveProgressChart = ({
                         <Skeleton variant="text" width="90%" height={24} />
                         <Skeleton variant="text" width="95%" height={24} />
                       </Stack>
-                    ) : actionPlans[detail.objective.id] ? (
+                    ) : (
                       <Paper
                         variant="outlined"
                         sx={{
@@ -759,7 +766,51 @@ export const ObjectiveProgressChart = ({
                           ).toLocaleDateString()}
                         </Typography>
                       </Paper>
-                    ) : (
+                    )}
+                  </Box>
+                )}
+
+                {/* Generate Action Plan Section - Only show for failed objectives without plans */}
+                {detail.objective.status === "failed" &&
+                  !actionPlans[detail.objective.id] && (
+                    <Box sx={{ mt: 3 }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ mb: 2 }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 3,
+                              height: 16,
+                              bgcolor: "error.main",
+                              borderRadius: 1.5,
+                              opacity: 0.6,
+                            }}
+                          />
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {t("objectives.actionPlan.title", "Action Plan")}
+                          </Typography>
+                        </Stack>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={<LightbulbIcon />}
+                          onClick={() =>
+                            handleGenerateActionPlan(detail.objective)
+                          }
+                          sx={{
+                            borderRadius: "980px",
+                            textTransform: "none",
+                          }}
+                        >
+                          {t("objectives.actionPlan.generate", "Generate Plan")}
+                        </Button>
+                      </Stack>
+
                       <Paper
                         variant="outlined"
                         sx={{
@@ -777,9 +828,8 @@ export const ObjectiveProgressChart = ({
                           )}
                         </Typography>
                       </Paper>
-                    )}
-                  </Box>
-                )}
+                    </Box>
+                  )}
               </Stack>
             </Box>
           ))}
