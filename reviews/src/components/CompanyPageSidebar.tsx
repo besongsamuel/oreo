@@ -1,11 +1,10 @@
 import {
   Analytics as AnalyticsIcon,
-  Assignment as ActionPlansIcon,
-  Dashboard as OverviewIcon,
   LocationOn as LocationOnIcon,
+  TrackChanges as ObjectivesIcon,
+  Dashboard as OverviewIcon,
   RateReview as ReviewsIcon,
   Settings as SettingsIcon,
-  TrackChanges as ObjectivesIcon,
 } from "@mui/icons-material";
 import {
   Box,
@@ -24,7 +23,6 @@ export type CompanyPageSection =
   | "reviews"
   | "analytics"
   | "objectives"
-  | "actionPlans"
   | "locations"
   | "settings";
 
@@ -70,11 +68,6 @@ export const CompanyPageSidebar = ({
       id: "objectives",
       labelKey: "companyPage.sidebar.objectives",
       icon: <ObjectivesIcon />,
-    },
-    {
-      id: "actionPlans",
-      labelKey: "companyPage.sidebar.actionPlans",
-      icon: <ActionPlansIcon />,
     },
     {
       id: "locations",
@@ -242,4 +235,3 @@ export const CompanyPageSidebar = ({
     </Paper>
   );
 };
-

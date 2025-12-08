@@ -37,7 +37,6 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ActionPlansCard,
   AverageRatingCard,
   CompanyHeader,
   CompanyPageSection,
@@ -2979,10 +2978,6 @@ export const CompanyPage = () => {
                     await deleteObjective(objectiveId);
                   }}
                 />
-              )}
-
-              {activeSection === "actionPlans" && companyId && (
-                <ActionPlansCard companyId={companyId} />
               )}
 
               {activeSection === "locations" && companyId && (
