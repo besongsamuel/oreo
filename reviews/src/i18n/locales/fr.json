@@ -137,11 +137,13 @@
     "add": "Ajouter",
     "noCompaniesYet": "Aucune entreprise pour le moment",
     "addFirstCompany": "Ajoutez votre première entreprise pour commencer à analyser les avis",
-    "location": "emplacement",
-    "locations": "emplacements",
-    "review": "avis",
+    "singleLocation": "emplacement",
+    "multipleLocations": "emplacements",
+    "singleReview": "avis",
+    "multipleReviews": "avis",
     "reviews": "avis",
     "viewDetails": "Voir les détails",
+    "viewActionPlans": "Voir les plans d'action",
     "myCompanies": "Mes entreprises",
     "otherCompanies": "Autres entreprises",
     "noCompaniesYetAdmin": "Vous n'avez pas encore d'entreprises",
@@ -1009,7 +1011,14 @@
     "status": {
       "new": "Nouveau",
       "inProgress": "En cours",
-      "completed": "Terminé"
+      "completed": "Terminé",
+      "notStarted": "Non débuté",
+      "markAsNew": "Marquer comme non débuté",
+      "markInProgress": "Marquer comme en cours",
+      "complete": "Marquer comme terminé",
+      "notStartedTooltip": "Cet élément d'action n'a pas encore été commencé",
+      "inProgressTooltip": "Cet élément d'action est actuellement en cours",
+      "completedTooltip": "Cet élément d'action a été terminé"
     },
     "sourceType": {
       "objective": "Objectif",
@@ -1061,5 +1070,24 @@
     "completionSuccess": "🎉 Excellent travail ! Vous avez terminé \"{{itemTitle}}\" !",
     "planCompletedSuccess": "🎉 Incroyable ! Vous avez terminé tout le plan d'action !",
     "markdownPlan": "Aperçu du plan"
+  },
+  "actionPlansStats": {
+    "totalPlans": "Total des plans d'action",
+    "completionRate": "Taux de réalisation",
+    "activePlans": "Plans actifs",
+    "itemsCompleted": "Éléments terminés"
+  },
+  "activity": {
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité récente. Commencez à travailler sur vos éléments d'action pour voir la progression ici !",
+    "completed": "Terminé : {{itemTitle}}",
+    "started": "Commencé : {{itemTitle}}",
+    "noteAdded": "Note ajoutée à : {{itemTitle}}",
+    "justNow": "À l'instant",
+    "minutesAgo": "Il y a {{count}} minute{{plural}}",
+    "hoursAgo": "Il y a {{count}} heure{{plural}}",
+    "daysAgo": "Il y a {{count}} jour{{plural}}",
+    "weeksAgo": "Il y a {{count}} semaine{{plural}}",
+    "monthsAgo": "Il y a {{count}} mois"
   }
 }
