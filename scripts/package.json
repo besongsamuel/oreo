@@ -5,7 +5,8 @@
   "main": "fetch-platform-logos.js",
   "type": "commonjs",
   "scripts": {
-    "fetch-logos": "node fetch-platform-logos.js"
+    "fetch-logos": "node fetch-platform-logos.js",
+    "sync-templates": "node sync-email-templates.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
@@ -14,4 +15,3 @@
     "dotenv": "^16.0.0"
   }
 }
-
