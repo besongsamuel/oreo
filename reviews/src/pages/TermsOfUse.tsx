@@ -221,7 +221,7 @@ export const TermsOfUse = () => {
             </Typography>
             <Typography variant="body1" paragraph>
               If you have any questions about these Terms of Use, please contact
-              us at legal@boresha.com or through our support channels.
+              us at legal@boresha.ca or through our support channels.
             </Typography>
           </Box>
         </Stack>

@@ -224,7 +224,7 @@ export const TermsOfUseFR = () => {
             </Typography>
             <Typography variant="body1" paragraph>
               Si vous avez des questions concernant ces conditions
-              d'utilisation, veuillez nous contacter à legal@boresha.com ou par
+              d'utilisation, veuillez nous contacter à legal@boresha.ca ou par
               nos canaux d'assistance.
             </Typography>
           </Box>

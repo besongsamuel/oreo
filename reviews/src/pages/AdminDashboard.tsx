@@ -1,14 +1,18 @@
 import {
   ArrowForward as ArrowForwardIcon,
+  Email as EmailIcon,
   People as PeopleIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
 import {
+  Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
   InputAdornment,
   Paper,
@@ -25,8 +29,14 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import { UserContext } from "../context/UserContext";
+import { useSupabase } from "../hooks/useSupabase";
 import { useTrial } from "../hooks/useTrial";
-import { AdminUser, fetchAllUsers } from "../services/adminService";
+import {
+  AdminUser,
+  CompanyWithStats,
+  fetchAllCompanies,
+  fetchAllUsers,
+} from "../services/adminService";
 import { getFormattedPlanName } from "../utils/planNames";
 
 export const AdminDashboard = () => {
@@ -35,12 +45,38 @@ export const AdminDashboard = () => {
   const profile = context?.profile;
   const isAdmin = context?.isAdmin;
   const { startTrial, loading: trialLoading } = useTrial();
+  const supabase = useSupabase();
 
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // Email trigger state
+  const [companies, setCompanies] = useState<
+    Array<CompanyWithStats & { owner_email: string; owner_name: string | null }>
+  >([]);
+  const [selectedCompany, setSelectedCompany] = useState<
+    | (CompanyWithStats & { owner_email: string; owner_name: string | null })
+    | null
+  >(null);
+  const [emailTargetDate, setEmailTargetDate] = useState<string>("");
+  const [emailRecipientOverride, setEmailRecipientOverride] =
+    useState<string>("");
+  const [triggeringWeekly, setTriggeringWeekly] = useState(false);
+  const [triggeringMonthly, setTriggeringMonthly] = useState(false);
+  const [emailResult, setEmailResult] = useState<{
+    type: "weekly" | "monthly" | null;
+    success: boolean;
+    message: string;
+    results?: {
+      sent: number;
+      skipped: number;
+      failed: number;
+    };
+    errors?: string[];
+  } | null>(null);
 
   useEffect(() => {
     if (!profile) {
@@ -55,6 +91,7 @@ export const AdminDashboard = () => {
     }
 
     fetchUsers();
+    fetchCompanies();
   }, [profile, isAdmin, navigate]);
 
   useEffect(() => {
@@ -67,9 +104,8 @@ export const AdminDashboard = () => {
     const filtered = users.filter((user) => {
       const planLabel = getFormattedPlanName(
         user.subscription_plan_name,
-        user.subscription_plan_display_name,
-      )
-        .toLowerCase();
+        user.subscription_plan_display_name
+      ).toLowerCase();
 
       return (
         user.email?.toLowerCase().includes(query) ||
@@ -94,6 +130,16 @@ export const AdminDashboard = () => {
       setError(err.message || "Failed to load users");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const data = await fetchAllCompanies();
+      setCompanies(data);
+    } catch (err: any) {
+      console.error("Error fetching companies:", err);
+      // Don't set error state - this is not critical for the main page
     }
   };
 
@@ -122,6 +168,124 @@ export const AdminDashboard = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Initialize target date to today
+  useEffect(() => {
+    const today = new Date();
+    setEmailTargetDate(today.toISOString().split("T")[0]);
+  }, []);
+
+  const handleTriggerWeeklyDigest = async () => {
+    if (!emailTargetDate) {
+      setEmailResult({
+        type: "weekly",
+        success: false,
+        message: "Please select a target date",
+      });
+      return;
+    }
+
+    setTriggeringWeekly(true);
+    setEmailResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "send-weekly-digest",
+        {
+          body: {
+            trigger: "manual",
+            targetDate: emailTargetDate,
+            companyId: selectedCompany?.id || undefined,
+            recipientOverride: emailRecipientOverride || undefined,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setEmailResult({
+          type: "weekly",
+          success: true,
+          message: data.message || "Weekly digest triggered successfully",
+          results: data.results,
+          errors: data.errors,
+        });
+      } else {
+        setEmailResult({
+          type: "weekly",
+          success: false,
+          message: data?.error || "Failed to trigger weekly digest",
+          errors: data?.errors,
+        });
+      }
+    } catch (err: any) {
+      console.error("Error triggering weekly digest:", err);
+      setEmailResult({
+        type: "weekly",
+        success: false,
+        message: err.message || "Failed to trigger weekly digest",
+      });
+    } finally {
+      setTriggeringWeekly(false);
+    }
+  };
+
+  const handleTriggerMonthlyReport = async () => {
+    if (!emailTargetDate) {
+      setEmailResult({
+        type: "monthly",
+        success: false,
+        message: "Please select a target date",
+      });
+      return;
+    }
+
+    setTriggeringMonthly(true);
+    setEmailResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "send-monthly-report",
+        {
+          body: {
+            trigger: "manual",
+            targetDate: emailTargetDate,
+            companyId: selectedCompany?.id || undefined,
+            recipientOverride: emailRecipientOverride || undefined,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setEmailResult({
+          type: "monthly",
+          success: true,
+          message: data.message || "Monthly report triggered successfully",
+          results: data.results,
+          errors: data.errors,
+        });
+      } else {
+        setEmailResult({
+          type: "monthly",
+          success: false,
+          message: data?.error || "Failed to trigger monthly report",
+          errors: data?.errors,
+        });
+      }
+    } catch (err: any) {
+      console.error("Error triggering monthly report:", err);
+      setEmailResult({
+        type: "monthly",
+        success: false,
+        message: err.message || "Failed to trigger monthly report",
+      });
+    } finally {
+      setTriggeringMonthly(false);
+    }
   };
 
   if (loading) {
@@ -165,6 +329,159 @@ export const AdminDashboard = () => {
               </Box>
             </Stack>
           </Box>
+
+          {/* Email Triggers */}
+          <Card>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2} mb={3}>
+                <EmailIcon sx={{ fontSize: 32, color: "primary.main" }} />
+                <Box>
+                  <Typography variant="h6" fontWeight={600}>
+                    Email Notifications
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Manually trigger weekly digest or monthly report emails.
+                    Select a company to send only to that company, or leave
+                    empty to send to all companies (even if disabled).
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Stack spacing={3}>
+                <Autocomplete
+                  options={companies}
+                  getOptionLabel={(option) =>
+                    `${option.name} (${option.owner_email})`
+                  }
+                  value={selectedCompany}
+                  onChange={(_, newValue) => setSelectedCompany(newValue)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Company (Optional)"
+                      helperText="Select a company to send only to that company, or leave empty for all companies"
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {option.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Owner: {option.owner_email}
+                          {option.owner_name && ` (${option.owner_name})`}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+                <Stack direction="row" spacing={2} alignItems="flex-end">
+                  <TextField
+                    label="Target Date"
+                    type="date"
+                    value={emailTargetDate}
+                    onChange={(e) => setEmailTargetDate(e.target.value)}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    sx={{ flex: 1 }}
+                    helperText="Date used to calculate the reporting period"
+                    required
+                  />
+                  <TextField
+                    label="Recipient Override (Optional)"
+                    type="email"
+                    value={emailRecipientOverride}
+                    onChange={(e) => setEmailRecipientOverride(e.target.value)}
+                    placeholder="admin@example.com"
+                    sx={{ flex: 1 }}
+                    helperText="Send only to this email (for testing)"
+                  />
+                </Stack>
+
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained"
+                    onClick={handleTriggerWeeklyDigest}
+                    disabled={triggeringWeekly || triggeringMonthly}
+                    startIcon={
+                      triggeringWeekly ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <EmailIcon />
+                      )
+                    }
+                    sx={{ textTransform: "none" }}
+                  >
+                    {triggeringWeekly
+                      ? "Triggering..."
+                      : "Trigger Weekly Digest"}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleTriggerMonthlyReport}
+                    disabled={triggeringWeekly || triggeringMonthly}
+                    startIcon={
+                      triggeringMonthly ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <EmailIcon />
+                      )
+                    }
+                    sx={{ textTransform: "none" }}
+                  >
+                    {triggeringMonthly
+                      ? "Triggering..."
+                      : "Trigger Monthly Report"}
+                  </Button>
+                </Stack>
+
+                {emailResult && (
+                  <Alert
+                    severity={emailResult.success ? "success" : "error"}
+                    onClose={() => setEmailResult(null)}
+                  >
+                    <Typography variant="subtitle2" gutterBottom>
+                      {emailResult.type === "weekly"
+                        ? "Weekly Digest"
+                        : "Monthly Report"}{" "}
+                      - {emailResult.success ? "Success" : "Failed"}
+                    </Typography>
+                    <Typography variant="body2">
+                      {emailResult.message}
+                    </Typography>
+                    {emailResult.results && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" component="div">
+                          Sent: {emailResult.results.sent} | Skipped:{" "}
+                          {emailResult.results.skipped} | Failed:{" "}
+                          {emailResult.results.failed}
+                        </Typography>
+                      </Box>
+                    )}
+                    {emailResult.errors && emailResult.errors.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" component="div">
+                          Errors:
+                        </Typography>
+                        {emailResult.errors.map((err, idx) => (
+                          <Typography
+                            key={idx}
+                            variant="caption"
+                            component="div"
+                            sx={{ fontFamily: "monospace", fontSize: "0.7rem" }}
+                          >
+                            • {err}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Alert>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
 
           {/* Search */}
           <Card>
@@ -293,7 +610,7 @@ export const AdminDashboard = () => {
                               label={
                                 getFormattedPlanName(
                                   user.subscription_plan_name,
-                                  user.subscription_plan_display_name,
+                                  user.subscription_plan_display_name
                                 ) || "Free"
                               }
                               size="small"

@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControlLabel,
   InputAdornment,
   ListItemIcon,
   ListItemText,
@@ -25,6 +26,7 @@ import {
   MenuItem,
   Skeleton,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -105,6 +107,8 @@ export const Companies = () => {
     description: "",
     industry: "",
     website: "",
+    weekly_digest_enabled: false,
+    monthly_digest_enabled: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -297,6 +301,9 @@ export const Companies = () => {
         description: company.description || "",
         industry: company.industry || "",
         website: websiteDisplay,
+        weekly_digest_enabled: (company as any).weekly_digest_enabled ?? false,
+        monthly_digest_enabled:
+          (company as any).monthly_digest_enabled ?? false,
       });
     } else {
       setEditingCompany(null);
@@ -305,6 +312,8 @@ export const Companies = () => {
         description: "",
         industry: "",
         website: "",
+        weekly_digest_enabled: false,
+        monthly_digest_enabled: false,
       });
     }
     setOpenDialog(true);
@@ -319,6 +328,8 @@ export const Companies = () => {
       description: "",
       industry: "",
       website: "",
+      weekly_digest_enabled: false,
+      monthly_digest_enabled: false,
     });
     setError(null);
   };
@@ -350,6 +361,8 @@ export const Companies = () => {
             description: formData.description || null,
             industry: formData.industry || null,
             website: websiteUrl,
+            weekly_digest_enabled: formData.weekly_digest_enabled,
+            monthly_digest_enabled: formData.monthly_digest_enabled,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingCompany.id);
@@ -391,6 +404,8 @@ export const Companies = () => {
           description: formData.description || null,
           industry: formData.industry || null,
           website: websiteUrl,
+          weekly_digest_enabled: formData.weekly_digest_enabled,
+          monthly_digest_enabled: formData.monthly_digest_enabled,
         });
 
         if (insertError) {
@@ -989,6 +1004,43 @@ export const Companies = () => {
                     }
                     disabled={submitting}
                   />
+                  {editingCompany && (
+                    <Box sx={{ pt: 1 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        {t("companies.emailDigestSettings")}
+                      </Typography>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.weekly_digest_enabled}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                weekly_digest_enabled: e.target.checked,
+                              })
+                            }
+                            disabled={submitting}
+                          />
+                        }
+                        label={t("companies.weeklyDigestEnabled")}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.monthly_digest_enabled}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                monthly_digest_enabled: e.target.checked,
+                              })
+                            }
+                            disabled={submitting}
+                          />
+                        }
+                        label={t("companies.monthlyDigestEnabled")}
+                      />
+                    </Box>
+                  )}
                 </Stack>
               </DialogContent>
               <DialogActions>

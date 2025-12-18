@@ -162,7 +162,7 @@ export const PrivacyPolicy = () => {
             </Typography>
             <Typography variant="body1" paragraph>
               If you have any questions about this privacy policy, please
-              contact us at privacy@boresha.com or through our support channels.
+              contact us at privacy@boresha.ca or through our support channels.
             </Typography>
           </Box>
         </Stack>

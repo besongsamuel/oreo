@@ -12,10 +12,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   LinearProgress,
   Paper,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -38,6 +40,8 @@ interface CompanyDetails {
   neutral_reviews: number;
   total_locations: number;
   logo_url?: string;
+  weekly_digest_enabled?: boolean;
+  monthly_digest_enabled?: boolean;
 }
 
 interface CompanyHeaderProps {
@@ -78,6 +82,8 @@ export const CompanyHeader = ({
     industry: company.industry,
     description: company.description || "",
     website: company.website || "",
+    weekly_digest_enabled: company.weekly_digest_enabled ?? false,
+    monthly_digest_enabled: company.monthly_digest_enabled ?? false,
   });
 
   const handleLogoClick = () => {
@@ -90,6 +96,8 @@ export const CompanyHeader = ({
       industry: company.industry,
       description: company.description || "",
       website: company.website || "",
+      weekly_digest_enabled: company.weekly_digest_enabled ?? false,
+      monthly_digest_enabled: company.monthly_digest_enabled ?? false,
     });
     setEditDialogOpen(true);
   };
@@ -109,6 +117,8 @@ export const CompanyHeader = ({
           industry: formData.industry,
           description: formData.description || null,
           website: formData.website || null,
+          weekly_digest_enabled: formData.weekly_digest_enabled,
+          monthly_digest_enabled: formData.monthly_digest_enabled,
           updated_at: new Date().toISOString(),
         })
         .eq("id", company.id);
@@ -233,9 +243,11 @@ export const CompanyHeader = ({
               }}
             />
           ) : (
-            <BusinessIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 }, color: "white" }} />
+            <BusinessIcon
+              sx={{ fontSize: { xs: 40, sm: 50, md: 60 }, color: "white" }}
+            />
           )}
-          
+
           {/* Upload button - visible on hover */}
           <IconButton
             size="small"
@@ -262,7 +274,7 @@ export const CompanyHeader = ({
           >
             <CameraIcon />
           </IconButton>
-          
+
           {uploading && (
             <LinearProgress
               sx={{
@@ -301,7 +313,9 @@ export const CompanyHeader = ({
               {companyId && (
                 <Button
                   startIcon={<AssignmentIcon />}
-                  onClick={() => navigate(`/companies/${companyId}/action_plans`)}
+                  onClick={() =>
+                    navigate(`/companies/${companyId}/action_plans`)
+                  }
                   variant="outlined"
                   size="small"
                   sx={{ textTransform: "none" }}
@@ -388,6 +402,39 @@ export const CompanyHeader = ({
                 setFormData({ ...formData, website: e.target.value })
               }
             />
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                {t("companies.emailDigestSettings")}
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.weekly_digest_enabled}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        weekly_digest_enabled: e.target.checked,
+                      })
+                    }
+                  />
+                }
+                label={t("companies.weeklyDigestEnabled")}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.monthly_digest_enabled}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        monthly_digest_enabled: e.target.checked,
+                      })
+                    }
+                  />
+                }
+                label={t("companies.monthlyDigestEnabled")}
+              />
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>
