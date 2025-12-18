@@ -177,6 +177,7 @@ async function publishTemplate(templateId) {
  */
 async function processTemplate(filePath) {
   const fileName = path.basename(filePath);
+  // Extract template name without extension (e.g., "weekly-review-summary-fr" from "weekly-review-summary-fr.html")
   const templateName = path.basename(fileName, path.extname(fileName));
 
   console.log(`\n🔄 Processing template: ${templateName}`);

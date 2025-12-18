@@ -2,14 +2,17 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { Resend } from "npm:resend@4.0.0";
 import {
-    formatDateRange,
     getPreviousWeekDates,
     isFirstMondayOfMonth,
 } from "../_shared/date-utils.ts";
 import {
     checkDuplicateSend,
+    getPositiveNegativeKeywords,
     getRecipientsWithReviews,
+    getReviewsByBranch,
+    getReviewsByPlatform,
     getReviewStats,
+    getUnansweredReviewsCount,
     logEmailAttempt,
     type ReviewStats,
     sendEmail,
@@ -68,19 +71,217 @@ async function validateAdminAccess(
 }
 
 /**
- * Format keywords as HTML list items
+ * Format reviews by platform and branch as HTML list
  */
-function formatKeywords(keywords: ReviewStats["top_keywords"]): string {
-    if (!keywords || keywords.length === 0) {
-        return '<li class="keyword-item">No keywords available</li>';
+function formatReviewsByPlatformBranch(
+    byPlatform: Array<{ platform_name: string; count: number }>,
+    byBranch: Array<{ branch_name: string; count: number }>,
+    language: string,
+): string {
+    const items: string[] = [];
+    const isEnglish = language === "en";
+    const reviewText = isEnglish ? "review" : "avis";
+    const reviewsText = isEnglish ? "reviews" : "avis";
+    const noDataText = isEnglish
+        ? "<li>No reviews available</li>"
+        : "<li>Aucun avis disponible</li>";
+
+    // Show platforms first
+    for (const platform of byPlatform) {
+        const countText = platform.count === 1 ? reviewText : reviewsText;
+        items.push(
+            `<li><span class="review-platform">${platform.count} ${countText} ${platform.platform_name}</span></li>`,
+        );
     }
 
-    return keywords
-        .map(
-            (kw) =>
-                `<li class="keyword-item">${kw.text} <span style="color: #86868b; font-size: 12px;">(${kw.count})</span></li>`,
-        )
-        .join("");
+    // Then show branches
+    for (const branch of byBranch) {
+        const countText = branch.count === 1 ? reviewText : reviewsText;
+        items.push(
+            `<li><span class="review-platform">${branch.count} ${countText}</span> <span class="review-branch">- ${branch.branch_name}</span></li>`,
+        );
+    }
+
+    if (items.length === 0) {
+        return noDataText;
+    }
+
+    return items.join("");
+}
+
+/**
+ * Format weekly trends as HTML list
+ */
+function formatWeeklyTrends(
+    sentimentGeneral: string,
+    mostFrequentKeyword: string,
+    positivePoints: Array<{ text: string; count: number }>,
+    negativePoints: Array<{ text: string; count: number }>,
+    language: string,
+): string {
+    const items: string[] = [];
+    const isEnglish = language === "en";
+
+    // General sentiment
+    const sentimentLabel = isEnglish
+        ? "General sentiment of the week:"
+        : "Sentiment général de la semaine :";
+    items.push(
+        `<li><strong>${sentimentLabel}</strong> ${sentimentGeneral}</li>`,
+    );
+
+    // Most frequent keyword
+    if (mostFrequentKeyword) {
+        const keywordLabel = isEnglish
+            ? "Most frequent keyword:"
+            : "Mot-clé le plus fréquent :";
+        items.push(
+            `<li><strong>${keywordLabel}</strong> ${mostFrequentKeyword}</li>`,
+        );
+    }
+
+    // Positive points
+    if (positivePoints.length > 0) {
+        const positiveList = positivePoints
+            .slice(0, 3)
+            .map((p) => p.text)
+            .join(", ");
+        const positiveLabel = isEnglish
+            ? "Points appreciated by customers:"
+            : "Points appréciés par les clients :";
+        items.push(
+            `<li><strong>${positiveLabel}</strong> ${positiveList}</li>`,
+        );
+    }
+
+    // Negative points
+    if (negativePoints.length > 0) {
+        const negativeList = negativePoints
+            .slice(0, 3)
+            .map((p) => p.text)
+            .join(", ");
+        const negativeLabel = isEnglish
+            ? "Negative points:"
+            : "Points négatifs :";
+        items.push(
+            `<li><strong>${negativeLabel}</strong> ${negativeList}</li>`,
+        );
+    }
+
+    return items.join("");
+}
+
+/**
+ * Generate key highlights for weekly digest
+ */
+function generateKeyHighlights(
+    stats: ReviewStats,
+    unansweredCount: number,
+    language: string,
+): string {
+    const highlights: string[] = [];
+
+    if (language === "en") {
+        if (stats.total_reviews > 0) {
+            highlights.push(
+                `${stats.total_reviews} review${
+                    stats.total_reviews > 1 ? "s" : ""
+                } received this week`,
+            );
+        }
+        if (stats.average_rating >= 4.5) {
+            highlights.push(
+                `Excellent average rating of ${
+                    stats.average_rating.toFixed(1)
+                }/5`,
+            );
+        } else if (stats.average_rating >= 4.0) {
+            highlights.push(
+                `Strong average rating of ${stats.average_rating.toFixed(1)}/5`,
+            );
+        }
+        if (unansweredCount > 0) {
+            highlights.push(
+                `${unansweredCount} unanswered review${
+                    unansweredCount > 1 ? "s" : ""
+                } requiring attention`,
+            );
+        }
+    } else {
+        if (stats.total_reviews > 0) {
+            highlights.push(
+                `${stats.total_reviews} avis reçu${
+                    stats.total_reviews > 1 ? "s" : ""
+                } cette semaine`,
+            );
+        }
+        if (stats.average_rating >= 4.5) {
+            highlights.push(
+                `Note moyenne excellente de ${
+                    stats.average_rating.toFixed(1)
+                }/5`,
+            );
+        } else if (stats.average_rating >= 4.0) {
+            highlights.push(
+                `Bonne note moyenne de ${stats.average_rating.toFixed(1)}/5`,
+            );
+        }
+        if (unansweredCount > 0) {
+            highlights.push(
+                `${unansweredCount} avis non répondu${
+                    unansweredCount > 1 ? "s" : ""
+                } nécessitant votre attention`,
+            );
+        }
+    }
+
+    if (highlights.length === 0) {
+        return language === "en"
+            ? "<li>New reviews received this week</li>"
+            : "<li>Nouveaux avis reçus cette semaine</li>";
+    }
+
+    return highlights.map((h) => `<li>${h}</li>`).join("");
+}
+
+/**
+ * Generate a weekly recommendation based on stats
+ */
+function generateWeeklyRecommendation(
+    unansweredCount: number,
+    negativeCount: number,
+    totalReviews: number,
+    language: string,
+): string {
+    if (language === "en") {
+        if (unansweredCount > 0) {
+            return `Respond to the ${unansweredCount} unanswered review${
+                unansweredCount > 1 ? "s" : ""
+            } to improve your customer engagement.`;
+        }
+        if (negativeCount > 0 && totalReviews > 0) {
+            const negativePercent = Math.round(
+                (negativeCount / totalReviews) * 100,
+            );
+            if (negativePercent > 20) {
+                return `Monitor the issues mentioned in negative reviews (${negativePercent}% of reviews).`;
+            }
+        }
+        return "Continue maintaining the quality of service for your customers.";
+    } else {
+        if (unansweredCount > 0) {
+            return `Répondez aux ${unansweredCount} avis non répondus pour améliorer votre engagement client.`;
+        }
+        if (negativeCount > 0 && totalReviews > 0) {
+            const negativePercent = Math.round(
+                (negativeCount / totalReviews) * 100,
+            );
+            if (negativePercent > 20) {
+                return `Surveillez les irritants mentionnés dans les avis négatifs (${negativePercent}% des avis).`;
+            }
+        }
+        return "Continuez à maintenir la qualité de service pour vos clients.";
+    }
 }
 
 /**
@@ -198,40 +399,133 @@ async function processWeeklyDigest(
                 continue;
             }
 
-            // Format date range (for potential future use)
-            const _periodRange = formatDateRange(startDate, endDate);
+            // Get additional data for weekly digest
+            const [
+                reviewsByPlatform,
+                reviewsByBranch,
+                unansweredCount,
+                keywordsData,
+            ] = await Promise.all([
+                getReviewsByPlatform(
+                    supabase,
+                    recipient.company_id,
+                    startDate,
+                    endDate,
+                ),
+                getReviewsByBranch(
+                    supabase,
+                    recipient.company_id,
+                    startDate,
+                    endDate,
+                ),
+                getUnansweredReviewsCount(
+                    supabase,
+                    recipient.company_id,
+                    startDate,
+                    endDate,
+                ),
+                getPositiveNegativeKeywords(
+                    supabase,
+                    recipient.company_id,
+                    startDate,
+                    endDate,
+                ),
+            ]);
+
+            // Get user language preference
+            const userLanguage = recipient.preferred_language || "fr";
+            const isEnglish = userLanguage === "en";
+
+            // Determine general sentiment
+            const totalSentiment = stats.sentiment_breakdown.positive +
+                stats.sentiment_breakdown.negative +
+                stats.sentiment_breakdown.neutral;
+            let sentimentGeneral = isEnglish ? "Neutral" : "Neutre";
+            if (totalSentiment > 0) {
+                const positivePercent =
+                    (stats.sentiment_breakdown.positive / totalSentiment) * 100;
+                const negativePercent =
+                    (stats.sentiment_breakdown.negative / totalSentiment) * 100;
+                if (positivePercent > 60) {
+                    sentimentGeneral = isEnglish
+                        ? "Very positive"
+                        : "Très positif";
+                } else if (positivePercent > 40) {
+                    sentimentGeneral = isEnglish
+                        ? "Rather positive"
+                        : "Plutôt positif";
+                } else if (negativePercent > 40) {
+                    sentimentGeneral = isEnglish
+                        ? "Rather negative"
+                        : "Plutôt négatif";
+                } else if (negativePercent > 20) {
+                    sentimentGeneral = isEnglish ? "Mixed" : "Mixte";
+                }
+            }
+
+            // Get most frequent keyword
+            const mostFrequentKeyword = stats.top_keywords.length > 0
+                ? stats.top_keywords[0].text
+                : "";
+
+            // Format date range based on language
+            const locale = isEnglish ? "en-US" : "fr-FR";
+            const periodStart = startDate.toLocaleDateString(locale, {
+                day: "numeric",
+                month: "long",
+            });
+            const periodEnd = endDate.toLocaleDateString(locale, {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            });
 
             // Prepare template data for Resend template
             const templateData = {
                 company_name: recipient.company_name,
-                period_start: startDate.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                }),
-                period_end: endDate.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                }),
-                total_reviews: stats.total_reviews.toString(),
-                average_rating: stats.average_rating.toFixed(2),
-                sentiment_positive: stats.sentiment_breakdown.positive
-                    .toString(),
-                sentiment_neutral: stats.sentiment_breakdown.neutral.toString(),
-                sentiment_negative: stats.sentiment_breakdown.negative
-                    .toString(),
-                top_keywords: formatKeywords(stats.top_keywords),
+                period_start: periodStart,
+                period_end: periodEnd,
+                key_highlights: generateKeyHighlights(
+                    stats,
+                    unansweredCount,
+                    userLanguage,
+                ),
+                reviews_by_platform_branch: formatReviewsByPlatformBranch(
+                    reviewsByPlatform,
+                    reviewsByBranch,
+                    userLanguage,
+                ),
+                unanswered_reviews_count: unansweredCount.toString(),
+                weekly_trends: formatWeeklyTrends(
+                    sentimentGeneral,
+                    mostFrequentKeyword,
+                    keywordsData.positive,
+                    keywordsData.negative,
+                    userLanguage,
+                ),
+                weekly_recommendation: generateWeeklyRecommendation(
+                    unansweredCount,
+                    stats.sentiment_breakdown.negative,
+                    stats.total_reviews,
+                    userLanguage,
+                ),
                 cta_url: ctaUrl,
             };
 
+            // Select template based on user language
+            const templateId = isEnglish
+                ? "weekly-review-summary-en"
+                : "weekly-review-summary-fr";
+
             // Send email using Resend template
-            const subject =
-                `Your Weekly Review Digest - ${recipient.company_name}`;
+            const subject = isEnglish
+                ? `Weekly Review Summary - ${recipient.company_name}`
+                : `Résumé hebdomadaire des avis - ${recipient.company_name}`;
             await sendEmail(
                 resend,
                 recipient.owner_email,
                 subject,
-                "weekly-review-summary",
+                templateId,
                 templateData,
             );
 

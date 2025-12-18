@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weekly Review Summary</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: #f5f5f7;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #0d2d53;
+        color: #ffffff;
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .content {
+        padding: 40px 30px;
+      }
+      .greeting {
+        font-size: 18px;
+        line-height: 1.7;
+        color: #1d1d1f;
+        margin-bottom: 20px;
+      }
+      .intro-text {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #6e6e73;
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: rgba(13, 45, 83, 0.04);
+        border-radius: 12px;
+        border-left: 4px solid #0d2d53;
+      }
+      .highlights-box {
+        background: linear-gradient(
+          135deg,
+          rgba(13, 45, 83, 0.08) 0%,
+          rgba(13, 45, 83, 0.04) 100%
+        );
+        border-radius: 16px;
+        padding: 25px;
+        margin-bottom: 35px;
+        border: 2px solid rgba(13, 45, 83, 0.1);
+      }
+      .highlights-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0d2d53;
+        margin-bottom: 15px;
+      }
+      .highlights-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .highlights-list li {
+        padding: 10px 0;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+        position: relative;
+        padding-left: 25px;
+      }
+      .highlights-list li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #34c759;
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .period {
+        font-size: 15px;
+        color: #0d2d53;
+        font-weight: 600;
+        margin-bottom: 30px;
+        padding: 12px 20px;
+        background-color: rgba(13, 45, 83, 0.08);
+        border-radius: 12px;
+        display: inline-block;
+      }
+      .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #0d2d53;
+      }
+      .section-intro {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #6e6e73;
+        margin-bottom: 20px;
+      }
+      .review-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 25px 0;
+      }
+      .review-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        font-size: 15px;
+        color: #1d1d1f;
+      }
+      .review-list li:last-child {
+        border-bottom: none;
+      }
+      .review-platform {
+        font-weight: 600;
+        color: #0d2d53;
+      }
+      .review-branch {
+        color: #6e6e73;
+        font-size: 14px;
+      }
+      .unanswered-badge {
+        display: inline-block;
+        background-color: #df4333;
+        color: #ffffff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 10px;
+      }
+      .trends-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 25px 0;
+      }
+      .trends-list li {
+        padding: 15px;
+        margin-bottom: 12px;
+        background-color: rgba(13, 45, 83, 0.06);
+        border-radius: 12px;
+        border-left: 4px solid #0d2d53;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      .recommendation-box {
+        background-color: rgba(52, 199, 89, 0.1);
+        border: 2px solid rgba(52, 199, 89, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .recommendation-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin-bottom: 10px;
+      }
+      .recommendation-content {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      .cta-button {
+        display: inline-block;
+        background-color: #0d2d53;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 16px 40px;
+        border-radius: 980px;
+        font-size: 17px;
+        font-weight: 600;
+        text-align: center;
+        margin: 25px 0;
+        box-shadow: 0 4px 15px rgba(13, 45, 83, 0.3);
+      }
+      .cta-section {
+        text-align: center;
+        margin: 40px 0 30px;
+      }
+      .footer {
+        background-color: #f5f5f7;
+        padding: 30px;
+        text-align: center;
+        font-size: 12px;
+        color: #6e6e73;
+      }
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          rgba(0, 0, 0, 0.1),
+          transparent
+        );
+        margin: 35px 0;
+      }
+      @media only screen and (max-width: 600px) {
+        .content {
+          padding: 30px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f5f5f7; padding: 30px 10px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            class="email-container"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+          >
+            <!-- Header -->
+            <tr>
+              <td class="header">
+                <h1>📧 Weekly Review Summary</h1>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td class="content">
+                <div class="greeting">Hello,</div>
+
+                <div class="intro-text">
+                  This week, your customers shared their experience with
+                  <strong>{{{company_name}}}</strong>. Here's an overview of
+                  their feedback and important trends to watch. This information
+                  will help you understand how to improve your service and meet
+                  your customers' expectations.
+                </div>
+
+                <div class="period">
+                  📅 From <strong>{{{period_start}}}</strong> to
+                  <strong>{{{period_end}}}</strong>
+                </div>
+
+                <!-- Key Highlights -->
+                <div class="highlights-box">
+                  <div class="highlights-title">
+                    ✨ Key Highlights of the Week
+                  </div>
+                  <ul class="highlights-list">
+                    {{{key_highlights}}}
+                  </ul>
+                </div>
+
+                <!-- 1. New Reviews This Week -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">1️⃣ New Reviews This Week</div>
+
+                  <div class="section-intro">
+                    Here's the breakdown of reviews received this week,
+                    organized by platform and branch. This distribution helps
+                    you see where your customer feedback is coming from and
+                    identify improvement opportunities.
+                  </div>
+
+                  <ul class="review-list">
+                    {{{reviews_by_platform_branch}}}
+                  </ul>
+
+                  <div style="margin-top: 20px">
+                    <div class="section-intro" style="margin-bottom: 10px">
+                      Unanswered reviews are an opportunity for direct
+                      engagement with your customers. Responding quickly shows
+                      that you care about their experience.
+                    </div>
+                    <div>
+                      <strong>Number of unanswered reviews:</strong>
+                      <span class="unanswered-badge"
+                        >{{{unanswered_reviews_count}}}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 2. Week Trends Overview -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">2️⃣ Week Trends Overview</div>
+
+                  <div class="section-intro">
+                    Sentiment and keyword analysis reveals the recurring themes
+                    in your customers' comments. Use these insights to
+                    understand what's working well and what needs your
+                    attention.
+                  </div>
+
+                  <ul class="trends-list">
+                    {{{weekly_trends}}}
+                  </ul>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 3. Recommendation -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">
+                    3️⃣ Recommendation for the Week
+                  </div>
+
+                  <div class="section-intro" style="margin-bottom: 15px">
+                    Based on the analysis of your reviews this week, here's a
+                    concrete action to improve your customer service.
+                  </div>
+
+                  <div class="recommendation-box">
+                    <div class="recommendation-title">💡 Suggested Action</div>
+                    <div class="recommendation-content">
+                      {{{weekly_recommendation}}}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. Action Button -->
+                <div class="cta-section">
+                  <a href="{{{cta_url}}}" class="cta-button"
+                    >View Updates on Boresha</a
+                  >
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="footer">
+                <p><strong>Automated email from Boresha</strong></p>
+                <p>
+                  You're receiving this email because you have weekly digest
+                  enabled for this company.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

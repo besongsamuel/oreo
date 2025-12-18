@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rapport mensuel de performance</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: #f5f5f7;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #0d2d53;
+        color: #ffffff;
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .content {
+        padding: 40px 30px;
+      }
+      .greeting {
+        font-size: 18px;
+        line-height: 1.7;
+        color: #1d1d1f;
+        margin-bottom: 20px;
+      }
+      .intro-text {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #6e6e73;
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: rgba(13, 45, 83, 0.04);
+        border-radius: 12px;
+        border-left: 4px solid #0d2d53;
+      }
+      .executive-summary {
+        background: linear-gradient(
+          135deg,
+          rgba(13, 45, 83, 0.08) 0%,
+          rgba(13, 45, 83, 0.04) 100%
+        );
+        border-radius: 16px;
+        padding: 25px;
+        margin-bottom: 35px;
+        border: 2px solid rgba(13, 45, 83, 0.1);
+      }
+      .executive-summary-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0d2d53;
+        margin-bottom: 15px;
+      }
+      .executive-summary-text {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #1d1d1f;
+      }
+      .period {
+        font-size: 15px;
+        color: #0d2d53;
+        font-weight: 600;
+        margin-bottom: 30px;
+        padding: 12px 20px;
+        background-color: rgba(13, 45, 83, 0.08);
+        border-radius: 12px;
+        display: inline-block;
+      }
+      .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #0d2d53;
+      }
+      .section-intro {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #6e6e73;
+        margin-bottom: 20px;
+      }
+      .stats-grid {
+        display: table;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 15px;
+        margin-bottom: 25px;
+      }
+      .stat-item {
+        display: table-cell;
+        background-color: rgba(13, 45, 83, 0.06);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        vertical-align: top;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: #6e6e73;
+        margin-bottom: 8px;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0d2d53;
+      }
+      .variation {
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 5px;
+      }
+      .variation.positive {
+        color: #34c759;
+      }
+      .variation.negative {
+        color: #df4333;
+      }
+      .distribution-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 25px 0;
+      }
+      .distribution-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        font-size: 15px;
+        color: #1d1d1f;
+      }
+      .distribution-list li:last-child {
+        border-bottom: none;
+      }
+      .distribution-name {
+        font-weight: 600;
+        color: #0d2d53;
+      }
+      .trends-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 25px 0;
+      }
+      .trends-list li {
+        padding: 15px;
+        margin-bottom: 12px;
+        background-color: rgba(13, 45, 83, 0.06);
+        border-radius: 12px;
+        border-left: 4px solid #0d2d53;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      .comparison-section {
+        margin: 25px 0;
+      }
+      .comparison-box {
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+      }
+      .comparison-box.improving {
+        background-color: rgba(52, 199, 89, 0.1);
+        border: 2px solid rgba(52, 199, 89, 0.3);
+      }
+      .comparison-box.degrading {
+        background-color: rgba(223, 67, 51, 0.1);
+        border: 2px solid rgba(223, 67, 51, 0.3);
+      }
+      .comparison-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin-bottom: 10px;
+      }
+      .comparison-content {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      .recommendations-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .recommendations-list li {
+        padding: 15px;
+        margin-bottom: 12px;
+        background-color: rgba(52, 199, 89, 0.1);
+        border-left: 4px solid #34c759;
+        border-radius: 12px;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1d1d1f;
+      }
+      .cta-button {
+        display: inline-block;
+        background-color: #0d2d53;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 16px 40px;
+        border-radius: 980px;
+        font-size: 17px;
+        font-weight: 600;
+        text-align: center;
+        margin: 25px 0;
+        box-shadow: 0 4px 15px rgba(13, 45, 83, 0.3);
+      }
+      .cta-section {
+        text-align: center;
+        margin: 40px 0 30px;
+      }
+      .footer {
+        background-color: #f5f5f7;
+        padding: 30px;
+        text-align: center;
+        font-size: 12px;
+        color: #6e6e73;
+      }
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          rgba(0, 0, 0, 0.1),
+          transparent
+        );
+        margin: 35px 0;
+      }
+      @media only screen and (max-width: 600px) {
+        .content {
+          padding: 30px 20px;
+        }
+        .stats-grid {
+          display: block;
+        }
+        .stat-item {
+          display: block;
+          margin-bottom: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f5f5f7; padding: 30px 10px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            class="email-container"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+          >
+            <!-- Header -->
+            <tr>
+              <td class="header">
+                <h1>📊 Rapport mensuel de performance</h1>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td class="content">
+                <div class="greeting">Bonjour,</div>
+
+                <div class="intro-text">
+                  Voici votre rapport mensuel de performance pour
+                  <strong>{{{company_name}}}</strong>. Ce document résume
+                  l'ensemble de vos retours clients sur le mois écoulé et vous
+                  donne les insights nécessaires pour prendre des décisions
+                  éclairées et continuer à améliorer l'expérience client.
+                </div>
+
+                <div class="period">📅 <strong>{{{period_month}}}</strong></div>
+
+                <!-- Executive Summary -->
+                <div class="executive-summary">
+                  <div class="executive-summary-title">📋 Résumé exécutif</div>
+                  <div class="executive-summary-text">
+                    {{{executive_summary}}}
+                  </div>
+                </div>
+
+                <!-- 1. Résultats du mois -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">1️⃣ Résultats du mois</div>
+
+                  <div class="section-intro">
+                    Voici un aperçu des métriques clés de performance pour ce
+                    mois. Ces chiffres vous donnent une vue d'ensemble de
+                    l'activité et de la satisfaction de vos clients.
+                  </div>
+
+                  <table
+                    class="stats-grid"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                  >
+                    <tr>
+                      <td class="stat-item">
+                        <div class="stat-label">Nombre total d'avis</div>
+                        <div class="stat-value">{{{total_reviews}}}</div>
+                      </td>
+                      <td class="stat-item">
+                        <div class="stat-label">Note moyenne</div>
+                        <div class="stat-value">⭐ {{{average_rating}}}</div>
+                        <div class="variation {{{rating_variation_class}}}">
+                          {{{rating_variation}}}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div class="section-intro" style="margin-top: 25px">
+                    La répartition des avis par plateforme et par succursale
+                    vous permet d'identifier où vos clients partagent le plus
+                    leur expérience et quelles locations génèrent le plus de
+                    retours.
+                  </div>
+
+                  <div class="section-intro">
+                    <strong>Répartition par plateforme :</strong>
+                  </div>
+                  <ul class="distribution-list">
+                    {{{reviews_by_platform}}}
+                  </ul>
+
+                  <div class="section-intro">
+                    <strong>Répartition par succursale :</strong>
+                  </div>
+                  <ul class="distribution-list">
+                    {{{reviews_by_branch}}}
+                  </ul>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 2. Aperçu des tendances du mois -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">
+                    2️⃣ Aperçu des tendances du mois
+                  </div>
+
+                  <div class="section-intro">
+                    L'analyse approfondie des commentaires de vos clients révèle
+                    les thèmes les plus fréquemment mentionnés. Ces tendances
+                    vous aident à comprendre ce que vos clients apprécient le
+                    plus et les points d'attention à surveiller.
+                  </div>
+
+                  <ul class="trends-list">
+                    {{{monthly_trends}}}
+                  </ul>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 3. Comparatif Mois vs Mois précédent -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">
+                    3️⃣ Comparatif Mois vs Mois précédent
+                  </div>
+
+                  <div class="section-intro" style="margin-bottom: 20px">
+                    Comparez vos performances ce mois-ci avec le mois précédent
+                    pour identifier les tendances et mesurer l'impact de vos
+                    actions d'amélioration continue.
+                  </div>
+
+                  {{{month_comparison}}}
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 4. Priorités recommandées -->
+                <div style="margin-bottom: 35px">
+                  <div class="section-title">
+                    4️⃣ Priorités recommandées pour le mois suivant
+                  </div>
+
+                  <div class="section-intro" style="margin-bottom: 20px">
+                    Basées sur l'analyse de vos données mensuelles, voici les
+                    actions prioritaires pour continuer à améliorer votre
+                    service et maximiser la satisfaction client.
+                  </div>
+
+                  <ul class="recommendations-list">
+                    {{{monthly_recommendations}}}
+                  </ul>
+                </div>
+
+                <!-- 5. Bouton d'action -->
+                <div class="cta-section">
+                  <a href="{{{cta_url}}}" class="cta-button"
+                    >Consulter les mises à jour sur Boresha</a
+                  >
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="footer">
+                <p><strong>Email automatisé de Boresha</strong></p>
+                <p>
+                  Vous recevez cet email car vous avez activé le rapport mensuel
+                  pour cette entreprise.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

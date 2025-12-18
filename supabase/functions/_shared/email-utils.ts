@@ -39,6 +39,7 @@ export interface RecipientWithCompany {
     owner_name: string | null;
     company_id: string;
     company_name: string;
+    preferred_language: string;
 }
 
 /**
@@ -153,7 +154,8 @@ export async function getRecipientsWithReviews(
                         profiles!owner_id(
                             id,
                             email,
-                            full_name
+                            full_name,
+                            preferred_language
                         )
                     )
                 )
@@ -207,6 +209,7 @@ export async function getRecipientsWithReviews(
                         owner_name: profile.full_name || null,
                         company_id: company.id,
                         company_name: company.name,
+                        preferred_language: profile.preferred_language || "fr",
                     });
                 }
             }
@@ -450,5 +453,380 @@ export async function logEmailAttempt(
     if (error) {
         console.error(`Failed to log email attempt: ${error.message}`);
         // Don't throw - logging failure shouldn't break the flow
+    }
+}
+
+/**
+ * Get reviews grouped by platform for a company in a date range
+ */
+export async function getReviewsByPlatform(
+    supabase: SupabaseClient,
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+): Promise<Array<{ platform_name: string; count: number }>> {
+    const { data: locations } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+    if (!locations || locations.length === 0) return [];
+
+    const locationIds = locations.map((loc) => loc.id);
+
+    const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select("id, platform_id, platforms(display_name)")
+        .in("location_id", locationIds)
+        .eq("is_active", true);
+
+    if (!platformConnections || platformConnections.length === 0) return [];
+
+    const platformConnectionIds = platformConnections.map((pc) => pc.id);
+
+    const { data: reviews } = await supabase
+        .from("reviews")
+        .select("platform_connection_id")
+        .in("platform_connection_id", platformConnectionIds)
+        .gte("published_at", startDate.toISOString())
+        .lte("published_at", endDate.toISOString());
+
+    if (!reviews) return [];
+
+    const platformMap = new Map<string, number>();
+    const connectionToPlatform = new Map<string, string>();
+
+    for (const pc of platformConnections) {
+        const platform = pc.platforms as any;
+        const platformName = platform?.display_name || "Unknown";
+        connectionToPlatform.set(pc.id, platformName);
+    }
+
+    for (const review of reviews) {
+        const platformName = connectionToPlatform.get(
+            review.platform_connection_id,
+        ) || "Unknown";
+        platformMap.set(
+            platformName,
+            (platformMap.get(platformName) || 0) + 1,
+        );
+    }
+
+    return Array.from(platformMap.entries())
+        .map(([platform_name, count]) => ({ platform_name, count }))
+        .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Get reviews grouped by location/branch for a company in a date range
+ */
+export async function getReviewsByBranch(
+    supabase: SupabaseClient,
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+): Promise<Array<{ branch_name: string; count: number }>> {
+    const { data: locations } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+    if (!locations || locations.length === 0) return [];
+
+    const locationIds = locations.map((loc) => loc.id);
+    const locationMap = new Map<string, string>();
+    for (const loc of locations) {
+        locationMap.set(loc.id, loc.name);
+    }
+
+    const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select("id, location_id")
+        .in("location_id", locationIds)
+        .eq("is_active", true);
+
+    if (!platformConnections || platformConnections.length === 0) return [];
+
+    const platformConnectionIds = platformConnections.map((pc) => pc.id);
+    const connectionToLocation = new Map<string, string>();
+
+    for (const pc of platformConnections) {
+        const locationName = locationMap.get(pc.location_id) || "Unknown";
+        connectionToLocation.set(pc.id, locationName);
+    }
+
+    const { data: reviews } = await supabase
+        .from("reviews")
+        .select("platform_connection_id")
+        .in("platform_connection_id", platformConnectionIds)
+        .gte("published_at", startDate.toISOString())
+        .lte("published_at", endDate.toISOString());
+
+    if (!reviews) return [];
+
+    const branchMap = new Map<string, number>();
+
+    for (const review of reviews) {
+        const branchName = connectionToLocation.get(
+            review.platform_connection_id,
+        ) || "Unknown";
+        branchMap.set(branchName, (branchMap.get(branchName) || 0) + 1);
+    }
+
+    return Array.from(branchMap.entries())
+        .map(([branch_name, count]) => ({ branch_name, count }))
+        .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Get count of unanswered reviews for a company in a date range
+ */
+export async function getUnansweredReviewsCount(
+    supabase: SupabaseClient,
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+): Promise<number> {
+    const { data: locations } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+    if (!locations || locations.length === 0) return 0;
+
+    const locationIds = locations.map((loc) => loc.id);
+
+    const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select("id")
+        .in("location_id", locationIds)
+        .eq("is_active", true);
+
+    if (!platformConnections || platformConnections.length === 0) return 0;
+
+    const platformConnectionIds = platformConnections.map((pc) => pc.id);
+
+    const { data: reviews } = await supabase
+        .from("reviews")
+        .select("id")
+        .in("platform_connection_id", platformConnectionIds)
+        .gte("published_at", startDate.toISOString())
+        .lte("published_at", endDate.toISOString())
+        .is("reply_content", null);
+
+    return reviews?.length || 0;
+}
+
+/**
+ * Get a negative review example for a company in a date range
+ */
+export async function getNegativeReviewExample(
+    supabase: SupabaseClient,
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+): Promise<{ rating: number; content: string } | null> {
+    const { data: locations } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+    if (!locations || locations.length === 0) return null;
+
+    const locationIds = locations.map((loc) => loc.id);
+
+    const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select("id")
+        .in("location_id", locationIds)
+        .eq("is_active", true);
+
+    if (!platformConnections || platformConnections.length === 0) return null;
+
+    const platformConnectionIds = platformConnections.map((pc) => pc.id);
+
+    // Get reviews first
+    const { data: reviews } = await supabase
+        .from("reviews")
+        .select("id, rating, content")
+        .in("platform_connection_id", platformConnectionIds)
+        .gte("published_at", startDate.toISOString())
+        .lte("published_at", endDate.toISOString())
+        .not("content", "is", null)
+        .order("rating", { ascending: true })
+        .limit(10); // Get lowest rated reviews
+
+    if (!reviews || reviews.length === 0) return null;
+
+    // Get sentiment for these reviews
+    const reviewIds = reviews.map((r) => r.id);
+    const { data: sentiments } = await supabase
+        .from("sentiment_analysis")
+        .select("review_id, sentiment")
+        .in("review_id", reviewIds)
+        .eq("sentiment", "negative")
+        .limit(1);
+
+    // If we have a negative sentiment review, use it; otherwise use the lowest rated
+    if (sentiments && sentiments.length > 0) {
+        const negativeReviewId = sentiments[0].review_id;
+        const review = reviews.find((r) => r.id === negativeReviewId);
+        if (review) {
+            return {
+                rating: Number(review.rating) || 0,
+                content: review.content || "",
+            };
+        }
+    }
+
+    // Fallback to lowest rated review
+    const lowestRated = reviews[0];
+    if (Number(lowestRated.rating) <= 3) {
+        return {
+            rating: Number(lowestRated.rating) || 0,
+            content: lowestRated.content || "",
+        };
+    }
+
+    return null;
+}
+
+/**
+ * Get positive and negative keywords separately
+ */
+export async function getPositiveNegativeKeywords(
+    supabase: SupabaseClient,
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+): Promise<{
+    positive: Array<{ text: string; count: number }>;
+    negative: Array<{ text: string; count: number }>;
+}> {
+    const { data: locations } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
+
+    if (!locations || locations.length === 0) {
+        return { positive: [], negative: [] };
+    }
+
+    const locationIds = locations.map((loc) => loc.id);
+
+    const { data: platformConnections } = await supabase
+        .from("platform_connections")
+        .select("id")
+        .in("location_id", locationIds)
+        .eq("is_active", true);
+
+    if (!platformConnections || platformConnections.length === 0) {
+        return { positive: [], negative: [] };
+    }
+
+    const platformConnectionIds = platformConnections.map((pc) => pc.id);
+
+    const { data: reviews } = await supabase
+        .from("reviews")
+        .select("id")
+        .in("platform_connection_id", platformConnectionIds)
+        .gte("published_at", startDate.toISOString())
+        .lte("published_at", endDate.toISOString());
+
+    if (!reviews || reviews.length === 0) {
+        return { positive: [], negative: [] };
+    }
+
+    const reviewIds = reviews.map((r) => r.id);
+
+    // Get sentiment for reviews
+    const { data: sentiments } = await supabase
+        .from("sentiment_analysis")
+        .select("review_id, sentiment")
+        .in("review_id", reviewIds);
+
+    const sentimentMap = new Map<string, string>();
+    if (sentiments) {
+        for (const s of sentiments) {
+            sentimentMap.set(s.review_id, s.sentiment as string);
+        }
+    }
+
+    // Get keywords
+    const { data: reviewKeywords } = await supabase
+        .from("review_keywords")
+        .select(`
+            review_id,
+            keywords!inner(text)
+        `)
+        .in("review_id", reviewIds);
+
+    const positiveKeywords = new Map<string, number>();
+    const negativeKeywords = new Map<string, number>();
+
+    if (reviewKeywords) {
+        for (const rk of reviewKeywords) {
+            const keyword = (rk as any).keywords;
+            const sentiment = sentimentMap.get(rk.review_id) || "neutral";
+
+            if (keyword) {
+                const keywordText = keyword.text;
+                if (sentiment === "positive") {
+                    positiveKeywords.set(
+                        keywordText,
+                        (positiveKeywords.get(keywordText) || 0) + 1,
+                    );
+                } else if (sentiment === "negative") {
+                    negativeKeywords.set(
+                        keywordText,
+                        (negativeKeywords.get(keywordText) || 0) + 1,
+                    );
+                }
+            }
+        }
+    }
+
+    return {
+        positive: Array.from(positiveKeywords.entries())
+            .map(([text, count]) => ({ text, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5),
+        negative: Array.from(negativeKeywords.entries())
+            .map(([text, count]) => ({ text, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5),
+    };
+}
+
+/**
+ * Get previous month statistics for comparison
+ */
+export async function getPreviousMonthStats(
+    supabase: SupabaseClient,
+    companyId: string,
+    currentStartDate: Date,
+): Promise<ReviewStats | null> {
+    // Calculate previous month dates
+    const prevMonthEnd = new Date(currentStartDate);
+    prevMonthEnd.setDate(0); // Last day of previous month
+    const prevMonthStart = new Date(prevMonthEnd);
+    prevMonthStart.setDate(1); // First day of previous month
+
+    try {
+        const stats = await getReviewStats(
+            supabase,
+            companyId,
+            prevMonthStart,
+            prevMonthEnd,
+        );
+        return stats;
+    } catch (error) {
+        console.warn(`Failed to get previous month stats: ${error}`);
+        return null;
     }
 }
