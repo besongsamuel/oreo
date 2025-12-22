@@ -45,3 +45,5 @@ SELECT cron.schedule(
 -- - The cron.job table is managed by pg_cron extension and cannot be commented without superuser privileges
 -- - Both functions will skip sending if total review count for the period is 0
 -- - Weekly digest will skip if it's the first Monday of the month (when monthly report is sent)
+
+
