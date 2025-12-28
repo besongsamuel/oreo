@@ -58,3 +58,4 @@ CREATE POLICY "admin_full_access_email_notification_logs"
     WITH CHECK (is_admin(auth.uid()));
 
 
+

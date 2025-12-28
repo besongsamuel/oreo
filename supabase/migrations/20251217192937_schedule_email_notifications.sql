@@ -47,3 +47,4 @@ SELECT cron.schedule(
 -- - Weekly digest will skip if it's the first Monday of the month (when monthly report is sent)
 
 
+
